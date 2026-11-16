@@ -26,7 +26,13 @@ guardhub.dev runs on a **shared** Ubuntu host next to other projects. Rules: tou
 - **Neighbours:** `docker-compose.prod.yml` caps CPU/memory/pids per container and the scanner at
   2 scans x 2 checks. Images are built off-host, so builds never compete for the host CPU.
 
-## 2. Deploy, rollback, status
+## 2. Deploy, rollback, status (zero-downtime blue/green)
+
+**Layout.** The data layer (postgres, redis, sentry-relay) is the long-lived compose project
+`guardhub`. The app layer runs as `guardhub-blue` or `guardhub-green` on `127.0.0.1:18701` /
+`:18702` (`ops/deploy/compose.color.yml` joins them to the data networks). nginx proxies to the
+upstream in `/opt/guardhub/shared/nginx-upstream.conf`, which `guardhub-ctl.sh` rewrites; the
+active colour and versions are in `/opt/guardhub/state/`.
 
 From a clean checkout on a workstation with Docker and SSH access:
 
@@ -34,18 +40,27 @@ From a clean checkout on a workstation with Docker and SSH access:
 ops/deploy/deploy.sh root@<host>     # build images here, ship release + images, activate
 ```
 
-`activate` takes a pre-deploy backup, starts the release with `--no-build`, and waits for
-`/api/v1/health` = ok. If the new release is not healthy it **rolls back automatically**.
+`activate <sha>`:
+1. pre-deploy backup;
+2. runs the release's migrations while the current colour keeps serving, so **migrations must be
+   expand-only** (add tables/columns/constraints that old code ignores; to drop or rename, ship
+   the code that stops using it first, then the destructive migration in a later release);
+3. starts the release in the idle colour and waits for its `/api/v1/health` = ok;
+4. switches the nginx upstream (`nginx -t`, then a graceful reload: in-flight requests finish on
+   the old colour) and checks public health through nginx;
+5. stops the old colour (containers kept for a fast rollback).
+If the new colour never becomes healthy, nothing is switched and it is torn down.
 
 ```bash
 ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh status
-ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh rollback   # to `previous`
+ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh rollback        # previous colour
+ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh exec api <cmd>  # active colour
 ```
 
-Rollback takes a backup, downgrades the schema first if the newer release migrated it, then starts
-the previous images. Measured on 2026-11-16: about 30 s end to end, with a ~14 s window of 502/503
-while api/web restart. The database container is not restarted. Rolling forward again is
-`guardhub-ctl.sh activate <sha>`.
+Rollback starts the previous colour, health-gates it, switches nginx back and stops the current
+one, also with no downtime. The schema is left as is (expand-only makes that safe). Rehearse any
+change to this flow with `ops/deploy/tests/bluegreen_rehearsal.sh` on a disposable Linux box
+(WSL works) before production.
 
 **After every deploy:**
 1. Self-scan (dogfooding, §2.5): publish a token in `/opt/guardhub/selfverify/guardhub-verify.txt`,
@@ -56,7 +71,7 @@ while api/web restart. The database container is not restarted. Rolling forward 
    target only; remove any temporary test site afterwards.
 
 **First admin:** the person registers on the site and enables 2FA, then
-`docker exec guardhub-api-1 python -m guardhub_api.admin.bootstrap promote <email>`.
+`guardhub-ctl.sh exec api python -m guardhub_api.admin.bootstrap promote <email>`.
 
 ## 3. Backups and restore drills
 
@@ -120,10 +135,11 @@ is not set; exit 1 = network error or rejected (the message says which). Then se
 each id (tag `service` = api / api-worker / scanner / web).
 
 ```bash
-docker exec guardhub-api-1        python -m guardhub_api.common.observability test-event
-docker exec guardhub-api-worker-1 python -m guardhub_api.common.observability test-event --service api-worker
-docker exec guardhub-scanner-1    /usr/local/bin/scanner sentry-test
-docker exec guardhub-web-1        node apps/web/scripts/sentry-test.mjs
+CTL=/opt/guardhub/current/ops/deploy/guardhub-ctl.sh   # exec runs in the ACTIVE colour
+$CTL exec api        python -m guardhub_api.common.observability test-event
+$CTL exec api-worker python -m guardhub_api.common.observability test-event --service api-worker
+$CTL exec scanner    /usr/local/bin/scanner sentry-test
+$CTL exec web        node apps/web/scripts/sentry-test.mjs
 ```
 
 - api/api-worker report `network error` → the relay isn't running (`COMPOSE_PROFILES` missing)

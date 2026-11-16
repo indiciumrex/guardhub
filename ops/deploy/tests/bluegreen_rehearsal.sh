@@ -43,7 +43,7 @@ sed -i 's#^PUBLIC_BASE_URL=.*#PUBLIC_BASE_URL=http://localhost#; s#^WEB_PORT=.*#
 envv() { grep -E "^$1=" "$RH/shared/.env" | cut -d= -f2-; }
 
 log "proxy stand-in (nginx container, reloads gracefully like the host nginx)"
-printf 'upstream guardhub_web {\n    server host.docker.internal:18700;\n    keepalive 16;\n}\n' >"$RH/shared/nginx-upstream.conf"
+printf 'upstream guardhub_web {\n    server host.docker.internal:18700 max_fails=0;\n}\n' >"$RH/shared/nginx-upstream.conf"
 cat >"$RH/shared/rh-site.conf" <<'NGINX'
 include /etc/nginx/gh/nginx-upstream.conf;
 server {
@@ -51,7 +51,6 @@ server {
     location / {
         proxy_pass http://guardhub_web;
         proxy_http_version 1.1;
-        proxy_set_header Connection "";
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $remote_addr;
     }
@@ -74,7 +73,11 @@ log "probe: proxy health every 0.2 s"
 PROBE=$RH/probe.log
 ( while :; do printf '%s %s\n' "$(date +%T.%3N)" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$PROXY_PORT/api/v1/health")"; sleep 0.2; done ) >"$PROBE" &
 PROBE_PID=$!
-trap 'kill $PROBE_PID 2>/dev/null || true' EXIT
+# diagnostics: the legacy app directly (bypassing the proxy), with the body of any failure
+( while :; do r=$(curl -s --max-time 3 -w ' %{http_code}' http://127.0.0.1:18700/api/v1/health); printf '%s %s
+' "$(date +%T.%3N)" "${r: -60}"; sleep 0.2; done ) >"$RH/probe-direct.log" &
+DIRECT_PID=$!
+trap 'kill $PROBE_PID $DIRECT_PID 2>/dev/null || true' EXIT
 
 CTL=(env GUARDHUB_ROOT="$RH" UPSTREAM_HOST=host.docker.internal
   NGINX_TEST_CMD="docker exec rh-nginx nginx -t" NGINX_RELOAD_CMD="docker exec rh-nginx nginx -s reload"
@@ -99,7 +102,8 @@ if HEALTH_TIMEOUT=60 "${CTL[@]}" activate "$BROKEN"; then echo "FAIL: broken rel
 [[ $(cat "$RH/shared/nginx-upstream.conf") == "$before" ]] || { echo "FAIL: upstream changed" >&2; exit 1; }
 echo "broken release refused; upstream unchanged"
 
-sleep 3; kill $PROBE_PID; wait $PROBE_PID 2>/dev/null || true
+sleep 3; kill $PROBE_PID $DIRECT_PID; wait $PROBE_PID 2>/dev/null || true
+docker logs rh-nginx 2>&1 | grep -E "\[(error|warn)\]" | head -20 >"$RH/nginx-errors.log" || true
 log "status";  "${CTL[@]}" status
 log "data survived"
 docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTGRES_DB)" -Atc \

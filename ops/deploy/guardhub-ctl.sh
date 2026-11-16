@@ -98,7 +98,10 @@ wait_port_healthy() {
 # finish on the old upstream, so the switch drops nothing.
 switch_upstream() {
   local port=$1 tmp=$UPSTREAM_CONF.new
-  printf 'upstream guardhub_web {\n    server %s:%s;\n    keepalive 16;\n}\n' "$UPSTREAM_HOST" "$port" >"$tmp"
+  # max_fails=0: with a single server, one failed request must never take the site out of
+  # rotation for fail_timeout (nginx's default would). No upstream keepalive: a reused idle
+  # connection that Node.js closes at the same moment surfaces as a 502 (seen in rehearsal).
+  printf 'upstream guardhub_web {\n    server %s:%s max_fails=0;\n}\n' "$UPSTREAM_HOST" "$port" >"$tmp"
   chmod 644 "$tmp"
   if [[ -f $UPSTREAM_CONF ]]; then cp -p "$UPSTREAM_CONF" "$UPSTREAM_CONF.bak"; fi
   mv -f "$tmp" "$UPSTREAM_CONF"
