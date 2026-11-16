@@ -1,17 +1,22 @@
 /**
- * Project page: ownership verification (instructions + "Verify"), "Rescan", and the scan
- * history (date, score, counts, status, report link).
+ * Project page: ownership verification (instructions + "Verify"), the automatic scan schedule
+ * (§8.2), the score trend (§8.3), "Rescan", and the scan history (date, trigger, score, counts,
+ * status, report and compare links).
  */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { RescanButton, VerifyProjectButton } from "@/components/account/ProjectActions";
+import { ScheduleControl } from "@/components/account/ScheduleControl";
+import { ScoreTrendChart } from "@/components/account/ScoreTrendChart";
 import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
 import { OwnershipInstructions } from "@/components/scan/OwnershipInstructions";
 import { SeverityCounts } from "@/components/scan/SeverityCounts";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
-import { isScanActive, type Project, type ScanSummary } from "@/lib/types";
+import { isScanActive, type Project, type ScanSummary, type TrendPoint } from "@/lib/types";
+
+const TREND_LIMIT = 30;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("project");
@@ -21,17 +26,24 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const projectPath = `/projects/${encodeURIComponent(id)}`;
-  const [project, scans] = await loadProtected(() =>
+  const [project, scans, trend] = await loadProtected(() =>
     Promise.all([
       serverApiFetch<Project>(projectPath),
       serverApiFetch<ScanSummary[]>(`${projectPath}/scans`),
+      serverApiFetch<TrendPoint[]>(`${projectPath}/trend`, { query: { limit: TREND_LIMIT } }),
     ]),
   );
   const t = await getTranslations("project");
+  const tSchedule = await getTranslations("schedule");
+  const tTrend = await getTranslations("trend");
+  const tCompare = await getTranslations("compare");
   const format = await getFormatter();
   const scanInProgress = scans.some((scan) => isScanActive(scan.status));
   const formatDate = (value: string) =>
     format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
+  // The oldest finished scan has nothing before it, so it gets no "Compare" link.
+  const doneScans = scans.filter((scan) => scan.status === "done");
+  const oldestDoneId = doneScans.at(-1)?.id ?? null;
 
   return (
     <div className="space-y-10">
@@ -64,6 +76,34 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         )}
       </section>
 
+      <section aria-labelledby="schedule-heading" className="space-y-4">
+        <div>
+          <h2 id="schedule-heading" className="text-xl font-semibold">
+            {tSchedule("heading")}
+          </h2>
+          <p className="gh-muted mt-1 text-sm">{tSchedule("intro")}</p>
+        </div>
+        <ScheduleControl
+          projectId={project.id}
+          verified={project.verified}
+          initial={{
+            scan_frequency: project.scan_frequency,
+            next_scan_at: project.next_scan_at,
+            schedule_paused_reason: project.schedule_paused_reason,
+          }}
+        />
+      </section>
+
+      <section aria-labelledby="trend-heading" className="space-y-4">
+        <div>
+          <h2 id="trend-heading" className="text-xl font-semibold">
+            {tTrend("heading")}
+          </h2>
+          <p className="gh-muted mt-1 text-sm">{tTrend("intro")}</p>
+        </div>
+        <ScoreTrendChart points={trend} />
+      </section>
+
       <section aria-labelledby="history-heading" className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="history-heading" className="text-xl font-semibold">
@@ -84,11 +124,15 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
               <thead>
                 <tr>
                   <th scope="col">{t("colDate")}</th>
+                  <th scope="col">{tTrend("colTrigger")}</th>
                   <th scope="col">{t("colScore")}</th>
                   <th scope="col">{t("colFindings")}</th>
                   <th scope="col">{t("colStatus")}</th>
                   <th scope="col">
                     <span className="sr-only">{t("colReport")}</span>
+                  </th>
+                  <th scope="col">
+                    <span className="sr-only">{tCompare("colCompare")}</span>
                   </th>
                 </tr>
               </thead>
@@ -96,6 +140,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 {scans.map((scan) => (
                   <tr key={scan.id}>
                     <td className="whitespace-nowrap">{formatDate(scan.created_at)}</td>
+                    <td className="whitespace-nowrap">{tTrend(`trigger.${scan.trigger}`)}</td>
                     <td className="tabular-nums">{scan.score ?? t("noScore")}</td>
                     <td>
                       <SeverityCounts counts={scan.finding_counts} compact />
@@ -111,6 +156,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                         {t("viewReport")}
                         <span className="sr-only"> {formatDate(scan.created_at)}</span>
                       </Link>
+                    </td>
+                    <td>
+                      {scan.status === "done" && scan.id !== oldestDoneId ? (
+                        <Link
+                          href={`/account/projects/${encodeURIComponent(project.id)}/compare/${encodeURIComponent(scan.id)}`}
+                          className="gh-link whitespace-nowrap"
+                          aria-label={tCompare("historyLinkLabel", {
+                            date: formatDate(scan.created_at),
+                          })}
+                        >
+                          {tCompare("historyLink")}
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
