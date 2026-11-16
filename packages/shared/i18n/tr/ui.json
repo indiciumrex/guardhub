@@ -84,7 +84,11 @@
     "totp_not_setup": "Önce iki adımlı doğrulamayı kurun.",
     "totp_already_enabled": "İki adımlı doğrulama zaten kurulu. Doğrulama uygulamanızdaki kodu girin.",
     "unsupported_locale": "Bu dil henüz desteklenmiyor.",
-    "module_not_found": "Böyle bir modül yok."
+    "module_not_found": "Böyle bir modül yok.",
+    "trusted_domain_inactive": "Bu sitenin güvenilir alan adı şu anda etkin değil. Yönetim → Güvenilir alan adları bölümünden yeniden doğrulayın ya da projenin sahipliğini doğrudan kanıtlayın.",
+    "trusted_domain_not_found": "Bu güvenilir alan adını bulamadık. Kaldırılmış olabilir.",
+    "trusted_domain_exists": "Bu adres zaten güvenilir alan adlarınız arasında.",
+    "trusted_domain_limit_reached": "En fazla güvenilir alan adı sayısına ulaştınız. Yenisini eklemek için birini kaldırın."
   },
   "severity": {
     "critical": "Kritik",
@@ -411,5 +415,55 @@
     "colTarget": "Web sitesi",
     "colStatus": "Durum",
     "colScore": "Puan"
+  },
+  "trustedDomains": {
+    "title": "Güvenilir alan adları",
+    "adminCardBody": "Bir sitenin size ait olduğunu bir kez kanıtlayın, ardından tam olarak o adresi kanıt adımı olmadan tarayın.",
+    "adminCardLink": "Güvenilir alan adlarını yönet",
+    "back": "Yönetim paneline dön",
+    "intro": "Yönettiğiniz bir siteyi ekleyin ve alışılmış yöntemlerden biriyle bir kez kanıtlayın. Sonrasında siteyi buradan, kanıt yeniden istenmeden tarayabilirsiniz.",
+    "rulesHeading": "Nasıl çalışır?",
+    "ruleOnce": "Sahipliği bir kez kanıtlarsınız: doğrulama dosyası, meta etiketi ya da DNS TXT kaydıyla.",
+    "ruleKeep": "Kanıtı yayında tutun. Her gün yeniden kontrol ediyoruz. Kanıt kaldırılmışsa alan adı askıya alınır ve siz yeniden doğrulayana kadar tarama yapılmaz.",
+    "ruleExact": "Yalnızca birebir aynı adres kapsanır: aynı alan adı, aynı port ve aynı http/https. www ya da app gibi alt alan adları için ayrı kayıt gerekir.",
+    "ruleOthers": "Diğer tüm siteler için normal sahiplik kanıtı yine gerekir. Güvenilir alan adlarınızı yalnızca siz görebilirsiniz.",
+    "addHeading": "Alan adı ekle",
+    "addLabel": "Web sitesi adresi",
+    "addHint": "Örneğin ornek.com ya da https://app.ornek.com. Özel ve kurum içi adresler eklenemez.",
+    "addSubmit": "Alan adını ekle",
+    "listHeading": "Güvenilir alan adlarınız",
+    "empty": "Henüz güvenilir alan adı eklemediniz.",
+    "status": {
+      "pending": "Doğrulama bekliyor",
+      "active": "Etkin",
+      "suspended": "Askıya alındı",
+      "revoked": "Kaldırıldı"
+    },
+    "statusHelp": {
+      "pending": "Aşağıdaki kanıtlardan birini yayınlayın, ardından Doğrula düğmesine basın.",
+      "active": "Kanıtlandı. Kanıt yayında kaldığı sürece bu adresi ek bir kanıt olmadan tarayabilirsiniz.",
+      "suspended": "Son kontrolde kanıtı bulamadık, bu yüzden taramalar durduruldu. Kanıtı yeniden yayınlayın, ardından Yeniden kontrol et düğmesine basın.",
+      "revoked": "Kaldırıldı. Bu adresi taramak için yeniden kanıt gerekir."
+    },
+    "provenAt": "Son kanıtlanma",
+    "lastCheckedAt": "Son kontrol",
+    "notYet": "Henüz yok",
+    "method": {
+      "well_known": "doğrulama dosyası",
+      "meta_tag": "meta etiketi",
+      "dns_txt": "DNS TXT kaydı"
+    },
+    "instructionsHeading": "{host} adresinin size ait olduğunu kanıtlayın",
+    "showInstructions": "Kanıtın nasıl yeniden yayınlanacağını göster",
+    "actionsLabel": "{host} için işlemler",
+    "verify": "Doğrula",
+    "verifying": "Kontrol ediliyor…",
+    "checkAgain": "Yeniden kontrol et",
+    "scanNow": "Şimdi tara",
+    "remove": "Kaldır",
+    "confirmLabel": "Kaldırmayı onayla",
+    "confirmRemove": "{host} güvenilir alan adlarınızdan kaldırılsın mı? Bu adrese ait projeler bir sonraki taramadan önce yeniden sahiplik kanıtı ister.",
+    "confirmYes": "Evet, kaldır",
+    "cancel": "Vazgeç"
   }
 }
