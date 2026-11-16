@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,8 +16,29 @@ async def list_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[Proje
     return list((await session.execute(stmt)).scalars().all())
 
 
-async def get(session: AsyncSession, project_id: uuid.UUID) -> Project | None:
-    return (await session.execute(select(Project).where(Project.id == project_id))).scalar_one_or_none()
+async def get(session: AsyncSession, project_id: uuid.UUID, *, for_update: bool = False) -> Project | None:
+    stmt = select(Project).where(Project.id == project_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def lock_due(session: AsyncSession, now: datetime, limit: int) -> list[Project]:
+    """Scheduled, unpaused projects whose next run is due, oldest first. Rows another scheduler
+    tick holds are skipped (FOR UPDATE SKIP LOCKED), so two ticks never claim the same project."""
+    stmt = (
+        select(Project)
+        .where(
+            Project.scan_frequency != "off",
+            Project.schedule_paused_reason.is_(None),
+            Project.next_scan_at.is_not(None),
+            Project.next_scan_at <= now,
+        )
+        .order_by(Project.next_scan_at)
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+    )
+    return list((await session.execute(stmt)).scalars().all())
 
 
 async def by_target(session: AsyncSession, user_id: uuid.UUID, target_url: str) -> Project | None:
