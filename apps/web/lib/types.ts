@@ -162,6 +162,23 @@ export interface AiStatus {
   active: boolean;
 }
 
+// §8.5 (ADR-0003): admin trusted domains
+export type TrustedDomainStatus = "pending" | "active" | "suspended" | "revoked";
+export type OwnershipMethod = "well_known" | "meta_tag" | "dns_txt";
+
+export interface TrustedDomain {
+  id: string;
+  host: string;
+  target_origin: string;
+  status: TrustedDomainStatus;
+  verification: ProjectVerification;
+  method: OwnershipMethod | null;
+  verified_at: string | null;
+  last_checked_at: string | null;
+  suspended_at: string | null;
+  created_at: string;
+}
+
 /** Admin list endpoints take limit/offset; accept either a bare array or a page envelope. */
 export type ListPayload<T> = T[] | { items: T[]; total?: number };
 

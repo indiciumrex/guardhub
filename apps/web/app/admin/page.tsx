@@ -4,6 +4,7 @@
  * the others.
  */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
 import { ModuleToggle } from "@/components/admin/ModuleToggle";
@@ -50,6 +51,7 @@ export default async function AdminPage() {
   const ai = settled(aiR);
 
   const t = await getTranslations("admin");
+  const tTrusted = await getTranslations("trustedDomains");
   const tHealth = await getTranslations("health");
   const format = await getFormatter();
   const formatDate = (value: string) =>
@@ -60,6 +62,16 @@ export default async function AdminPage() {
   return (
     <div className="space-y-10">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
+
+      <section aria-labelledby="trusted-domains-heading" className="gh-card p-5">
+        <h2 id="trusted-domains-heading" className="text-lg font-semibold">
+          {tTrusted("title")}
+        </h2>
+        <p className="gh-muted mt-1 text-sm">{tTrusted("adminCardBody")}</p>
+        <Link href="/admin/trusted-domains" className="gh-link mt-3 inline-block text-sm">
+          {tTrusted("adminCardLink")}
+        </Link>
+      </section>
 
       <section aria-labelledby="health-heading" className="grid gap-4 md:grid-cols-2">
         <div className="gh-card p-5">
