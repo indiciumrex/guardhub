@@ -10,8 +10,8 @@ guardhub.dev runs on a **shared** Ubuntu host next to other projects. Rules: tou
 |---|---|
 | `/opt/guardhub/releases/<sha>` | one directory per release (git archive of that commit) |
 | `/opt/guardhub/current`, `previous` | symlinks used by deploy/rollback |
-| `/opt/guardhub/shared/.env` | production secrets, `root:root 600`, generated on the server; **keep an offline copy of `DATA_ENCRYPTION_KEY`** (backups are useless without it) |
-| `/opt/guardhub/backups` | `pg_dump -Fc` + manifest, 14-day retention (`700`) |
+| `/opt/guardhub/shared/.env` | production secrets, `root:root 600`, generated on the server; **keep an offline copy of `DATA_ENCRYPTION_KEY` (+ any `DATA_ENCRYPTION_KEYS_PREVIOUS`) and `RESTIC_PASSWORD`** (backups are useless without them) |
+| `/opt/guardhub/backups` | `pg_dump -Fc` + manifest, 14-day retention (`700`); copied off-site, encrypted, by restic (§3.1) |
 | `/opt/guardhub/acme`, `selfverify` | certbot webroot; our own ownership-proof file for the self-scan |
 
 - **Proxy:** the host's existing nginx owns 80/443. `ops/deploy/nginx/guardhub.dev.conf` is the
@@ -76,14 +76,98 @@ change to this flow with `ops/deploy/tests/bluegreen_rehearsal.sh` on a disposab
 ## 3. Backups and restore drills
 
 - Nightly 03:17 UTC `guardhub-ctl.sh backup`: `pg_dump -Fc` plus a manifest with row counts
-  taken in a quiet window, schema version and sha256. Weekly (Sunday 03:47 UTC)
-  `guardhub-ctl.sh restore-drill`: restores the newest dump into a throwaway Postgres on an
-  internal-only network and **proves** row counts, schema version, RLS, the audit trigger, and that
-  encrypted TOTP secrets/evidence decrypt with the production key. Log: `/var/log/guardhub-backup.log`.
-- Backups currently live on the same disk. Off-host, encrypted copies are a fast-follow item.
+  taken in a quiet window, schema version and sha256, then (when configured) the encrypted
+  off-site copy (§3.1). Without off-site config the log says `offsite: not configured` and
+  `status` shows it; that is not an error, but production must have it.
+- Weekly (Sunday 03:47 UTC) restore drill: from the newest **off-site** snapshot when off-site is
+  configured (`restore-drill --offsite`), otherwise from the newest local dump. It restores into a
+  throwaway Postgres on an internal-only network and **proves** row counts, schema version, RLS,
+  the audit trigger, and that every encrypted column (TOTP secrets, evidence, Slack webhooks)
+  decrypts with the keyring (`DATA_ENCRYPTION_KEY`, then `DATA_ENCRYPTION_KEYS_PREVIOUS`); it
+  prints how many values are still `under_previous_key`. Log: `/var/log/guardhub-backup.log`.
+- Pre-deploy/rollback backups (`activate`, `rollback`) stay local only: they exist for an
+  immediate rollback and must not block a deploy when the storage provider is down.
 - Redis holds only queues, rate limits, progress and session revocations. Losing it is safe:
   in-flight scans are reaped as `timeout` and users simply rescan.
 - Evidence is masked by the scanner and encrypted with `DATA_ENCRYPTION_KEY`.
+
+### 3.1 Off-site backups (restic, encrypted client-side)
+
+`ops/deploy/offsite.sh` runs the official `restic/restic:0.19.1` image (pinned by digest) with
+`docker run --rm`; nothing is installed on the host. restic encrypts and authenticates
+everything **before** it leaves the server (AES-256 + Poly1305), so the storage provider only
+ever sees ciphertext. Each nightly snapshot holds one dump plus its manifest; retention is
+`restic forget --keep-daily 14 --keep-weekly 8 --prune` after every push (about 8 weeks of
+history). Secrets reach the container as `-e NAME` only (never in `ps`), and only the variables
+below: the restic container never sees GuardHub's own secrets.
+
+**Provision once:**
+1. An S3-compatible bucket at a different provider or region than this host, private, used for
+   nothing else. Turn on **versioning** with a lifecycle rule that deletes non-current versions
+   after ~30 days (or object lock in governance mode): then a stolen server key that deletes
+   objects can't destroy the history.
+2. An access key **restricted to that bucket** (list/get/put/delete on it, nothing else in the
+   account).
+3. A restic password, generated offline: `head -c 32 /dev/urandom | base64`. Store it **offline
+   next to `DATA_ENCRYPTION_KEY`** (password manager + a sealed paper copy). Without it the
+   off-site backups are unreadable, by us too; restic cannot recover it.
+4. Add to `/opt/guardhub/shared/.env` with an editor (not `echo`: shell history):
+   ```
+   RESTIC_REPOSITORY=s3:https://<s3-endpoint>/<bucket>/guardhub
+   RESTIC_PASSWORD=<from step 3>
+   AWS_ACCESS_KEY_ID=<bucket-scoped key id>
+   AWS_SECRET_ACCESS_KEY=<bucket-scoped secret>
+   AWS_DEFAULT_REGION=<region, optional>
+   ```
+5. Initialise and prove it, then install the cron file (it runs the scripts with `bash`):
+   ```bash
+   D=/opt/guardhub/current/ops/deploy
+   docker pull restic/restic:0.19.1@sha256:136600b6ff6843d61d355f7f71f460a166429f35de6fd11b568fece3c9a4d510
+   bash $D/offsite.sh init
+   bash $D/guardhub-ctl.sh backup                  # local dump + "offsite: pushed ..."
+   bash $D/guardhub-ctl.sh restore-drill --offsite # must end with RESTORE DRILL PASSED
+   bash $D/guardhub-ctl.sh status                  # last line: offsite: configured, latest snapshot ...
+   install -m 644 $D/guardhub-backup.cron /etc/cron.d/guardhub-backup
+   ```
+Monthly: `bash $D/offsite.sh check` (repository integrity). A push that dies mid-way can leave a
+stale lock: `bash $D/offsite.sh unlock`. `ops/deploy/tests/offsite_e2e.sh` proves the whole flow
+locally (MinIO + throwaway Postgres; wrong password fails; no plaintext in the bucket).
+
+### 3.2 Restore from off-site only (server lost)
+
+Needs only the offline copies: `DATA_ENCRYPTION_KEY` (+ `DATA_ENCRYPTION_KEYS_PREVIOUS` if a key
+rotation happened within the last ~8 weeks), `RESTIC_PASSWORD`, the bucket key, and access to
+this repository.
+1. New host per §1 (Docker, nginx vhost, UFW) and point DNS at it (certbot needs it for the
+   certificate). Between steps 3 and 5 the site is up but EMPTY: anything created then is
+   overwritten in step 5, so keep that window to minutes.
+2. Write `/opt/guardhub/shared/.env` (`root:root 600`): start from `.env.example` +
+   `python3 ops/scripts/gen_secrets.py` for the database/Redis/JWT/pepper values (new ones are
+   fine; a new `JWT_SECRET` only logs everyone out, a new `HASH_PEPPER` only resets rate limits
+   and unclaimed anonymous scan tokens), then put back from the offline store:
+   `DATA_ENCRYPTION_KEY`, `DATA_ENCRYPTION_KEYS_PREVIOUS`, the `RESTIC_*`/`AWS_*` values,
+   `PUBLIC_BASE_URL`, and keep `GUARDHUB_APP_DB_USER` at the old name (the dump's grants use it).
+3. `ops/deploy/deploy.sh root@<new-host>` (from a workstation, same commit as before or newer).
+   This starts an EMPTY GuardHub (fresh schema).
+4. Fetch, verify and **prove** the newest off-site backup before using it:
+   ```bash
+   D=/opt/guardhub/current/ops/deploy
+   DUMP=$(bash $D/offsite.sh restore-latest /opt/guardhub/backups/from-offsite)  # sha256 checked
+   bash $D/guardhub-ctl.sh restore-drill "$DUMP"   # must end with RESTORE DRILL PASSED
+   ```
+5. Load it into the production database (app containers stopped, data layer running):
+   ```bash
+   docker ps --format '{{.Names}}' | grep -E '^guardhub-(blue|green)-' | xargs -r docker stop
+   U=$(grep -E '^POSTGRES_USER=' /opt/guardhub/shared/.env | cut -d= -f2-)
+   DB=$(grep -E '^POSTGRES_DB=' /opt/guardhub/shared/.env | cut -d= -f2-)
+   docker exec guardhub-postgres-1 psql -U "$U" -d postgres -c "DROP DATABASE \"$DB\"" -c "CREATE DATABASE \"$DB\""
+   docker exec -i guardhub-postgres-1 pg_restore -U "$U" -d "$DB" --no-owner --exit-on-error <"$DUMP"
+   bash $D/guardhub-ctl.sh activate "$(basename "$(readlink -f /opt/guardhub/current)")"
+   ```
+   (`activate` runs the release's migrations: a no-op at the same schema, an upgrade if newer.)
+6. Check: log in with a real account + 2FA (TOTP decrypts), open an old report (evidence
+   decrypts), `guardhub-ctl.sh status`. Then take `guardhub-ctl.sh backup`, install
+   the cron file (§3.1 step 5) and delete `/opt/guardhub/backups/from-offsite`.
 
 ## 4. Key rotation
 
@@ -91,8 +175,67 @@ change to this flow with `ops/deploy/tests/bluegreen_rehearsal.sh` on a disposab
 |---|---|
 | `JWT_SECRET` | All sessions end, so users log in again. Safe anytime. |
 | `HASH_PEPPER` | Rate-limit buckets reset. Unclaimed anonymous scan tokens stop working. |
-| `DATA_ENCRYPTION_KEY` | **Don't just replace it**: existing TOTP secrets and evidence would become unreadable. A re-encryption migration is needed (Phase 1 item; see ADR process). |
+| `DATA_ENCRYPTION_KEY` | **Never just replace it**: existing TOTP secrets, evidence and Slack webhooks would become unreadable. Follow §4.1. |
+| `RESTIC_PASSWORD` | Only wraps restic's master key: `restic key add` then `restic key remove <old id>` (not scripted). Store the new one offline first. |
 | DB / Redis passwords | Change in `.env` and in the server (`ALTER ROLE` / `requirepass`), then restart. |
+
+### 4.1 Rotating DATA_ENCRYPTION_KEY
+
+The app keeps a **keyring**: `DATA_ENCRYPTION_KEY` is the current key (all new encryption);
+`DATA_ENCRYPTION_KEYS_PREVIOUS` (comma-separated base64 keys, newest first, validated at
+startup like the current key) is used **only to decrypt**. AES-GCM is authenticated, so trying
+the keys in order is safe; a value no key opens is an error, never ignored. The CLI
+`python -m guardhub_api.ops.rotate_encryption_key [--dry-run] [--batch-size N]` re-encrypts
+every encrypted column (`users.totp_secret`, `evidence.redacted_payload`,
+`notification_settings.slack_webhook_enc`) under the current key: batches of N rows (default
+500) in their own transactions, values already under the current key are skipped (a re-run is a
+no-op), each rewritten value is read back and checked before commit, and if any value can't be
+decrypted its whole batch is left untouched and the exit code is 1. It is audited as
+`ops.encryption_key_rotated` (counts only). No downtime: the app reads both keys throughout.
+
+Prerequisites: the running release contains the keyring (do not rotate while a rollback to an
+older release is still possible: it would not know `DATA_ENCRYPTION_KEYS_PREVIOUS`), and the last
+restore drill passed.
+
+1. **Generate the new key offline** (a trusted workstation, not the server):
+   `head -c 32 /dev/urandom | base64`. Store it in the offline secret store **before** anything
+   else, labelled with the date; the old key stays there too.
+2. Fresh backup under the old key: `bash $D/guardhub-ctl.sh backup` (`D=/opt/guardhub/current/ops/deploy`).
+3. Edit `/opt/guardhub/shared/.env` with an editor (never `echo`: shell history):
+   ```
+   DATA_ENCRYPTION_KEY=<NEW key>
+   DATA_ENCRYPTION_KEYS_PREVIOUS=<OLD key>          # if it already had keys: <OLD>,<older>
+   ```
+4. Deploy the new env with zero downtime (same release into the idle colour):
+   `bash $D/guardhub-ctl.sh activate "$(basename "$(readlink -f /opt/guardhub/current)")"`.
+   From now on new values use the NEW key; old ones are still read with the OLD key.
+5. Re-encrypt (after `activate` finished, so no old-colour container writes with the old key):
+   ```bash
+   bash $D/guardhub-ctl.sh exec api python -m guardhub_api.ops.rotate_encryption_key --dry-run
+   bash $D/guardhub-ctl.sh exec api python -m guardhub_api.ops.rotate_encryption_key
+   ```
+   The dry run must show `undecryptable=0` on every line; the real run must end with
+   `OK: every encrypted value is under the current key` (exit 0). Exit 1 lists each undecryptable
+   row; their batches were not changed. Do **not** remove any key: find the key those rows were
+   written with, add it to `DATA_ENCRYPTION_KEYS_PREVIOUS`, re-activate, run again.
+6. Verify: `bash $D/guardhub-ctl.sh backup`, then `bash $D/guardhub-ctl.sh restore-drill` (and
+   `--offsite` if configured) must PASS with `under_previous_key=0`. The audit log (`/admin`)
+   shows `ops.encryption_key_rotated` with `result=ok`.
+7. **Keep `DATA_ENCRYPTION_KEYS_PREVIOUS` for the backup retention window**: dumps taken before
+   step 5 hold values under the OLD key (local copies 14 days, off-site weekly snapshots ~8
+   weeks). After 8 weeks remove the old key from `DATA_ENCRYPTION_KEYS_PREVIOUS`, re-activate
+   (step 4) and run a drill. Keep the old key in the offline store until the last off-site
+   snapshot older than the rotation has been pruned (`offsite.sh check` lists the snapshots);
+   to restore such a backup later, put the old key back into `DATA_ENCRYPTION_KEYS_PREVIOUS`.
+   *Rotating because the old key leaked?* Then do step 7 right after step 6 (the old key is no
+   longer needed by the live app) and use the offline copy only for old backups.
+8. Offline store: it must always hold the current key, every key still listed in
+   `DATA_ENCRYPTION_KEYS_PREVIOUS`, and `RESTIC_PASSWORD`.
+
+**Rollback** (any time, before or after step 5): the same mechanism in reverse, never by deleting
+the new key (values written since step 4 are under it). Set `DATA_ENCRYPTION_KEY=<OLD>` and
+`DATA_ENCRYPTION_KEYS_PREVIOUS=<NEW>`, re-activate (step 4), run the CLI (step 5): everything is
+back under the old key. The keyring decrypts both throughout, so users notice nothing.
 
 ## 5. Incidents
 

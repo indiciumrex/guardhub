@@ -1,5 +1,8 @@
-# GuardHub only: nightly backup (14-day retention) and a weekly PROVEN restore drill.
-# Installed as /etc/cron.d/guardhub-backup. A failed drill exits non-zero and is logged.
+# GuardHub only: nightly backup (14-day retention, + encrypted off-site copy when configured) and a
+# weekly PROVEN restore drill: from the newest OFF-SITE snapshot when off-site is configured
+# (proves the copy we'd need if the server were lost), otherwise from the newest local dump.
+# Installed as /etc/cron.d/guardhub-backup. A failed backup/drill exits non-zero and is logged.
+# Scripts are run with `bash` explicitly: release files come from `git archive` (mode 644).
 SHELL=/bin/bash
-17 3 * * * root /opt/guardhub/current/ops/deploy/guardhub-ctl.sh backup >> /var/log/guardhub-backup.log 2>&1
-47 3 * * 0 root /opt/guardhub/current/ops/deploy/guardhub-ctl.sh restore-drill >> /var/log/guardhub-backup.log 2>&1
+17 3 * * * root bash /opt/guardhub/current/ops/deploy/guardhub-ctl.sh backup >> /var/log/guardhub-backup.log 2>&1
+47 3 * * 0 root d=/opt/guardhub/current/ops/deploy; if bash $d/offsite.sh configured; then bash $d/guardhub-ctl.sh restore-drill --offsite; else bash $d/guardhub-ctl.sh restore-drill; fi >> /var/log/guardhub-backup.log 2>&1

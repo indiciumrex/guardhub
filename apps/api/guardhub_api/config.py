@@ -6,14 +6,14 @@ weak or placeholder values are refused at startup.
 
 from __future__ import annotations
 
-import base64
-import binascii
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from guardhub_api.common.crypto import Keyring, parse_key, parse_key_list
 
 _PLACEHOLDER_MARK = "change-me"
 
@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     redis_url: SecretStr = Field(description="redis:// URL")
     jwt_secret: SecretStr
     data_encryption_key: SecretStr
+    # Old keys, comma-separated, used ONLY to decrypt values not yet re-encrypted
+    # (python -m guardhub_api.ops.rotate_encryption_key). Empty outside a rotation window.
+    data_encryption_keys_previous: SecretStr = SecretStr("")
     hash_pepper: SecretStr
 
     public_base_url: str = "http://localhost:3000"
@@ -99,17 +102,25 @@ class Settings(BaseSettings):
     @field_validator("data_encryption_key")
     @classmethod
     def _aes_key(cls, v: SecretStr) -> SecretStr:
-        try:
-            key = base64.b64decode(v.get_secret_value(), validate=True)
-        except (binascii.Error, ValueError) as exc:
-            raise ValueError("must be base64") from exc
-        if len(key) != 32:
-            raise ValueError("must decode to exactly 32 bytes (AES-256)")
+        parse_key(v.get_secret_value())
+        return v
+
+    @field_validator("data_encryption_keys_previous")
+    @classmethod
+    def _aes_key_list(cls, v: SecretStr) -> SecretStr:
+        parse_key_list(v.get_secret_value())
         return v
 
     @property
     def encryption_key_bytes(self) -> bytes:
-        return base64.b64decode(self.data_encryption_key.get_secret_value())
+        """The CURRENT key only. Prefer `keyring` (it can also read values under previous keys)."""
+        return parse_key(self.data_encryption_key.get_secret_value())
+
+    @property
+    def keyring(self) -> Keyring:
+        return Keyring(
+            self.encryption_key_bytes, parse_key_list(self.data_encryption_keys_previous.get_secret_value())
+        )
 
 
 @lru_cache(maxsize=1)

@@ -15,7 +15,6 @@ from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from guardhub_api.auth.security import SessionClaims
-from guardhub_api.common.crypto import Cipher
 from guardhub_api.common.errors import NotFoundError, ServiceUnavailableError, UnprocessableError
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Scan
@@ -127,7 +126,7 @@ async def owned_view(redis: Redis, claims: SessionClaims, scan_id: uuid.UUID, lo
 
 
 async def build_view(session: AsyncSession, redis: Redis, scan: Scan, locale: str) -> ScanView:
-    cipher = Cipher(get_settings().encryption_key_bytes)
+    cipher = get_settings().keyring
     findings: list[FindingView] = []
     for finding, ev in await repository.findings_with_evidence(session, scan.id):
         texts = render_finding(finding.check_id, finding.finding_key, dict(finding.params), locale)

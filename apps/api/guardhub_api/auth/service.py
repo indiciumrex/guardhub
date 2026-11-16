@@ -25,7 +25,7 @@ from guardhub_api.auth.security import (
     verify_password,
 )
 from guardhub_api.common import audit, ratelimit
-from guardhub_api.common.crypto import Cipher, keyed_hash
+from guardhub_api.common.crypto import Keyring, keyed_hash
 from guardhub_api.common.errors import (
     ConflictError,
     NotFoundError,
@@ -52,8 +52,8 @@ def user_view(user: User, *, mfa_complete: bool) -> UserView:
     )
 
 
-def _cipher() -> Cipher:
-    return Cipher(get_settings().encryption_key_bytes)
+def _cipher() -> Keyring:
+    return get_settings().keyring
 
 
 def _pepper() -> str:
