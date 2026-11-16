@@ -348,3 +348,19 @@ TrustedDomain = {"id","host","target_origin","status":"pending|active|suspended|
 `ownership_method = 'trusted_domain'`. Any other target (any user, admins included) follows the
 normal proof flow. Rescans of `trusted_domain` projects require the domain to be `active`.
 Audit actions: `admin.trusted_domain.{added,verified,suspended,reactivated,revoked,scan}`.
+
+Clarifications (as built):
+- 404 `not_found` also for signed-out visitors and admins without a full MFA session (no 401/403).
+- A domain counts only while `status = 'active'` AND its last successful proof (`verified_at`,
+  refreshed by every passing check) is under 30 days old. `scan` re-proves a stale active domain
+  inline first; `POST /projects` simply treats it as untrusted.
+- `verify`: a failure keeps a `pending` domain pending and suspends an `active` one (422
+  `ownership_not_verified`); success on a `suspended` domain is audited as `reactivated`.
+- Errors: 404 `trusted_domain_not_found` (someone else's, revoked or missing: indistinguishable),
+  409 `trusted_domain_exists` (one live entry per host, whatever the scheme), 422
+  `trusted_domain_limit_reached` (50 live per admin), 409 `scan_in_progress`, 429 `rate_limited`
+  (verify 10 per 10 min, scan 10 per hour, per domain).
+- `scan` on an existing project for the origin re-marks it `trusted_domain` (fresh proof time).
+- Rescans and (§8.2) scheduled scans of `trusted_domain` projects call
+  `admin.trusted_domains.ownership.require_trusted_domain(user_id, origin)` (DB role re-checked);
+  a revoked, suspended or stale domain gives 422 `trusted_domain_inactive` and nothing is queued.

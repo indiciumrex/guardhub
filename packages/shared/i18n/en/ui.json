@@ -86,7 +86,11 @@
     "unsupported_locale": "That language isn't available.",
     "module_not_found": "That module doesn't exist.",
     "invalid_slack_webhook": "That isn't a Slack incoming webhook address. It should start with https://hooks.slack.com/services/.",
-    "invalid_comparison": "Those two scans can't be compared. Pick an earlier, finished scan of the same project."
+    "invalid_comparison": "Those two scans can't be compared. Pick an earlier, finished scan of the same project.",
+    "trusted_domain_inactive": "The trusted domain for this site isn't active right now. Verify it again under Administration → Trusted domains, or prove ownership of the project directly.",
+    "trusted_domain_not_found": "We couldn't find that trusted domain. It may have been removed.",
+    "trusted_domain_exists": "This address is already in your trusted domains.",
+    "trusted_domain_limit_reached": "You've reached the maximum number of trusted domains. Remove one to add another."
   },
   "severity": {
     "critical": "Critical",
@@ -556,5 +560,55 @@
       "failed": "Failed",
       "skipped": "Not sent"
     }
+  },
+  "trustedDomains": {
+    "title": "Trusted domains",
+    "adminCardBody": "Prove once that you control a site, then scan exactly that address without the proof prompt.",
+    "adminCardLink": "Manage trusted domains",
+    "back": "Back to administration",
+    "intro": "Add a site you control and prove it once with one of the usual methods. After that you can scan it from here without being asked for the proof again.",
+    "rulesHeading": "How it works",
+    "ruleOnce": "You prove ownership once, with a verification file, a meta tag or a DNS TXT record.",
+    "ruleKeep": "Keep the proof published. We check it again every day. If it's gone, the domain is suspended and scans stop until you verify it again.",
+    "ruleExact": "Only the exact address is covered: the same host, port and http/https. Subdomains such as www or app need their own entry.",
+    "ruleOthers": "Every other site still needs the normal ownership proof. Only you can see your trusted domains.",
+    "addHeading": "Add a domain",
+    "addLabel": "Website address",
+    "addHint": "For example example.com or https://app.example.com. Private and internal addresses can't be added.",
+    "addSubmit": "Add domain",
+    "listHeading": "Your trusted domains",
+    "empty": "You haven't added any trusted domains yet.",
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "suspended": "Suspended",
+      "revoked": "Removed"
+    },
+    "statusHelp": {
+      "pending": "Publish one of the proofs below, then select Verify.",
+      "active": "Proven. While the proof stays published, you can scan this exact address without another proof.",
+      "suspended": "We couldn't find the proof at the last check, so scans are paused. Publish it again, then select Check again.",
+      "revoked": "Removed. Scanning this address needs a fresh proof."
+    },
+    "provenAt": "Last proven",
+    "lastCheckedAt": "Last checked",
+    "notYet": "Not yet",
+    "method": {
+      "well_known": "verification file",
+      "meta_tag": "meta tag",
+      "dns_txt": "DNS TXT record"
+    },
+    "instructionsHeading": "Prove that you control {host}",
+    "showInstructions": "Show how to publish the proof again",
+    "actionsLabel": "Actions for {host}",
+    "verify": "Verify",
+    "verifying": "Checking…",
+    "checkAgain": "Check again",
+    "scanNow": "Scan now",
+    "remove": "Remove",
+    "confirmLabel": "Confirm removal",
+    "confirmRemove": "Remove {host} from your trusted domains? Its projects will need a fresh ownership proof before their next scan.",
+    "confirmYes": "Yes, remove it",
+    "cancel": "Cancel"
   }
 }
