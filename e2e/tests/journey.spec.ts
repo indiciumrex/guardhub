@@ -9,22 +9,26 @@
  *   → report renders in Turkish
  *   → negative paths: internal address refused, unverified target never scanned.
  */
-import { expect, test, type Locator, type Page, type Response } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import {
+  expectFinishedReport,
+  fill,
+  readField,
+  recordScanStatuses,
+  registerWith2fa,
+  signIn as signInAs,
+} from "./flows";
 import {
   composeExec,
-  DEMO_RAW_SECRET,
   DEMO_TARGET,
-  nextTotpWindow,
   publishOwnershipToken,
   removeOwnershipToken,
   resetLocalRateLimits,
-  totp,
 } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
 const email = `e2e-${Date.now()}@example.com`;
-const password = "e2e-Correct-Horse-Battery-9";
 let totpSecret = "";
 
 test.beforeAll(() => {
@@ -32,51 +36,6 @@ test.beforeAll(() => {
   removeOwnershipToken();
 });
 test.afterAll(() => removeOwnershipToken());
-
-/** Records every scan status the browser itself received while polling. */
-function recordScanStatuses(page: Page): string[] {
-  const seen: string[] = [];
-  page.on("response", async (res: Response) => {
-    if (!/\/api\/v1\/(public\/)?scans\/[0-9a-f-]+(\?|$)/.test(res.url()) || !res.ok()) return;
-    try {
-      const body = (await res.json()) as { status: string; progress: { status: string }[] };
-      seen.push(body.status, ...body.progress.map((p) => `check:${p.status}`));
-    } catch {
-      // navigation raced the body; ignore
-    }
-  });
-  return seen;
-}
-
-async function expectFinishedReport(page: Page) {
-  await expect(page.getByText("Scan complete")).toBeVisible({ timeout: 150_000 });
-  await expect(
-    page.getByRole("heading", { name: "Security report for demo-target:8080" }),
-  ).toBeVisible();
-  // the exposed .env is reported, and its secret is masked (§9.1)
-  const evidence = page.locator("details").filter({ hasText: "STRIPE_SECRET_KEY" }).first();
-  await evidence.getByText("Show evidence (masked)").click();
-  await expect(evidence.getByText(/STRIPE_SECRET_KEY=\*\*\*\*1234/)).toBeVisible();
-  expect(await page.content()).not.toContain(DEMO_RAW_SECRET);
-}
-
-/**
- * Fills a controlled input once the page has hydrated. Typing earlier is lost when React
- * hydrates (the value is reset), so first wait for the page's scripts to finish loading.
- */
-async function fill(input: Locator, value: string) {
-  await input.page().waitForLoadState("networkidle");
-  await expect(async () => {
-    await input.fill(value);
-    await expect(input).toHaveValue(value, { timeout: 1_000 });
-  }).toPass({ timeout: 20_000 });
-}
-
-async function readField(page: Page, label: string): Promise<string> {
-  const value = await page.getByLabel(label, { exact: true }).first().inputValue();
-  expect(value).not.toBe("");
-  return value;
-}
 
 test("anonymous scan: ownership proof, live progress, plain report, save → register → 2FA → claim", async ({
   page,
@@ -262,34 +221,4 @@ test("refuses internal addresses and never scans an unverified target", async ({
   expect(queued).toEqual([]);
 });
 
-/** Log in with password + TOTP (a fresh 30 s step, since codes can't be replayed). */
-async function signIn(page: Page) {
-  expect(totpSecret, "the first journey registers the account").not.toBe("");
-  await page.goto("/account/login");
-  await fill(page.getByLabel("Email address"), email);
-  await fill(page.getByLabel("Password", { exact: true }), password);
-  await page.getByRole("button", { name: "Log in" }).click();
-  await page.waitForURL(/\/account\/2fa/);
-  await nextTotpWindow();
-  await fill(page.getByLabel("6-digit code"), totp(totpSecret));
-  await page.getByRole("button", { name: "Verify" }).click();
-  await page.waitForURL(
-    (url) => url.pathname.startsWith("/account") && !url.pathname.includes("2fa"),
-  );
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
-
-/** Registers on the current /account/register page and completes the mandatory 2FA setup. */
-async function registerWith2fa(page: Page, address: string): Promise<string> {
-  await fill(page.getByLabel("Email address"), address);
-  await fill(page.getByLabel("Password", { exact: true }), password);
-  await page.getByRole("button", { name: "Create account" }).click();
-
-  await page.waitForURL(/\/account\/2fa/);
-  await expect(page.getByRole("img", { name: /QR code/ })).toBeVisible();
-  const secret = (await page.locator("code").first().innerText()).trim();
-  expect(secret).toMatch(/^[A-Z2-7]{16,}$/);
-  await fill(page.getByLabel("6-digit code"), totp(secret));
-  await page.getByRole("button", { name: "Verify" }).click();
-  return secret;
-}
+const signIn = (page: Page) => signInAs(page, email, totpSecret);
