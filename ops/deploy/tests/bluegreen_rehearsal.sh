@@ -43,7 +43,7 @@ sed -i 's#^PUBLIC_BASE_URL=.*#PUBLIC_BASE_URL=http://localhost#; s#^WEB_PORT=.*#
 envv() { grep -E "^$1=" "$RH/shared/.env" | cut -d= -f2-; }
 
 log "proxy stand-in (nginx container, reloads gracefully like the host nginx)"
-printf 'upstream guardhub_web {\n    server host.docker.internal:18700 max_fails=0;\n}\n' >"$RH/shared/nginx-upstream.conf"
+printf 'upstream guardhub_web {\n    server gh-upstream:18700 max_fails=0;\n}\n' >"$RH/shared/nginx-upstream.conf"
 cat >"$RH/shared/rh-site.conf" <<'NGINX'
 include /etc/nginx/gh/nginx-upstream.conf;
 server {
@@ -56,7 +56,7 @@ server {
     }
 }
 NGINX
-docker run -d --name rh-nginx --add-host host.docker.internal:host-gateway -p "127.0.0.1:$PROXY_PORT:8080" \
+docker run -d --name rh-nginx --add-host gh-upstream:host-gateway -p "127.0.0.1:$PROXY_PORT:8080" \
   -v "$RH/shared:/etc/nginx/gh:ro" -v "$RH/shared/rh-site.conf:/etc/nginx/conf.d/default.conf:ro" nginx:1.27-alpine >/dev/null
 
 log "legacy layout: $LEGACY as the single project 'guardhub' on :18700"
@@ -79,7 +79,7 @@ PROBE_PID=$!
 DIRECT_PID=$!
 trap 'kill $PROBE_PID $DIRECT_PID 2>/dev/null || true' EXIT
 
-CTL=(env GUARDHUB_ROOT="$RH" UPSTREAM_HOST=host.docker.internal
+CTL=(env GUARDHUB_ROOT="$RH" UPSTREAM_HOST=gh-upstream
   NGINX_TEST_CMD="docker exec rh-nginx nginx -t" NGINX_RELOAD_CMD="docker exec rh-nginx nginx -s reload"
   PUBLIC_HEALTH_URL="http://127.0.0.1:$PROXY_PORT/api/v1/health" bash "$RH/releases/$NEW/ops/deploy/guardhub-ctl.sh")
 
