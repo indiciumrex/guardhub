@@ -220,7 +220,8 @@ export interface NotificationHistoryItem {
 }
 
 /** Same rule the API enforces (§8.4); the server stays authoritative. */
-export const SLACK_WEBHOOK_PATTERN = /^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9_/-]{10,200}$/;
+export const SLACK_WEBHOOK_PATTERN =
+  /^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9_/-]{10,200}$/;
 
 export function isSlackWebhookUrl(value: string): boolean {
   return SLACK_WEBHOOK_PATTERN.test(value);

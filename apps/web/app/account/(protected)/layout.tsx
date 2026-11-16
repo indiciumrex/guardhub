@@ -21,6 +21,9 @@ export default async function ProtectedAccountLayout({ children }: { children: R
           <Link href="/account" className="gh-link">
             {t("projectsNav")}
           </Link>
+          <Link href="/account/notifications" className="gh-link">
+            {t("alertsNav")}
+          </Link>
           {user.role === "admin" ? (
             <Link href="/admin" className="gh-link">
               {t("adminNav")}

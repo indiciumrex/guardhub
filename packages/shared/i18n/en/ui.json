@@ -468,6 +468,7 @@
     "scoreHeading": "Score",
     "scoreNow": "Now",
     "scoreBefore": "Before",
+    "scoreChange": "Change",
     "outOf": "out of 100",
     "deltaUp": "Up {delta} points",
     "deltaDown": "Down {delta} points",
