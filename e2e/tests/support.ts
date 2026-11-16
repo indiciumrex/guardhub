@@ -1,7 +1,7 @@
 /** Test support: RFC 6238 TOTP, the demo target's ownership file, and the operator CLI. */
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -74,4 +74,56 @@ export function resetLocalRateLimits(): void {
     "-c",
     'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning --scan --pattern "gh:rl:*" | xargs -r redis-cli -a "$REDIS_PASSWORD" --no-auth-warning del',
   ]);
+}
+
+/** Plays the site owner fixing (or re-breaking) the demo site's exposed `.env` file. */
+export function setDemoEnvExposed(exposed: boolean): void {
+  const live = resolve(ROOT, "ops/demo-target/site/.env");
+  const parked = resolve(ROOT, "ops/demo-target/site/.env.parked");
+  if (exposed && existsSync(parked)) renameSync(parked, live);
+  if (!exposed && existsSync(live)) renameSync(live, parked);
+}
+
+/** Runs SQL as the database owner (test-only shortcut, e.g. to make a schedule due now). */
+export function psql(sql: string): string {
+  return composeExec("postgres", [
+    "sh",
+    "-c",
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "$0"',
+    sql,
+  ]).trim();
+}
+
+/** One scheduler tick, exactly what the `enqueue_due_scans` cron runs every 5 minutes. */
+export function runSchedulerTick(): string {
+  return composeExec("api-jobs", [
+    "python",
+    "-c",
+    "import asyncio; from guardhub_api.common.redis import get_redis; " +
+      "from guardhub_api.jobs.scheduler import enqueue_due_scans; " +
+      "print(asyncio.run(enqueue_due_scans(get_redis())))",
+  ]);
+}
+
+export interface CapturedMail {
+  subject: string;
+  to: string;
+  text: string;
+}
+
+/** Alert e-mails captured by the local `mailpit` SMTP sink (read from inside the network). */
+export function mailsTo(address: string): CapturedMail[] {
+  const script = [
+    "import json, urllib.request as u",
+    "base = 'http://mailpit:8025/api/v1'",
+    "msgs = json.load(u.urlopen(base + '/messages?limit=200'))['messages']",
+    "out = []",
+    "for m in msgs:",
+    "    to = ','.join(t['Address'] for t in m['To'])",
+    "    if to != " + JSON.stringify(address) + ": continue",
+    "    full = json.load(u.urlopen(base + '/message/' + m['ID']))",
+    "    out.append({'subject': m['Subject'], 'to': to, 'text': full['Text']})",
+    "print(json.dumps(out))",
+  ].join("\n");
+  return JSON.parse(composeExec("api-jobs", ["python", "-c", script])) as CapturedMail[];
 }
