@@ -14,6 +14,10 @@ services:
     <<: *logging
     deploy: { resources: { limits: { cpus: "1.0", memory: 768M, pids: 200 } } }
     shm_size: 128m
+    volumes:
+      # Same target as the base file, so this REPLACES its release-relative source: a stable
+      # path keeps the database container untouched when the app version changes.
+      - /opt/guardhub/shared/postgres-init/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
 
   redis:
     <<: *logging

@@ -55,6 +55,8 @@ wait_healthy() {
 
 start() { # start <version>
   local v=$1
+  # stable copy of the DB init script (see docker-compose.prod.yml): no DB restart per release
+  install -D -m 755 "$(release_dir "$v")/ops/docker/postgres/10-app-role.sh" "$ROOT/shared/postgres-init/10-app-role.sh"
   for img in api scanner web; do
     docker image inspect "guardhub-$img:$v" >/dev/null 2>&1 || die "image guardhub-$img:$v not loaded"
   done
