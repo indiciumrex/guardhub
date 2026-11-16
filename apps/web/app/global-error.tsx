@@ -3,10 +3,12 @@
  * Last-resort error boundary for failures in the root layout itself. It replaces the whole
  * document, so it renders its own (English, from the en catalog) brand header and footer.
  */
+import { useEffect } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { Logo } from "@/components/brand/Logo";
 import { PoweredBy } from "@/components/brand/PoweredBy";
 import { enMessages } from "@/lib/i18n/messages";
+import { reportClientError } from "@/lib/observability/browser";
 import "./globals.css";
 
 function GlobalErrorContent({ reset }: { reset: () => void }) {
@@ -34,7 +36,17 @@ function GlobalErrorContent({ reset }: { reset: () => void }) {
   );
 }
 
-export default function GlobalError({ reset }: { error: Error; reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Errors with a digest came from the server and were already reported there.
+    if (!error.digest) reportClientError(error);
+  }, [error]);
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col">

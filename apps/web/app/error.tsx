@@ -4,8 +4,10 @@
  * footer stay visible. Never shows raw error details to the user.
  */
 import Link from "next/link";
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ShieldMark } from "@/components/brand/ShieldMark";
+import { reportClientError } from "@/lib/observability/browser";
 
 export default function ErrorPage({
   error,
@@ -15,6 +17,10 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   const t = useTranslations("errorPage");
+  useEffect(() => {
+    // Errors with a digest came from the server and were already reported there.
+    if (!error.digest) reportClientError(error);
+  }, [error]);
   return (
     <section className="gh-container flex flex-col items-center py-20 text-center">
       <ShieldMark className="h-16 w-16" />

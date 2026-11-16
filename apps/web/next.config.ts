@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
   reactStrictMode: true,
+  // Error tracking SDK (loaded only when SENTRY_DSN is set): required from node_modules at
+  // runtime instead of being bundled, which keeps OpenTelemetry/require-hook code out of webpack.
+  serverExternalPackages: ["@sentry/node"],
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiInternalUrl}/api/:path*` }];
   },
