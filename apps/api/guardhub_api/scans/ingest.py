@@ -18,7 +18,6 @@ from pydantic import ValidationError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from guardhub_api.common.crypto import Cipher
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Evidence, Finding, Scan
 from guardhub_api.db.session import DbContext, db_session
@@ -101,7 +100,7 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
 
 
 async def _apply_completed(session: AsyncSession, scan: Scan, event: dict[str, Any], at: datetime) -> None:
-    cipher = Cipher(get_settings().encryption_key_bytes)
+    cipher = get_settings().keyring
     findings = validate_findings(event.get("findings"), set(scan.checks))
     for raw in findings:
         evidence_id = uuid.uuid4()
