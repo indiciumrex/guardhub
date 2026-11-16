@@ -19,6 +19,7 @@ from guardhub_api.admin.router import router as admin_router
 from guardhub_api.auth.router import router as auth_router
 from guardhub_api.common.errors import install_error_handlers
 from guardhub_api.common.logging import configure_logging
+from guardhub_api.common.observability import init_observability
 from guardhub_api.common.redis import close_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
@@ -51,6 +52,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     get_settings()  # fail fast on missing or weak configuration
+    init_observability("api")  # no-op unless SENTRY_DSN is set
     app = FastAPI(
         title="GuardHub API",
         version="0.1.0",

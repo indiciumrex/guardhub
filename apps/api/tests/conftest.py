@@ -20,3 +20,6 @@ os.environ.setdefault("DATA_ENCRYPTION_KEY", base64.b64encode(b"t" * 32).decode(
 os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault("TRUSTED_PROXY_HOPS", "0")
 os.environ.setdefault("LOG_LEVEL", "warning")
+os.environ["SENTRY_DSN"] = os.environ["SENTRY_DSN_API"] = (
+    ""  # error tracking stays off in tests, whatever the developer's shell has
+)

@@ -35,6 +35,9 @@ RUN addgroup -S -g 1001 guardhub && adduser -S -u 1001 -G guardhub -H -s /sbin/n
 # The i18n catalogs are statically imported, so they are bundled into the server output.
 COPY --from=build --chown=guardhub:guardhub /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=guardhub:guardhub /repo/apps/web/.next/static ./apps/web/.next/static
+# Error-tracking test event, run only via `docker compose exec web node apps/web/scripts/sentry-test.mjs`
+# (resolves @sentry/node from the standalone node_modules; no HTTP route).
+COPY --from=build --chown=guardhub:guardhub /repo/apps/web/scripts/sentry-test.mjs ./apps/web/scripts/sentry-test.mjs
 USER guardhub
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

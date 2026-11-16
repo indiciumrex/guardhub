@@ -1,0 +1,15 @@
+# Sentry Relay in PROXY mode (compose profile "sentry"). api and api-worker sit on the internal
+# `backend` network with no internet; they send error events to this relay, which forwards them
+# unchanged to the Sentry host taken from SENTRY_DSN (`--upstream-dsn`; key/project ignored).
+# Proxy mode needs no credentials and fetches no project configs. Mounted read-only.
+relay:
+  mode: proxy
+  host: 0.0.0.0
+  port: 3000
+logging:
+  level: info
+  format: json
+limits:
+  # Error events only, so a small body cap is plenty and bounds memory on a shared host.
+  max_envelope_size: 5MB
+  max_event_size: 1MB

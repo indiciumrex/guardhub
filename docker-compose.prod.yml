@@ -51,3 +51,11 @@ services:
   web:
     <<: *logging
     deploy: { resources: { limits: { cpus: "1.0", memory: 512M, pids: 128 } } }
+
+  # Runs only with COMPOSE_PROFILES=sentry (set it in /opt/guardhub/shared/.env with SENTRY_DSN).
+  # Base file already sets read_only, tmpfs /tmp, cap_drop [ALL] and no-new-privileges (lists can't
+  # be restated here: Compose appends them and rejects duplicates); read_only is re-pinned.
+  sentry-relay:
+    <<: *logging
+    read_only: true
+    deploy: { resources: { limits: { cpus: "0.25", memory: 192M, pids: 64 } } }

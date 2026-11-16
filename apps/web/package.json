@@ -18,6 +18,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@sentry/browser": "10.78.0",
+    "@sentry/node": "10.78.0",
     "next": "15.5.29",
     "next-intl": "4.15.1",
     "qrcode": "1.5.4",

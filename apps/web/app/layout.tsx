@@ -10,6 +10,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { BrowserErrorReporting } from "@/components/observability/BrowserErrorReporting";
+import { errorTrackingConfig } from "@/lib/observability/config";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,9 +35,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   await headers(); // opt into dynamic rendering (per-request CSP nonce)
   const locale = await getLocale();
   const messages = await getMessages();
+  const tracking = errorTrackingConfig(); // runtime env; null unless SENTRY_DSN_WEB (or SENTRY_DSN) is set
   return (
     <html lang={locale}>
       <body className="flex min-h-screen flex-col">
+        {tracking?.browser ? (
+          <BrowserErrorReporting environment={tracking.environment} release={tracking.release} />
+        ) : null}
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
           <SiteHeader />
           <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">

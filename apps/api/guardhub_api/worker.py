@@ -19,6 +19,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError, ResponseError
 
 from guardhub_api.common.logging import configure_logging
+from guardhub_api.common.observability import init_observability
 from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session, dispose_engine
@@ -120,6 +121,7 @@ async def run(stop: asyncio.Event) -> None:
 
 async def _main() -> None:
     configure_logging(get_settings().log_level)
+    init_observability("api-worker")  # no-op unless SENTRY_DSN is set
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
