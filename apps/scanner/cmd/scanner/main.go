@@ -1,0 +1,152 @@
+// Command scanner is the GuardHub scan worker. It consumes scan and verify
+// jobs from Redis (gh:jobs), runs the passive checks through the hardened
+// probe client on a bounded worker pool, and publishes results (gh:events,
+// progress hashes, verify replies). Configuration comes only from the
+// environment (see internal/config). It stops gracefully on SIGTERM/SIGINT.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+
+	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/config"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/probe"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/queue"
+)
+
+func main() {
+	os.Exit(run())
+}
+
+func run() int {
+	cfg, err := config.Load()
+	if err != nil {
+		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("invalid configuration", "err", err)
+		return 2
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})).
+		With("service", "scanner")
+	slog.SetDefault(logger)
+
+	if len(os.Args) > 1 && os.Args[1] == "selfscan" {
+		return runSelfScan(cfg, logger, os.Args[2:])
+	}
+
+	ropts, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		logger.Error("invalid REDIS_URL", "err", err)
+		return 2
+	}
+	rdb := redis.NewClient(ropts)
+	defer func() { _ = rdb.Close() }()
+
+	if len(cfg.AllowPrivateHosts) > 0 {
+		logger.Warn("private-host allowlist is active (local e2e demo only)", "hosts", cfg.AllowPrivateHosts)
+	}
+
+	// One limiter set for the whole process: the per-host rate limit holds
+	// across concurrently running scans.
+	limiters := probe.NewLimiters(cfg.HostRPS, cfg.HostBurst)
+	base := probe.Options{
+		Timeout:           cfg.RequestTimeout,
+		HostRPS:           cfg.HostRPS,
+		HostBurst:         cfg.HostBurst,
+		MaxRequests:       cfg.MaxRequestsPerScan,
+		AllowPrivateHosts: cfg.AllowPrivateHosts,
+		Limiters:          limiters,
+	}
+	scanOpts := base
+	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
+
+	svc := &queue.Service{
+		RDB:              rdb,
+		Consumer:         cfg.ConsumerName,
+		Registry:         checks.Default(),
+		NewScanProbe:     func() *probe.Client { return probe.New(scanOpts) },
+		NewVerifyProbe:   func() *probe.Client { return probe.New(base) },
+		Workers:          cfg.Workers,
+		CheckConcurrency: cfg.CheckConcurrency,
+		VerifyDeadline:   cfg.VerifyDeadline,
+		ShutdownTimeout:  cfg.ShutdownTimeout,
+		Logger:           logger,
+		Now:              time.Now,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+
+	logger.Info("scanner starting",
+		"workers", cfg.Workers, "check_concurrency", cfg.CheckConcurrency,
+		"host_rps", cfg.HostRPS, "max_requests_per_scan", cfg.MaxRequestsPerScan,
+		"request_timeout", cfg.RequestTimeout.String(), "checks", svc.Registry.IDs())
+	if err := svc.Run(ctx); err != nil {
+		logger.Error("scanner stopped with error", "err", err)
+		return 1
+	}
+	logger.Info("scanner stopped")
+	return 0
+}
+
+// runSelfScan implements `scanner selfscan <origin> <token>` (dogfooding gate).
+// It prints a JSON report to stdout. Exit codes: 0 = no critical/high
+// findings, 3 = critical/high findings present, 4 = ownership not verified,
+// 2 = usage error, 1 = other failure.
+func runSelfScan(cfg config.Config, logger *slog.Logger, args []string) int {
+	if len(args) != 2 {
+		logger.Error("usage: scanner selfscan <origin> <verification-token>")
+		return 2
+	}
+	base := probe.Options{
+		Timeout:           cfg.RequestTimeout,
+		HostRPS:           cfg.HostRPS,
+		HostBurst:         cfg.HostBurst,
+		MaxRequests:       cfg.MaxRequestsPerScan,
+		AllowPrivateHosts: cfg.AllowPrivateHosts,
+		Limiters:          probe.NewLimiters(cfg.HostRPS, cfg.HostBurst),
+	}
+	scanOpts := base
+	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
+	svc := &queue.Service{
+		Registry:       checks.Default(),
+		NewScanProbe:   func() *probe.Client { return probe.New(scanOpts) },
+		NewVerifyProbe: func() *probe.Client { return probe.New(base) },
+		VerifyDeadline: cfg.VerifyDeadline,
+		Logger:         logger,
+		Now:            time.Now,
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	report, err := svc.SelfScan(ctx, args[0], args[1])
+	if errors.Is(err, queue.ErrNotVerified) {
+		logger.Error("ownership not verified; nothing was scanned", "err", err)
+		return 4
+	}
+	if err != nil {
+		logger.Error("self-scan failed", "err", err)
+		return 1
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(report); err != nil {
+		return 1
+	}
+	for _, f := range report.Findings {
+		if f.Severity == evidence.SeverityCritical || f.Severity == evidence.SeverityHigh {
+			return 3
+		}
+	}
+	return 0
+}

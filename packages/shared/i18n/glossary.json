@@ -1,0 +1,52 @@
+{
+  "$comment": "Terms that must never be translated in any locale (GUARDHUB_STANDARDS §7.5). Keep them verbatim in every checks.json and ui.json. 'terms' lists preferred, consistent translations per locale for common security words.",
+  "never_translate": [
+    "CSP", "HSTS", "TLS", "SSL", "CVE", "HTTP", "HTTPS", "DNS", "XSS", "CSRF", "API", "IP", "SSH", "VPN", "2FA", "SSO", "IAM", "PCI DSS",
+    ".env", ".git", ".gitignore", ".htaccess", "Git", "KEY=VALUE",
+    "TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3",
+    "Secure", "HttpOnly", "SameSite", "SameSite=Lax",
+    "Content-Security-Policy", "Content-Security-Policy-Report-Only", "frame-ancestors", "default-src", "script-src", "style-src", "img-src", "connect-src",
+    "Strict-Transport-Security", "max-age", "includeSubDomains",
+    "X-Frame-Options", "SAMEORIGIN", "X-Content-Type-Options", "nosniff", "Content-Type",
+    "X-Powered-By", "X-AspNet-Version", "Server",
+    "nginx", "Apache", "IIS", "Cloudflare", "Cloudflare Access", "Vercel", "Netlify", "Render", "Railway", "Heroku", "AWS", "AWS CloudTrail", "Docker",
+    "Let's Encrypt", "certbot",
+    "Next.js", "next.config.js", "Express", "helmet", "express-session", "express-rate-limit", "Node.js",
+    "Django", "django-axes", "Flask", "Werkzeug", "gunicorn", "uWSGI", "Laravel", "Laravel Ignition", "Laravel Telescope", "Laravel Debugbar", "Rails", "Symfony", "Spring Boot", "Spring Security", "actuator", "PHP", "php.ini", "ASP.NET", "web.config",
+    "phpMyAdmin", "Adminer", "server-status", "stub_status",
+    "WordPress", "Joomla", "Drupal", "install.php", "Jenkins", "Tomcat", "Tomcat Manager", "Grafana",
+    "Stripe", "OpenAI", "Sentry", "gitleaks", "trufflehog"
+  ],
+  "terms": {
+    "tr": {
+      "finding": "bulgu",
+      "check": "kontrol",
+      "scan": "tarama",
+      "certificate": "sertifika",
+      "header": "başlık",
+      "cookie": "çerez",
+      "flag": "bayrak",
+      "secret": "gizli bilgi",
+      "key": "anahtar",
+      "password": "şifre",
+      "rotate (a key/password)": "yenilemek (değiştirmek)",
+      "debug mode": "hata ayıklama modu",
+      "debug console": "hata ayıklama konsolu",
+      "admin panel": "yönetim paneli",
+      "admin": "yönetici",
+      "installer": "kurulum sayfası",
+      "setup wizard": "kurulum sihirbazı",
+      "default password": "varsayılan şifre",
+      "stack trace": "yığın izi (stack trace)",
+      "directory listing": "dizin listeleme",
+      "redirect": "yönlendirme",
+      "attacker": "saldırgan",
+      "vulnerability": "açık",
+      "severity": "önem derecesi",
+      "production": "canlı ortam",
+      "deploy": "yayına almak",
+      "self-signed": "kendinden imzalı (self-signed)",
+      "two-factor authentication": "iki adımlı doğrulama"
+    }
+  }
+}

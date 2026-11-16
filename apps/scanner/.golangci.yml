@@ -1,0 +1,56 @@
+# golangci-lint v2 configuration for the GuardHub scanner (GUARDHUB_STANDARDS §7.2).
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose
+    - copyloopvar
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - noctx
+    - nolintlint
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+        - name: indent-error-flow
+        - name: error-strings
+        - name: unused-parameter
+          disabled: true
+  exclusions:
+    generated: lax # contract_gen.go is generated from packages/shared
+    presets:
+      - comments
+      - std-error-handling
+    rules:
+      # Tests build throwaway TLS servers/certs and plain test requests.
+      - path: _test\.go
+        linters:
+          - gosec
+          - noctx
+          - unparam
+          - errorlint
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/hksolutions/guardhub

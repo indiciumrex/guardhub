@@ -1,0 +1,212 @@
+{
+  "exposed_env": {
+    "name": "Açıkta kalan gizli dosyalar",
+    "description": "Sitenizden internetteki herkesin indirebildiği .env dosyaları, .git klasörü veya bulut erişim dosyaları gibi yapılandırma ve gizli bilgi dosyalarını arar.",
+    "findings": {
+      "env_file_exposed": {
+        "title": "Ortam değişkeni dosyası herkese açık: {path}",
+        "summary": "{path} dosyası sitenizden herkes tarafından indirilebiliyor. İçinde {secret_count} adet KEY=VALUE satırı saydık; bu genellikle şifre, API anahtarı veya veritabanı bağlantı bilgisi anlamına gelir. Değerleri kaydetmedik.",
+        "why": ".env dosyası, uygulamanızın konuştuğu her şeyin anahtarlarını taşır: veritabanı, ödeme sağlayıcısı, e-posta servisi ve bulut hesabı. Botlar her gün tam olarak bu dosyayı arayarak interneti tarar. Bu dosyayı ele geçiren biri müşteri verilerinizi okuyabilir ya da silebilir, sizin adınıza e-posta gönderebilir, bulut veya yapay zekâ hesaplarınızda yüksek faturalar çıkarabilir ya da hesabınız üzerinden ödeme yapabilir.",
+        "fix": "1. Dosyadaki her değerin görüldüğünü varsayın. Önce içindeki tüm anahtar, token ve şifreleri yenileyin (değiştirin): her sağlayıcının panelinden (veritabanı, Stripe, AWS, OpenAI, e-posta servisi vb.) yenilerini oluşturun ve eskilerini iptal edin.\n2. Yeni değerleri herkese sunulan bir dosyada değil, barındırma platformunuzun ortam değişkeni ayarlarında (Vercel, Netlify, Render, Railway, Heroku vb.) saklayın.\n3. Web sunucunuzda nokta ile başlayan dosyalara erişimi engelleyin. nginx: `deny all;` içeren bir `location ~ /\\.` bloğu ekleyin. Apache: `RedirectMatch 404 /\\..*$` ya da `Require all denied` içeren bir `<FilesMatch \"^\\.\">` kuralı ekleyin.\n4. .env dosyasını yayına aldığınız dosyalardan ve public ya da build çıktısı klasöründen (ör. `public/`, `dist/`, `build/`) kaldırın; `.gitignore` dosyasına `.env*` satırını ekleyin.\n5. {path} adresinin artık 403 veya 404 döndürdüğünü doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "git_repository_exposed": {
+        "title": "Git deposu herkese açık: {path}",
+        "summary": "{path} adresindeki Git klasörü sitenizden okunabiliyor. Bununla biri genellikle kaynak kodunuzun tamamını, geçmişiyle birlikte yeniden oluşturabilir.",
+        "why": "Kaynak kodunuz, saldırgana uygulamanızın nasıl çalıştığını ve nerede zayıf olabileceğini açıkça gösterir. Git geçmişinde de çoğu zaman bir kez commit edilip sonradan \"silinmiş\" ama eski commit'lerde hâlâ duran şifre veya API anahtarları bulunur. Ücretsiz araçlar açıkta kalan bir .git klasörünü dakikalar içinde tamamen indirebilir.",
+        "fix": "1. Git geçmişinizde gizli bilgi olup olmadığını kontrol edin (ör. gitleaks veya trufflehog ile). Bulduğunuz her anahtarı, token'ı ve şifreyi, eski olsa bile yenileyin (değiştirin) ve eski değerleri iptal edin.\n2. Web sunucunuzda .git klasörüne erişimi engelleyin. nginx: `deny all;` içeren bir `location ~ /\\.git` bloğu ekleyin. Apache: `RedirectMatch 404 /\\.git` ekleyin.\n3. .git klasörünü yayından kaldırın. Proje klasörünün tamamını sunucuya kopyalamak yerine bir build adımı veya paketten yayına alın (Vercel, Netlify, Docker imajı, CI hattı).\n4. {path} adresinin artık 403 veya 404 döndürdüğünü doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "cloud_credentials_exposed": {
+        "title": "Bulut erişim dosyası herkese açık: {path}",
+        "summary": "AWS credentials dosyası gibi bir bulut erişim dosyası sitenizde {path} adresinden indirilebiliyor.",
+        "why": "Bu anahtarlar bulut hesabınıza doğrudan erişim sağlar. Saldırgan depolama alanlarınızı ve veritabanlarınızı okuyup silebilir, faturası size kesilecek pahalı sunucular (çoğu zaman kripto madenciliği için) başlatabilir ya da sizi kendi hesabınızdan kilitleyebilir. Sızan bulut anahtarları genellikle bulunduktan birkaç dakika sonra kötüye kullanılır.",
+        "fix": "1. Anahtarları hemen yenileyin: bulut konsolunuzda (AWS için IAM > Users > Security credentials) yeni erişim anahtarları oluşturun, ardından açığa çıkan anahtarları devre dışı bırakıp silin.\n2. Hesabınızda tanımadığınız hareketleri kontrol edin: yeni kullanıcılar, yeni sunucular, olağandışı faturalar. AWS CloudTrail ve fatura paneli iyi bir başlangıç noktasıdır.\n3. Web sunucunuzda nokta ile başlayan dosya ve klasörlere erişimi engelleyin. nginx: `deny all;` içeren bir `location ~ /\\.` bloğu. Apache: `RedirectMatch 404 /\\..*$`.\n4. Erişim dosyasını yayındaki dosyalardan kaldırın. Bulut sunucularında anahtar dosyaları yerine IAM rollerini veya platformunuzun gizli bilgi yöneticisini tercih edin.\n5. {path} adresinin artık 403 veya 404 döndürdüğünü doğrulamak için taramayı yeniden çalıştırın."
+      }
+    }
+  },
+  "security_headers": {
+    "name": "Güvenlik başlıkları ve çerezler",
+    "description": "Sitenizin, tarayıcılara ziyaretçilerinizi korumalarını söyleyen HTTP güvenlik başlıklarını ve çerez ayarlarını gönderip göndermediğini kontrol eder.",
+    "findings": {
+      "csp_missing": {
+        "title": "Content-Security-Policy (CSP) yok",
+        "summary": "Siteniz Content-Security-Policy başlığı göndermiyor; bu yüzden tarayıcılar sayfalarınıza giren her betiği çalıştırır.",
+        "why": "CSP, siteler arası betik çalıştırmaya (XSS) karşı bir güvenlik ağıdır. Saldırgan bir yorum alanı ya da ele geçirilmiş bir üçüncü taraf kütüphane üzerinden sayfanıza betik sokmayı başarırsa, CSP tarayıcının bu betiği çalıştırmasını engelleyebilir. CSP olmadan o betik kullanıcılarınızın oturumlarını çalabilir veya yazdıklarını okuyabilir.",
+        "fix": "1. Hiçbir şeyi bozmamak için önce yalnızca raporlayan bir politikayla başlayın: `Content-Security-Policy-Report-Only: default-src 'self'` gönderin ve tarayıcı konsolunda nelerin engelleneceğine bakın.\n2. Gerçekten kullandığınız dış alan adlarını (analitik, yazı tipleri, ödeme bileşenleri) ilgili yönergelere ekleyin: `script-src`, `style-src`, `img-src`, `connect-src` gibi.\n3. Raporlar temiz olduğunda başlık adını `Content-Security-Policy` olarak değiştirin.\n4. Nerede ayarlanır: Next.js: `next.config.js` içindeki `headers()` fonksiyonu. Express: `helmet()` (contentSecurityPolicy seçeneği). Vercel: `vercel.json` headers. Netlify: `_headers` dosyası. nginx: `add_header Content-Security-Policy \"...\" always;`. Cloudflare: yanıt başlıklarını ayarlayan bir Transform Rule."
+      },
+      "hsts_missing": {
+        "title": "HSTS (Strict-Transport-Security) yok",
+        "summary": "Siteniz Strict-Transport-Security başlığı göndermiyor; yani tarayıcılara sitenize her zaman HTTPS ile bağlanmaları söylenmiyor.",
+        "why": "HSTS olmadan, adresinizi elle yazan veya eski bir http:// bağlantısına tıklayan ziyaretçi şifresiz bir bağlantıyla başlar. Halka açık Wi-Fi ağlarında saldırgan bu ilk isteği yakalayıp ziyaretçiyi sitenizin şifresiz, sahte bir kopyasında tutabilir; burada giriş bilgileri ve çerezler okunabilir.",
+        "fix": "1. Sitenizin tamamının, kapsamak istediğiniz alt alan adları dahil, HTTPS üzerinden çalıştığından emin olun.\n2. HTTPS yanıtlarında `Strict-Transport-Security: max-age=31536000; includeSubDomains` başlığını gönderin.\n3. Nerede ayarlanır: nginx: `add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;`. Apache: `Header always set Strict-Transport-Security \"max-age=31536000; includeSubDomains\"`. Express: `helmet()` varsayılan olarak ekler. Next.js: `next.config.js` içinde `headers()`. Cloudflare: SSL/TLS > Edge Certificates > HSTS. Vercel kendi alan adlarında otomatik ekler; özel kurulumları kontrol edin.\n4. İsterseniz kısa bir max-age (ör. 86400) ile başlayıp emin olunca yükseltebilirsiniz."
+      },
+      "hsts_weak": {
+        "title": "HSTS süresi çok kısa ({max_age} saniye)",
+        "summary": "Siteniz HSTS gönderiyor ancak max-age={max_age} saniye; bu, önerilen en az 180 günden (15552000 saniye) kısa.",
+        "why": "HSTS, ziyaretçileri yalnızca tarayıcı onu hatırladığı sürece korur. Süre kısa olunca koruma çabuk sona erer ve geri dönen ziyaretçiler güvenilmeyen ağlarda yeniden şifresiz bağlantıya düşürülebilir.",
+        "fix": "1. max-age değerini en az 15552000'e (180 gün) çıkarın; bir yıl (31536000) yaygın bir seçimdir: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.\n2. Başlık şu an nerede ayarlanıyorsa orada değiştirin: web sunucusu yapılandırması (nginx `add_header`, Apache `Header always set`), Express'te `helmet()` seçenekleri, `next.config.js` içinde `headers()` veya Cloudflare'in HSTS ayarı.\n3. Yeni değeri doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "nosniff_missing": {
+        "title": "X-Content-Type-Options: nosniff yok",
+        "summary": "Siteniz `X-Content-Type-Options: nosniff` göndermiyor; bu yüzden tarayıcılar sunucunuzun bildirdiği türe güvenmek yerine dosyanın türünü tahmin etmeye çalışabilir.",
+        "why": "Kullanıcılar dosya yükleyebiliyorsa, saldırgan görüntü gibi görünen ama tarayıcının betik ya da web sayfası olarak yorumladığı bir dosya yükleyebilir. Bu, alan adınızda siteler arası betik çalıştırmaya (XSS) yol açabilir. Bu başlık, riski tek satırla ortadan kaldırır.",
+        "fix": "1. Tüm yanıtlarda `X-Content-Type-Options: nosniff` başlığını gönderin.\n2. Nerede ayarlanır: nginx: `add_header X-Content-Type-Options nosniff always;`. Apache: `Header always set X-Content-Type-Options \"nosniff\"`. Express: `helmet()` varsayılan olarak ekler. Next.js: `next.config.js` içinde `headers()`. Vercel: `vercel.json` headers. Netlify: `_headers` dosyası.\n3. Sunucunuzun her dosya için doğru Content-Type gönderdiğinden emin olun (ör. stil dosyaları için `text/css`)."
+      },
+      "clickjacking_unprotected": {
+        "title": "Siteniz başka sitelere gömülebiliyor (clickjacking)",
+        "summary": "Siteniz ne X-Frame-Options başlığı ne de CSP frame-ancestors kuralı gönderiyor; bu yüzden herhangi bir site sayfalarınızı görünmez bir çerçeve içinde açabilir.",
+        "why": "Clickjacking saldırısında biri sayfanızı kendi sayfasının üzerine görünmez şekilde yerleştirir ve oturum açmış kullanıcılarınızı göremedikleri düğmelere, örneğin \"hesabı sil\", \"e-postayı değiştir\" veya \"ödemeyi onayla\" düğmelerine tıklatır.",
+        "fix": "1. Başka bir sitenin sizinkini meşru olarak gömmesi gerekip gerekmediğine karar verin. Çoğu zaman cevap hayırdır.\n2. `Content-Security-Policy: frame-ancestors 'self'` gönderin (veya mevcut CSP'nize `frame-ancestors 'self'` ekleyin). Eski tarayıcılar için ayrıca `X-Frame-Options: SAMEORIGIN` gönderin.\n3. Nerede ayarlanır: nginx: `add_header X-Frame-Options SAMEORIGIN always;`. Apache: `Header always set X-Frame-Options \"SAMEORIGIN\"`. Express: `helmet()` X-Frame-Options'ı varsayılan olarak ekler. Next.js: `next.config.js` içinde `headers()`. Django: `XFrameOptionsMiddleware` (varsayılan olarak açık). Vercel/Netlify: `vercel.json` veya `_headers`."
+      },
+      "cookie_flags_missing": {
+        "title": "\"{cookie_name}\" çerezinde eksik bayrak: {missing_flags}",
+        "summary": "Siteniz \"{cookie_name}\" çerezini şu koruyucu bayraklar olmadan oluşturuyor: {missing_flags}.",
+        "why": "Çerezler genellikle kullanıcının oturumunu taşır. Secure olmadan çerez şifresiz HTTP üzerinden gönderilebilir ve halka açık Wi-Fi'da okunabilir. HttpOnly olmadan sayfaya sızan herhangi bir betik çerezi okuyup hesabı ele geçirebilir. SameSite olmadan başka siteler, kullanıcılarınızın tarayıcısının bu çerezi sahte isteklerle birlikte göndermesini sağlayabilir (CSRF).",
+        "fix": "1. \"{cookie_name}\" çerezinin kodunuzda veya framework ayarlarınızda nerede oluşturulduğunu bulun.\n2. Eksik bayrakları ekleyin. Oturum çerezleri için güvenli bir varsayılan `Secure; HttpOnly; SameSite=Lax` şeklindedir. HttpOnly'yi yalnızca ön yüzdeki JavaScript'in çerezi gerçekten okuması gerekiyorsa çıkarın.\n3. Framework ayarları: Express: `res.cookie(name, value, ...)` içinde `secure: true`, `httpOnly: true`, `sameSite: 'lax'` ya da express-session'da aynı seçenekler. Django: `SESSION_COOKIE_SECURE = True`, `CSRF_COOKIE_SECURE = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`. Flask: `SESSION_COOKIE_SECURE = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`. Laravel: `config/session.php` içinde `secure`, `http_only` ve `same_site`. Rails: oturum deposunda `secure: true`, `httponly: true`, `same_site: :lax`. Next.js: çerez oluştururken aynı seçenekleri verin.\n4. Bayrakların eklendiğini doğrulamak için taramayı yeniden çalıştırın."
+      }
+    }
+  },
+  "tls_cert": {
+    "name": "HTTPS ve sertifika",
+    "description": "Sitenizin geçerli, güvenilir ve süresi dolmamış bir sertifikayla, güncel TLS sürümleri kullanılarak HTTPS üzerinden sunulduğunu kontrol eder.",
+    "findings": {
+      "https_unavailable": {
+        "title": "HTTPS kullanılamıyor",
+        "summary": "Sitenize HTTPS üzerinden bağlanamadık. Ziyaretçiler sitenize yalnızca şifresiz HTTP ile ulaşabiliyor.",
+        "why": "HTTPS olmadan ziyaretçilerinizle siteniz arasında giden her şey, yani şifreler, oturum çerezleri ve kişisel veriler, düz metin olarak iletilir. Aynı ağdaki herkes (halka açık Wi-Fi, ele geçirilmiş bir modem) bu verileri okuyabilir veya değiştirebilir. Tarayıcılar da bu tür siteleri \"Güvenli değil\" diye işaretler ve bu güven kaybettirir.",
+        "fix": "1. Ücretsiz bir sertifika alın. Çoğu barındırma hizmeti (Vercel, Netlify, Render, Cloudflare) alan adınız bağlandığında bunu otomatik yapar; panelinizdeki alan adı ayarlarını kontrol edin.\n2. Kendi sunucunuzda certbot ile Let's Encrypt kullanın: ör. `sudo certbot --nginx -d example.com` veya `sudo certbot --apache -d example.com`.\n3. Güvenlik duvarınızda ve bulut güvenlik grubunuzda 443 portunun açık olduğundan emin olun.\n4. HTTPS'in çalıştığını doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "http_not_redirected": {
+        "title": "HTTP, HTTPS'e yönlendirilmiyor",
+        "summary": "Siteniz düz HTTP üzerinden de yanıt veriyor ve ziyaretçileri HTTPS sürümüne yönlendirmiyor.",
+        "why": "Adresinizi https:// olmadan yazan ya da eski bağlantılara tıklayan ziyaretçiler şifresiz bağlantıda kalır. Giriş bilgileri ve çerezleri aynı ağdaki herkes tarafından okunabilir veya değiştirilebilir.",
+        "fix": "1. Tüm HTTP isteklerini kalıcı (301) bir yönlendirmeyle HTTPS'e gönderin.\n2. nginx: 80 portundaki server bloğuna `return 301 https://$host$request_uri;` ekleyin. Apache: 80 portundaki virtual host'a `Redirect permanent / https://example.com/` ekleyin. Cloudflare: SSL/TLS > Edge Certificates > Always Use HTTPS seçeneğini açın. Vercel ve Netlify bağlı alan adlarında otomatik yönlendirir. Django: `SECURE_SSL_REDIRECT = True`. Rails: `config.force_ssl = true`. Laravel/Express: bir middleware'de veya proxy katmanında yönlendirin.\n3. Yönlendirme çalıştıktan sonra, tarayıcıların bir dahaki sefere doğrudan HTTPS'e gitmesi için HSTS ekleyin."
+      },
+      "cert_expired": {
+        "title": "Sertifikanın süresi {expired_on} tarihinde doldu",
+        "summary": "Sitenizin TLS sertifikasının süresi {expired_on} tarihinde doldu. Tarayıcılar ziyaretçilere artık tam sayfa bir güvenlik uyarısı gösteriyor.",
+        "why": "Ziyaretçilerin çoğu bu uyarıyı görünce siteyi terk eder; uyarıyı geçenler ise gerçek uyarıları da görmezden gelmeye alışır. Süresi dolmuş bir sertifika, yenileme sürecinizin bozuk olduğunu da gösterir; yani bu durum tekrar yaşanır.",
+        "fix": "1. Sertifikayı hemen yenileyin. Let's Encrypt kullanıyorsanız: `sudo certbot renew`, ardından web sunucunuzu yeniden yükleyin (`sudo systemctl reload nginx` veya `apache2`).\n2. Yönetilen barındırmalarda (Vercel, Netlify, Cloudflare, Render) alan adı ayarlarını kontrol edin: yenileme genellikle DNS artık barındırma hizmetini göstermediği için başarısız olur. DNS kayıtlarını düzeltip sertifikayı yeniden oluşturun.\n3. Otomatik yenilemeyi kurun (certbot zamanlayıcısını test etmek için `sudo certbot renew --dry-run`) ve bir son kullanma hatırlatıcısı veya izleme ekleyin.\n4. Yeni sertifikanın sunulduğunu doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "cert_expiring_soon": {
+        "title": "Sertifikanın süresi {days_left} gün içinde doluyor",
+        "summary": "Sitenizin TLS sertifikasının süresi {expires_on} tarihinde, yani {days_left} gün sonra doluyor.",
+        "why": "Süre dolduğunda tarayıcılar tam sayfa güvenlik uyarısı gösterir ve ziyaretçilerin çoğu siteyi terk eder. Let's Encrypt sertifikaları normalde süre dolmadan yaklaşık 30 gün önce otomatik yenilenir; bu uyarıyı görüyorsanız otomatik yenileme büyük olasılıkla çalışmıyordur.",
+        "fix": "1. Beklemeden şimdi yenileyin. Let's Encrypt kullanıyorsanız: `sudo certbot renew`, ardından web sunucunuzu yeniden yükleyin.\n2. Otomatik yenilemenin neden çalışmadığına bakın: `sudo certbot renew --dry-run` komutunu çalıştırıp hataları inceleyin. Sık görülen nedenler: engellenmiş 80 portu, değişmiş bir DNS kaydı veya kapatılmış bir zamanlayıcı ya da cron işi.\n3. Yönetilen barındırmalarda (Vercel, Netlify, Cloudflare) platformun yenileyebilmesi için DNS'in hâlâ doğru yeri gösterdiğinden emin olun.\n4. {expires_on} tarihinden önce sizi uyaracak bir takvim hatırlatıcısı veya erişilebilirlik izleyicisi ekleyin."
+      },
+      "cert_hostname_mismatch": {
+        "title": "Sertifika {host} adresiyle eşleşmiyor",
+        "summary": "Sunucunuzun sunduğu sertifika {host} için geçerli değil. Ziyaretçiler bu adresi açtığında tarayıcılar güvenlik uyarısı gösteriyor.",
+        "why": "Tarayıcılar sayfanın gerçekten sizin siteniz olduğunu doğrulayamadığı için sayfayı engeller. Ziyaretçiler ya siteyi terk eder ya da uyarıları geçmeye alışır; bu da onları gerçek kimlik taklidi saldırılarına karşı daha savunmasız bırakır.",
+        "fix": "1. {host} adresini kapsayan bir sertifika alın, ör. `sudo certbot --nginx -d {host}` (kullandığınız tüm adları, örneğin hem çıplak alan adını hem www'yu, ek `-d` seçenekleriyle ekleyin).\n2. Yönetilen barındırmalarda (Vercel, Netlify, Cloudflare) platformun sertifika üretmesi için {host} adresini proje ayarlarına alan adı olarak ekleyin.\n3. Web sunucunuzun bu ad için doğru sertifikayı sunduğunu kontrol edin (nginx'te `server_name` ve `ssl_certificate` satırları, Apache'de 443 virtual host'undaki `ServerName`/`ServerAlias`).\n4. Doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "cert_untrusted": {
+        "title": "Sertifika güvenilir değil",
+        "summary": "Sitenizin sertifikasına tarayıcılar güvenmiyor; örneğin sertifika kendinden imzalı (self-signed) olabilir ya da ara sertifika zinciri eksik olabilir.",
+        "why": "Tarayıcılar tam sayfa uyarı gösterir ve ziyaretçilerin çoğu siteyi terk eder. Uyarıyı geçen ziyaretçiler sitenizi bir saldırganın sahte kopyasından ayırt edemez; bu da HTTPS'in sağlaması gereken korumayı ortadan kaldırır.",
+        "fix": "1. Kendinden imzalı sertifikayı güvenilir bir sertifika otoritesinden alınmış bir sertifikayla değiştirin. Let's Encrypt ücretsizdir: `sudo certbot --nginx -d example.com` veya `--apache`.\n2. Satın aldığınız bir sertifika kullanıyorsanız yalnızca kendi sertifikanızı değil, zincirin tamamını yükleyin. nginx'te `ssl_certificate` tam zincir dosyasını göstermelidir (certbot için `fullchain.pem`). Apache 2.4.8 ve üzerinde `SSLCertificateFile` için tam zincir dosyasını kullanın.\n3. Web sunucunuzu yeniden yükleyin ve doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "legacy_tls_supported": {
+        "title": "Eski protokol {version} hâlâ açık",
+        "summary": "Sunucunuz, artık güvenli kabul edilmeyen eski bir protokol sürümü olan {version} ile bağlantıları hâlâ kabul ediyor.",
+        "why": "TLS 1.0 ve 1.1'in bilinen zayıflıkları vardır ve tüm büyük tarayıcılar bunları kullanımdan kaldırmıştır. Bunları açık tutmak, ağdaki bir saldırganın daha zayıf bir bağlantıyı zorlamayı denemesine izin verir ve uyumluluk denetimlerinin (ör. ödemeler için PCI DSS) başarısız olmasına yol açabilir.",
+        "fix": "1. Yalnızca TLS 1.2 ve TLS 1.3'e izin verin.\n2. nginx: `ssl_protocols TLSv1.2 TLSv1.3;`. Apache: `SSLProtocol -all +TLSv1.2 +TLSv1.3`. Cloudflare: SSL/TLS > Edge Certificates > Minimum TLS Version = 1.2. AWS yük dengeleyicileri: TLS 1.2 ve üzerini kullanan bir güvenlik politikası seçin.\n3. Web sunucunuzu yeniden yükleyin ve {version} sürümünün artık kabul edilmediğini doğrulamak için taramayı yeniden çalıştırın."
+      }
+    }
+  },
+  "open_admin": {
+    "name": "Açık yönetim ve hata ayıklama panelleri",
+    "description": "Herkese açık internetten erişilebilen yönetim panellerini, hata ayıklama konsollarını, veritabanı araçlarını ve durum sayfalarını arar.",
+    "findings": {
+      "debug_console_exposed": {
+        "title": "{product} hata ayıklama konsolu herkese açık",
+        "summary": "{path} adresinde herkesin erişebildiği bir {product} hata ayıklama konsolu var. Bu tür bir konsol, ziyaretçinin sunucunuzda kod çalıştırmasına izin verir.",
+        "why": "Bu, sunucunuzun komut satırını bir yabancıya teslim etmekle aynı şeydir. Saldırgan hiçbir şifreye ihtiyaç duymadan tüm dosyalarınızı ve gizli bilgilerinizi okuyabilir, veritabanınıza erişebilir, zararlı yazılım kurabilir veya sunucuyu tamamen ele geçirebilir.",
+        "fix": "1. Canlı ortamda hata ayıklama modunu hemen kapatın. Flask/Werkzeug için: `debug=True` veya `FLASK_DEBUG=1` kullanmayın; uygulamayı yerleşik geliştirme sunucusu yerine gunicorn veya uWSGI gibi bir üretim sunucusuyla çalıştırın.\n2. Yeniden yayına alın ve {path} adresinin artık yanıt vermediğini doğrulayın.\n3. Konsol daha önce kullanılmış olabileceği için sunucunuzdaki gizli bilgileri, veritabanı şifrelerini ve API anahtarlarını yenileyin (değiştirin); sunucuda tanımadığınız süreç veya dosya olup olmadığını kontrol edin.\n4. Hata ayıklama araçlarını yalnızca kendi bilgisayarınızda kullanın, asla herkese açık bir sunucuda kullanmayın."
+      },
+      "debug_endpoint_exposed": {
+        "title": "{product} hata ayıklama adresi herkese açık",
+        "summary": "{path} adresinde giriş yapmadan erişilebilen bir {product} hata ayıklama veya tanılama sayfası var.",
+        "why": "Hata ayıklama adresleri ortam değişkenleri, yapılandırma, son istekler ve bazen oturum verileri ya da şifreler gibi iç ayrıntıları gösterir. Saldırgan bunları gizli bilgi toplamak veya oturumları ele geçirmek için kullanabilir; bazı adresler (ör. Spring Boot actuator) ayarları değiştirmeye ya da bellek dökümü almaya bile izin verir.",
+        "fix": "1. Aracı canlı ortamda kapatın. Spring Boot: `management.endpoints.web.exposure.include=health` ile yalnızca `health` adresini açın, gerisini Spring Security ile koruyun. Symfony: profiler'ın yüklenmemesi için `APP_ENV=prod` olduğundan emin olun. Laravel: `APP_DEBUG=false` yapın; Telescope ve Debugbar'ı yalnızca geliştirme bağımlılığı olarak kurun (veya Telescope'u gate ile kısıtlayın). Django: `DEBUG = False`. Rails: `RAILS_ENV=production` ile çalıştırın.\n2. Aracın canlı ortamda gerçekten gerekli olduğu durumlarda onu giriş ekranı ve IP izin listesinin arkasına alın.\n3. Yeniden yayına alın ve {path} adresinin 403 veya 404 döndürdüğünü doğrulayın.\n4. Sayfa gizli bilgi gösterdiyse bunları yenileyin (değiştirin)."
+      },
+      "db_admin_exposed": {
+        "title": "{product} veritabanı yönetim aracı herkese açık",
+        "summary": "{product} veritabanı aracına internetten {path} adresi üzerinden erişilebiliyor.",
+        "why": "Veritabanı yönetim araçları, otomatik şifre tahmin eden botların en sevdiği hedeflerdendir. Saldırgan zayıf bir şifre ya da araçtaki bir hata sayesinde içeri girerse tüm verilerinizi okuyabilir, değiştirebilir veya silebilir. Bu araçlarda geçmişte pek çok güvenlik açığı da çıkmıştır.",
+        "fix": "1. İhtiyacınız yoksa {product} aracını herkese açık sunucudan kaldırın. Bunun yerine veritabanınıza kendi bilgisayarınızdan bir SSH tüneli veya bulut sağlayıcınızın konsolu üzerinden bağlanın.\n2. Tutmanız gerekiyorsa erişimi IP ile kısıtlayın. nginx: {path} için olan location içinde `allow <IP adresiniz>;` ve ardından `deny all;` kullanın. Apache: `Require ip <IP adresiniz>`. Ya da aracı bir VPN veya Cloudflare Access arkasına alın.\n3. Veritabanı kullanıcılarının güçlü ve benzersiz şifreleri olduğundan emin olun, aracı güncel tutun.\n4. {path} adresinin artık herkese açık olmadığını doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "server_status_exposed": {
+        "title": "Sunucu durum sayfası herkese açık",
+        "summary": "Web sunucunuzun durum sayfasına {path} adresinden erişilebiliyor. Bu sayfa sunucunuzun işlediği istekler hakkında anlık bilgi gösterir.",
+        "why": "Apache server-status sayfası ziyaretçilerin IP adreslerini, açtıkları adresleri (bazen bağlantılardaki token'larla birlikte), iç sunucu adlarını ve sunucu yazılımı ayrıntılarını ortaya çıkarabilir. Bu, saldırganın sisteminizin haritasını çıkarmasına yardım eder ve özel verilerin sızmasına yol açabilir.",
+        "fix": "1. Sayfayı yalnızca sunucunun kendisine açın. Apache: `<Location \"/server-status\">` bloğunda `Require local` (veya `Require ip <IP adresiniz>`) kullanın.\n2. Kullanmıyorsanız tamamen kapatın: Debian/Ubuntu'da `sudo a2dismod status`, ardından Apache'yi yeniden yükleyin.\n3. nginx `stub_status` için ilgili location içine `allow 127.0.0.1;` ve `deny all;` ekleyin.\n4. {path} adresinin 403 veya 404 döndürdüğünü doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "admin_login_exposed": {
+        "title": "Yönetici giriş sayfası herkese açık",
+        "summary": "{path} adresinde bir yönetici giriş sayfası bulduk. Bu yaygın bir durumdur ve tek başına sorun değildir, ancak erişimi sınırlamakta fayda var.",
+        "why": "Herkese açık giriş sayfaları, sık kullanılan şifreleri deneyen botlar tarafından sürekli yoklanır. Bir yönetici hesabının şifresi zayıfsa ya da başka yerde de kullanılıyorsa ve deneme sayısında bir sınır yoksa, saldırgan zamanla içeri girebilir.",
+        "fix": "1. Tüm yönetici hesaplarında güçlü ve benzersiz şifreler kullanın, iki adımlı doğrulamayı (2FA) açın.\n2. Giriş denemelerini sınırlayın: ör. bir oran sınırlama eklentisi (WordPress), `express-rate-limit` (Express), django-axes (Django) veya Cloudflare oran sınırlama kuralları.\n3. Bu sayfayı yalnızca ekibiniz kullanıyorsa erişimi IP ile kısıtlayın ya da Cloudflare Access veya bir VPN arkasına alın.\n4. İsterseniz yönetim alanını daha az tahmin edilebilir bir adrese taşıyabilirsiniz; ancak bunu koruma değil, yalnızca küçük bir ek önlem olarak görün."
+      }
+    }
+  },
+  "default_creds": {
+    "name": "Tamamlanmamış kurulum ve varsayılan şifreler",
+    "description": "Erişilebilir durumda bırakılmış kurulum dosyalarını ve sihirbazlarını, ayrıca varsayılan şifrelerle gelmesiyle bilinen ürünleri arar. Hiçbir zaman giriş yapmayı denemez.",
+    "findings": {
+      "installer_exposed": {
+        "title": "{product} kurulum sayfası hâlâ erişilebilir",
+        "summary": "{product} kurulum sayfasına {path} adresinden erişilebiliyor. Kurulum hiç tamamlanmadıysa herhangi biri onu tamamlayabilir.",
+        "why": "Kurulumu tamamlayan kişi yönetici hesabını belirler. Saldırgan kurulumu kendisi bitirip sitenizin yöneticisi olabilir ve çoğu durumda sunucunuzda kendi kodunu çalıştırabilir. Botlar, yeni bir site yayına girdikten sonraki birkaç saat içinde tamamlanmamış kurulumları arar.",
+        "fix": "1. {path} adresini kendiniz açın. Kurulum hâlâ ayar yapmayı öneriyorsa kurulumu hemen güçlü bir yönetici şifresiyle tamamlayın.\n2. Kurulum dosyalarını silin veya erişimi engelleyin: Joomla: `installation` klasörünü kaldırın. Drupal: `install.php` dosyasını web sunucusunda engelleyin. WordPress: kurulumdan sonra `wp-admin/install.php` yalnızca zaten kurulu olduğunu söylemelidir; isterseniz nginx veya Apache'de engelleyebilirsiniz.\n3. Site tanımadığınız biri tarafından kurulmuşsa siteyi yayından kaldırın, temiz bir kopyadan yeniden kurun ve veritabanı ile barındırma şifrelerinizi yenileyin (değiştirin).\n4. {path} adresine artık erişilemediğini doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "setup_wizard_exposed": {
+        "title": "{product} kurulum sihirbazı hâlâ açık",
+        "summary": "{product} ilk kurulum ekranına {path} adresinden erişilebiliyor; bu, kurulumun tamamlanmadığını gösteriyor.",
+        "why": "Kurulum sihirbazını ilk tamamlayan kişi yönetici olur. Jenkins gibi araçlarda bu, derleme sunucunuz, kaynak kodunuz ve yayına alma için kullanılan gizli bilgiler üzerinde tam kontrol ile sunucuda komut çalıştırabilme yetkisi anlamına gelir.",
+        "fix": "1. Kurulumu hemen kendiniz tamamlayın ve güçlü, benzersiz şifreli bir yönetici hesabı oluşturun. Jenkins için sunucudaki kilit açma anahtarını kullanın (`/var/lib/jenkins/secrets/initialAdminPassword`).\n2. {product} erişimini IP, VPN veya Cloudflare Access ile kısıtlayın; derleme ve yönetim araçlarının herkese açık olması nadiren gerekir.\n3. Sizin oluşturmadığınız yönetici hesapları veya işler görürseniz aracın ele geçirildiğini varsayın: aracı yeniden kurun ve içinde saklanan tüm gizli bilgileri yenileyin (değiştirin).\n4. {path} adresinin artık kurulum ekranı göstermediğini doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "default_login_product": {
+        "title": "{product} girişi herkese açık; varsayılan şifrenin değiştirildiğinden emin olun",
+        "summary": "{path} adresinde bir {product} giriş sayfası bulduk. Bu ürünün varsayılan kullanıcı adı ve şifrelerle geldiği biliniyor. Giriş yapmayı denemedik.",
+        "why": "{product} gibi ürünlerin varsayılan şifreleri kılavuzlarda yayımlanmıştır ve botların ilk denediği şeylerdir. Sizinki hiç değiştirilmediyse saldırgan yönetici olarak giriş yapabilir ve Tomcat Manager gibi araçlarda sunucunuza kendi kodunu yükleyebilir.",
+        "fix": "1. Giriş yapın ve varsayılan yönetici şifresinin (ör. Grafana için admin/admin ya da Tomcat'te `tomcat-users.xml` içindeki kullanıcılar) güçlü ve benzersiz bir şifreyle değiştirildiğinden emin olun. Kullanılmayan varsayılan hesapları kaldırın.\n2. Herkesin erişmesi gerekmiyorsa {path} erişimini IP, VPN veya Cloudflare Access ile kısıtlayın.\n3. {product} destekliyorsa iki adımlı doğrulamayı veya tek oturum açmayı (SSO) etkinleştirin ve ürünü güncel tutun.\n4. {path} adresinin artık herkese açık olmadığını doğrulamak için taramayı yeniden çalıştırın; ya da yalnızca varsayılanların kaldırıldığından eminseniz açık bırakın."
+      }
+    }
+  },
+  "info_leak": {
+    "name": "Bilgi sızıntıları",
+    "description": "Sitenizin ziyaretçilere gösterdiği yazılım sürümlerini, hata ayrıntılarını, hata ayıklama modunu ve dosya listelerini arar.",
+    "findings": {
+      "server_version_disclosed": {
+        "title": "Sunucu sürümü görünüyor: {value}",
+        "summary": "Sunucunuzun {header} başlığı, kullandığı yazılımı ve sürümünü ortaya koyuyor: \"{value}\".",
+        "why": "Bu tek başına küçük bir risktir. Ancak saldırganların o sürüme ait bilinen açıkları (CVE) anında bulup sunucunuzu bunlara uygun saldırılarla hedeflemesini kolaylaştırır. Sürümü gizlemek otomatik hedeflemeyi zorlaştırır.",
+        "fix": "1. Sunucu yazılımını güncel tutun; bu, sürümü gizlemekten daha önemlidir.\n2. Sürümü gizleyin. nginx: http bloğunda `server_tokens off;`. Apache: `ServerTokens Prod` ve `ServerSignature Off`. IIS: Server başlığını URL Rewrite ile ya da request filtering içindeki `removeServerHeader` ile kaldırın.\n3. Sunucuyu yeniden yükleyin ve {header} başlığının artık sürüm göstermediğini doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "framework_version_disclosed": {
+        "title": "Framework sürümü görünüyor: {value}",
+        "summary": "Sitenizin {header} başlığı arkadaki teknolojiyi ortaya koyuyor: \"{value}\".",
+        "why": "Bu başlık saldırganlara hangi framework'ü ve hangi sürümü kullandığınızı söyler; böylece o sürüme ait bilinen açıkları (CVE) bulup uygun saldırıyı seçebilirler. Ziyaretçilerinize ise hiçbir faydası yoktur.",
+        "fix": "1. Framework'ü güncel tutun; en önemlisi budur.\n2. Başlığı kaldırın. Express: `app.disable('x-powered-by')` ya da `helmet()` kullanın. Next.js: `next.config.js` içinde `poweredByHeader: false`. PHP: php.ini içinde `expose_php = Off`. ASP.NET: web.config içinde `<httpRuntime enableVersionHeader=\"false\" />` ve customHeaders altında X-Powered-By'ı kaldırın.\n3. Başlığı proxy katmanında da silebilirsiniz: nginx `proxy_hide_header X-Powered-By;` veya `fastcgi_hide_header X-Powered-By;`.\n4. {header} başlığının kaldırıldığını doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "stack_trace_exposed": {
+        "title": "Hata sayfası teknik ayrıntı gösteriyor",
+        "summary": "{path} adresinde bir hata oluştuğunda siteniz yığın izi (stack trace) gösteriyor: iç kod yolları, dosya adları ve bazen ayarlar.",
+        "why": "Yığın izleri saldırgana kodunuzun nasıl kurulduğunu, hangi kütüphaneleri ve sürümleri kullandığınızı, bazen de veritabanı sorgularını veya gizli bilgileri gösterir. Bu, bir zayıflığı bulup istismar etmeyi çok kolaylaştırır.",
+        "fix": "1. Canlı ortamda ayrıntılı hata gösterimini kapatın (framework'ünüze göre: Django `DEBUG = False`, Laravel `APP_DEBUG=false`, Rails `RAILS_ENV=production`, Express'te `NODE_ENV=production` ve kendi hata işleyiciniz, ASP.NET'te `customErrors` açık).\n2. Ziyaretçilere bunun yerine sade ve anlaşılır bir hata sayfası gösterin.\n3. Hatanın tüm ayrıntılarını yalnızca ekibinizin görebileceği loglara veya bir hata izleme aracına (ör. Sentry) gönderin.\n4. {path} adresinin artık yığın izi göstermediğini doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "debug_mode_enabled": {
+        "title": "{framework} hata ayıklama modunda çalışıyor",
+        "summary": "Siteniz canlı ortamda {framework} hata ayıklama modu açık şekilde çalışıyor gibi görünüyor.",
+        "why": "Hata ayıklama modu; kaynak kodu, ayarları ve çoğu zaman ortam değişkenlerini veya gizli anahtarları içeren ayrıntılı hata sayfaları gösterir. Eski Laravel Ignition sürümleri gibi bazı hata ayıklama araçları, saldırganların sunucuda kod çalıştırmasına bile olanak tanımıştır.",
+        "fix": "1. Hata ayıklama modunu kapatın. Django: `DEBUG = False` (ve `ALLOWED_HOSTS` ayarlayın). Laravel: ortam değişkenlerinde `APP_DEBUG=false` ve `APP_ENV=production`, ardından `php artisan config:cache`. Rails: `consider_all_requests_local` false olsun diye `RAILS_ENV=production` ile çalıştırın. Flask: `FLASK_DEBUG` veya `debug=True` kullanmayın.\n2. Yeniden yayına alın ve hata sayfalarının artık kod veya ayar göstermediğini kontrol edin.\n3. Hata ayıklama sayfaları herhangi bir gizli anahtar veya şifre gösterdiyse bunları yenileyin (değiştirin).\n4. {framework} hata ayıklama modunun kapandığını doğrulamak için taramayı yeniden çalıştırın."
+      },
+      "directory_listing_enabled": {
+        "title": "Klasör içeriği herkese açık listeleniyor",
+        "summary": "{path} adresi açıldığında o klasördeki tüm dosyaların listesi görünüyor.",
+        "why": "Dosya listesi, herkesin hiç bağlantı vermediğiniz dosyalara göz atmasını sağlar: yedekler, eski dışa aktarımlar, yapılandırma dosyaları veya yüklenmiş belgeler gibi. Saldırganlar bunu veri ve zayıf nokta bulmak için hızlıca kullanır.",
+        "fix": "1. Dizin listelemeyi kapatın. nginx: `autoindex` kapalı olsun (varsayılan olarak kapalıdır; varsa `autoindex on;` satırını kaldırın). Apache: yapılandırmanızda veya `.htaccess` içinde `Options -Indexes`. IIS: Directory Browsing'i kapatın.\n2. {path} altında listelenen dosyaları gözden geçirin ve herkese açık olmaması gereken her şeyi (yedekler, dışa aktarımlar gibi) kaldırın. Bunlardan herhangi biri şifre veya anahtar içeriyorsa yenileyin (değiştirin).\n3. {path} adresinin artık dosya listelemediğini doğrulamak için taramayı yeniden çalıştırın."
+      }
+    }
+  }
+}
