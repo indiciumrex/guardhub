@@ -1,0 +1,18 @@
+{
+  "name": "@guardhub/e2e",
+  "private": true,
+  "type": "module",
+  "description": "Real-browser end-to-end journeys (Playwright) against a running GuardHub stack.",
+  "scripts": {
+    "test": "playwright test",
+    "typecheck": "tsc -p .",
+    "format:check": "prettier --check .",
+    "install-browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "22.19.1",
+    "prettier": "3.10.1",
+    "typescript": "5.9.3"
+  }
+}

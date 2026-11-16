@@ -86,6 +86,11 @@ cd apps/scanner && go vet ./... && go test -race ./...
 
 # web
 cd apps/web && npm ci && npm run lint && npm test && npm run build
+
+# real-browser E2E (Playwright) against the running stack + demo target:
+# anonymous scan → save → register → 2FA → claim → history → rescan, second user, admin via CLI,
+# Turkish report, internal addresses refused. Needs: docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
+cd e2e && npm ci && npx playwright install chromium && npm test
 ```
 
 ## Security posture (summary)
