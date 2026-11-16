@@ -6,10 +6,10 @@
 #                                        gate -> switch nginx (graceful reload) -> stop the old colour.
 #                                        If the new colour is unhealthy, nothing is switched.
 #   guardhub-ctl.sh rollback             start the previous colour, health gate, switch back
-#   guardhub-ctl.sh backup               pg_dump (custom format) + manifest, 14-day retention
-#   guardhub-ctl.sh restore-drill [dump] restore into a throwaway, network-isolated Postgres and
-#                                        PROVE it: row counts, schema version, RLS, audit trigger,
-#                                        and that encrypted data decrypts with the production key
+#   guardhub-ctl.sh backup               pg_dump + manifest (14-day retention), then off-site copy
+#   guardhub-ctl.sh restore-drill [--offsite | dump]  restore newest local (or off-site) backup into
+#                                        a throwaway, network-isolated Postgres and PROVE it: counts,
+#                                        schema, RLS, audit trigger, decryption with the keyring
 #   guardhub-ctl.sh status
 #   guardhub-ctl.sh exec <service> <cmd...>   run a command in the ACTIVE colour's container
 #
@@ -32,7 +32,10 @@ ENV_FILE=$ROOT/shared/.env
 BACKUPS=$ROOT/backups
 RETENTION_DAYS=14
 HEALTH_TIMEOUT=240
-DRILL=guardhub-restore-drill # name of the throwaway container AND its internal network
+DRILL=${GUARDHUB_DRILL_NAME:-guardhub-restore-drill} # throwaway container AND its internal network
+DB_CONTAINER=${GUARDHUB_DB_CONTAINER:-guardhub-postgres-1}
+OFFSITE=$(dirname "$(readlink -f "$0")")/offsite.sh
+OFFSITE_TMP= # set while an off-site snapshot is unpacked for a drill; removed by drill_cleanup
 
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
@@ -120,7 +123,7 @@ check_images() {
   done
 }
 
-db_is_up() { docker ps --format '{{.Names}}' | grep -qx guardhub-postgres-1; }
+db_is_up() { docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; }
 
 cmd_backup() {
   db_is_up || { log "no database running yet, nothing to back up"; return 0; }
@@ -135,9 +138,9 @@ cmd_backup() {
       UNION ALL SELECT 'audit_logs', count(*) FROM audit_logs) c;"
   local before after attempt
   for attempt in 1 2 3; do
-    before=$(docker exec guardhub-postgres-1 psql -U "$user" -d "$db" -Atc "$counts_sql")
-    docker exec guardhub-postgres-1 pg_dump -U "$user" -d "$db" -Fc --no-owner >"$file.tmp"
-    after=$(docker exec guardhub-postgres-1 psql -U "$user" -d "$db" -Atc "$counts_sql")
+    before=$(docker exec "$DB_CONTAINER" psql -U "$user" -d "$db" -Atc "$counts_sql")
+    docker exec "$DB_CONTAINER" pg_dump -U "$user" -d "$db" -Fc --no-owner >"$file.tmp"
+    after=$(docker exec "$DB_CONTAINER" psql -U "$user" -d "$db" -Atc "$counts_sql")
     [[ $before == "$after" ]] && break
     log "writes during dump (attempt $attempt), retrying for an exact manifest"
   done
@@ -145,7 +148,7 @@ cmd_backup() {
   mv "$file.tmp" "$file"
   {
     echo "counts=$after"
-    echo "alembic=$(docker exec guardhub-postgres-1 psql -U "$user" -d "$db" -Atc 'SELECT version_num FROM alembic_version')"
+    echo "alembic=$(docker exec "$DB_CONTAINER" psql -U "$user" -d "$db" -Atc 'SELECT version_num FROM alembic_version')"
     echo "release=$(current_version)"
     echo "sha256=$(sha256sum "$file" | cut -d' ' -f1)"
   } >"$file.manifest"
@@ -154,13 +157,34 @@ cmd_backup() {
   echo "$file"
 }
 
+cmd_backup_with_offsite() { # the `backup` command: local dump first, then the encrypted off-site copy
+  local file; file=$(cmd_backup)
+  [[ -n $file ]] || return 0
+  if bash "$OFFSITE" configured; then
+    bash "$OFFSITE" push "$file" "$file.manifest" || die "offsite: push FAILED (local backup kept: $file)"
+  else
+    log "offsite: not configured (no RESTIC_REPOSITORY in $ENV_FILE): local backup only"
+  fi
+  echo "$file"
+}
+
 drill_cleanup() { # globals only: also runs from the EXIT trap, after locals are gone
   docker rm -f "$DRILL" >/dev/null 2>&1 || true
   docker network rm "$DRILL" >/dev/null 2>&1 || true
+  if [[ ${1:-} != --pre && -n $OFFSITE_TMP ]]; then rm -rf "$OFFSITE_TMP"; fi
 }
 
 cmd_restore_drill() {
-  local dump=${1:-$(ls -1t "$BACKUPS"/guardhub-*.dump 2>/dev/null | head -1)}
+  local dump
+  if [[ ${1:-} == --offsite ]]; then # e.g. the server was lost: prove the off-site copy alone
+    mkdir -p "$BACKUPS"; chmod 700 "$BACKUPS"
+    OFFSITE_TMP=$(mktemp -d "$BACKUPS/.offsite-drill.XXXXXX")
+    trap drill_cleanup EXIT
+    dump=$(bash "$OFFSITE" restore-latest "$OFFSITE_TMP") || die "could not fetch + verify the latest off-site backup"
+    log "offsite: fetched $(basename "$dump"), sha256 matches the manifest stored with it"
+  else
+    dump=${1:-$(ls -1t "$BACKUPS"/guardhub-*.dump 2>/dev/null | head -1)}
+  fi
   [[ -f $dump && -f $dump.manifest ]] || die "no backup (with manifest) to restore"
   local expected_counts expected_alembic expected_sha
   expected_counts=$(grep '^counts=' "$dump.manifest" | cut -d= -f2-)
@@ -170,7 +194,7 @@ cmd_restore_drill() {
 
   local name=$DRILL net=$DRILL pw
   pw=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')
-  drill_cleanup
+  drill_cleanup --pre # leftovers of an interrupted drill (keeps a just-fetched off-site dump)
   trap drill_cleanup EXIT
   # internal network: no internet, not reachable from the host, nothing published
   docker network create --internal "$net" >/dev/null
@@ -200,31 +224,41 @@ cmd_restore_drill() {
   ((rls >= 8)) || { log "row-level security missing on restored tables ($rls)"; ok=0; }
   ((trig >= 1)) || { log "append-only audit trigger missing"; ok=0; }
 
-  # The data must be USABLE, not just present: decrypt encrypted columns with the production key.
+  # The data must be USABLE, not just present: decrypt every encrypted column with the keyring
+  # (DATA_ENCRYPTION_KEY, then DATA_ENCRYPTION_KEYS_PREVIOUS), exactly like the app does.
+  # Secrets go in as `-e NAME` from this process's environment: never on a command line (ps).
   local v; v=$(current_version)
   local decrypted
-  decrypted=$(docker run --rm -i --network "$net" --read-only --cap-drop ALL --memory 256m \
-    -e DSN="postgresql://drill:$pw@$name:5432/restored" \
-    -e DATA_ENCRYPTION_KEY="$(envval DATA_ENCRYPTION_KEY)" \
+  decrypted=$(DSN="postgresql://drill:$pw@$name:5432/restored" \
+    DATA_ENCRYPTION_KEY="$(envval DATA_ENCRYPTION_KEY)" \
+    DATA_ENCRYPTION_KEYS_PREVIOUS="$(envval DATA_ENCRYPTION_KEYS_PREVIOUS)" \
+    docker run --rm -i --network "$net" --read-only --cap-drop ALL --memory 256m \
+    -e DSN -e DATA_ENCRYPTION_KEY -e DATA_ENCRYPTION_KEYS_PREVIOUS \
     "guardhub-api:$v" python - <<'PY'
-import asyncio, base64, os
+import asyncio, os
 import asyncpg
-from guardhub_api.common.crypto import Cipher
+from guardhub_api.common.crypto import Keyring
+
+# keep in sync with guardhub_api/ops/rotate_encryption_key.py ENCRYPTED_COLUMNS
+COLUMNS = [("totp", "users", "id", "totp_secret"), ("evidence", "evidence", "id", "redacted_payload"),
+           ("slack", "notification_settings", "user_id", "slack_webhook_enc")]
 
 async def main() -> None:
-    c = Cipher(base64.b64decode(os.environ["DATA_ENCRYPTION_KEY"]))
+    ring = Keyring.from_b64(os.environ["DATA_ENCRYPTION_KEY"], os.environ.get("DATA_ENCRYPTION_KEYS_PREVIOUS", ""))
     db = await asyncpg.connect(os.environ["DSN"])
-    users = await db.fetch("SELECT id, totp_secret FROM users WHERE totp_secret IS NOT NULL")
-    ev = await db.fetch("SELECT id, redacted_payload FROM evidence")
-    for r in users:
-        c.decrypt(r["totp_secret"], associated_data=str(r["id"]).encode())
-    for r in ev:
-        c.decrypt(r["redacted_payload"], associated_data=str(r["id"]).encode())
-    print(f"totp={len(users)} evidence={len(ev)}")
+    parts, under_previous = [], 0
+    for label, table, key, col in COLUMNS:
+        if not await db.fetchval("SELECT to_regclass($1) IS NOT NULL", f"public.{table}"):
+            continue
+        rows = await db.fetch(f"SELECT {key}::text AS k, {col} AS v FROM {table} WHERE {col} IS NOT NULL")
+        for r in rows:  # raises (non-zero exit) if ANY value can't be decrypted
+            under_previous += ring.decrypt_with_index(r["v"], r["k"].encode())[1] > 0
+        parts.append(f"{label}={len(rows)}")
+    print(" ".join(parts) + f" under_previous_key={under_previous}")
 
 asyncio.run(main())
 PY
-  ) || { log "encrypted data could NOT be decrypted with the production key"; ok=0; }
+  ) || { log "encrypted data could NOT be decrypted with the production keyring"; ok=0; }
 
   if ((ok)); then
     log "RESTORE DRILL PASSED: $counts | schema $alembic | RLS tables $rls | audit trigger ok | decrypted $decrypted"
@@ -306,6 +340,7 @@ cmd_status() {
   docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -E '^guardhub-' | sort
   if health_ok; then echo "active colour health: ok"; else echo "active colour health: NOT ok"; fi
   if public_health; then echo "public health: ok"; else echo "public health: NOT ok"; fi
+  bash "$OFFSITE" status || echo "offsite: status unavailable"
 }
 
 cmd_exec() { # exec <service> <cmd...> in the active colour
@@ -317,8 +352,8 @@ cmd_exec() { # exec <service> <cmd...> in the active colour
 case ${1:-} in
   activate) cmd_activate "${2:-}" ;;
   rollback) cmd_rollback ;;
-  backup) cmd_backup ;;
-  restore-drill) cmd_restore_drill "${2:-}" ;;
+  backup) cmd_backup_with_offsite ;;
+  restore-drill) cmd_restore_drill "${2:-}" ;; # "--offsite" or a dump path
   status) cmd_status ;;
   exec) shift; cmd_exec "$@" ;;
   *) sed -n '2,24p' "$0"; exit 2 ;;
