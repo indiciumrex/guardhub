@@ -1,12 +1,14 @@
-"""Error tracking (Sentry protocol) for api and api-worker; OFF unless SENTRY_DSN_API (or SENTRY_DSN) is set.
+"""Error tracking (Sentry protocol) for api, api-worker and api-jobs.
+
+OFF unless SENTRY_DSN_API (or SENTRY_DSN) is set.
 
 Errors only (traces/profiles sample rate 0) and no PII (§9): `scrub_event` drops request bodies,
 cookies, auth/scan-token/CSRF headers, query strings, client IPs, users and local variables. It
 does NOT trace requests or attach any request data beyond method + path. When SENTRY_RELAY_URL is
 set (production: the `sentry-relay` service), events go to that relay instead of the DSN host,
-because api and api-worker have no internet access.
+because api and api-worker have no internet access (api-jobs uses the relay too).
 
-CLI: `python -m guardhub_api.common.observability test-event [--service api|api-worker]`.
+CLI: `python -m guardhub_api.common.observability test-event [--service api|api-worker|api-jobs]`.
 """
 
 from __future__ import annotations
@@ -31,7 +33,7 @@ from sentry_sdk.transport import Transport
 if TYPE_CHECKING:
     from sentry_sdk.types import Breadcrumb, BreadcrumbHint, Event, Hint
 
-Service = Literal["api", "api-worker"]
+Service = Literal["api", "api-worker", "api-jobs"]
 
 FILTERED = "[Filtered]"
 
@@ -323,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m guardhub_api.common.observability")
     sub = parser.add_subparsers(dest="command", required=True)
     test = sub.add_parser("test-event", help="send one test event and wait for delivery")
-    test.add_argument("--service", choices=["api", "api-worker"], default="api")
+    test.add_argument("--service", choices=["api", "api-worker", "api-jobs"], default="api")
     args = parser.parse_args(argv)
     return send_test_event(cast(Service, args.service))
 

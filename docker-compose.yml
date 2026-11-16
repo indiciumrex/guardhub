@@ -8,6 +8,8 @@
 # SENTRY_DSN_API (api + api-worker), SENTRY_DSN_SCANNER, SENTRY_DSN_WEB; SENTRY_DSN is only a
 # fallback. api/api-worker have no internet, so they report through the `sentry-relay` service
 # (profile "sentry"); scanner and web report directly. See docs/architecture.md §7.
+# api-jobs (Arq: scheduled scans + alerts, docs/architecture.md §8.1) is the only Python service
+# with egress, and only to send alerts (SMTP host from .env, Slack webhooks).
 
 name: guardhub
 
@@ -31,6 +33,13 @@ x-api-env: &api-env
   SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
   SENTRY_RELAY_URL: ${SENTRY_RELAY_URL:-http://sentry-relay:3000}
   GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
+  # Alert e-mail (non-secret part; the API uses it to say whether e-mail alerts are set up).
+  # Empty SMTP_HOST = e-mail alerts are skipped. Credentials go to api-jobs only.
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_FROM: ${SMTP_FROM:-}
+  SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+  SMTP_INSECURE_HOSTS: ${SMTP_INSECURE_HOSTS:-}
 
 services:
   postgres:
@@ -110,6 +119,28 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
     networks: [backend]
+
+  # Python-only background jobs (Arq): the 5-minute scan scheduler and change alerts. Same image
+  # as api. On `egress` only to deliver alerts (SMTP, hooks.slack.com); everything else it talks
+  # to (postgres, redis, sentry-relay) is on the internal backend network.
+  api-jobs:
+    image: guardhub-api:${GUARDHUB_VERSION:-local}
+    restart: unless-stopped
+    command: ["python", "-m", "guardhub_api.jobs"]
+    environment:
+      <<: *api-env
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SCHEDULER_BATCH: ${SCHEDULER_BATCH:-10}
+      SCHEDULER_MAX_INFLIGHT: ${SCHEDULER_MAX_INFLIGHT:-2}
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    networks: [backend, egress]
 
   scanner:
     build: { context: ./apps/scanner }

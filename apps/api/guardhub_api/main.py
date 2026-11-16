@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 
 from guardhub_api.admin.router import router as admin_router
 from guardhub_api.admin.trusted_domains.router import router as trusted_domains_router
+from guardhub_api.alerts.router import router as alerts_router
 from guardhub_api.auth.router import router as auth_router
 from guardhub_api.common.errors import install_error_handlers
 from guardhub_api.common.logging import configure_logging
@@ -25,6 +26,7 @@ from guardhub_api.common.redis import close_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.health.router import router as health_router
+from guardhub_api.jobs.client import close_arq
 from guardhub_api.projects.router import router as projects_router
 from guardhub_api.scans.router import public_router
 from guardhub_api.scans.router import router as scans_router
@@ -47,6 +49,7 @@ SECURITY_HEADERS = {
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging(get_settings().log_level)
     yield
+    await close_arq()
     await close_redis()
     await dispose_engine()
 
@@ -100,6 +103,7 @@ def create_app() -> FastAPI:
         scans_router,
         admin_router,
         trusted_domains_router,
+        alerts_router,
     ):
         api.include_router(r)
     app.include_router(api)

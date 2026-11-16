@@ -33,6 +33,7 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.models import AdminTrustedDomain, Project
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.projects import repository as project_repo
+from guardhub_api.projects.scanning import start_project_scan
 from guardhub_api.projects.service import MAX_PROJECTS_PER_USER
 from guardhub_api.projects.verification import instructions, new_token, prove_ownership
 from guardhub_api.scans import repository as scan_repo
@@ -250,14 +251,9 @@ async def scan_domain(redis: Redis, claims: SessionClaims, domain_id: uuid.UUID)
             project.ownership_method = TRUSTED_DOMAIN_METHOD
         project_id = project.id
 
-    scan = await scan_service.create_and_enqueue(
-        redis,
-        target=origin,
-        project_id=project_id,
-        user_id=claims.user_id,
-        verification_id=None,
-        public_token_hash=None,
-        ctx=_ctx(claims),
+    # one scan path for every trigger (projects.scanning): re-checks the trusted domain itself
+    scan = await start_project_scan(
+        redis, project_id=project_id, ctx=_ctx(claims), actor=_actor(claims), trigger="manual"
     )
     async with db_session(_ctx(claims)) as session:
         await audit.record(

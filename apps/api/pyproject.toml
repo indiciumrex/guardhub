@@ -18,6 +18,9 @@ dependencies = [
   "pyotp>=2.9",
   "cryptography>=43",
   "sentry-sdk==2.73.0",
+  "arq==0.28.0",
+  "aiosmtplib==5.1.2",
+  "httpx==0.28.1",
 ]
 
 [dependency-groups]
@@ -28,7 +31,14 @@ dev = [
   "fakeredis>=2.26",
   "ruff>=0.8",
   "mypy>=1.13",
+  "aiosmtpd==1.4.6",
 ]
+
+[tool.uv]
+# arq 0.28.0 declares redis<6, but GuardHub runs redis-py 8 for everything else. arq only uses
+# basic commands (pipelines with WATCH, ZADD/PSETEX/scripts), and the Phase 1 integration tests run
+# a real arq worker against Redis 7 with this combination. Revisit when arq widens its range.
+override-dependencies = ["redis>=5.2"]
 
 [build-system]
 requires = ["hatchling"]
@@ -47,7 +57,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF", "N", "SIM", "PL"]
 ignore = ["PLR0913", "PLR2004", "PLR0911", "S101"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S", "PLR", "N", "PLC0415", "E501"]
+"tests/**" = ["S", "PLR", "N", "PLC0415", "E501", "RUF001"]  # RUF001: Turkish texts (ı) in assertions
 
 [tool.mypy]
 python_version = "3.12"

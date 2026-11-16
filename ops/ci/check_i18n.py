@@ -5,6 +5,9 @@
 - `tr` is complete for the MVP: any key missing vs. `en` (checks.json and ui.json) → FAIL.
 - The other locales fall back to `en`: missing keys → WARNING only (shown in the CI log).
 - Placeholders must match the params declared in check-ids.json in every locale → FAIL.
+- notifications.json (alert e-mail/Slack texts, docs/architecture.md §8.4): `en` must exist with no
+  empty text, `tr` must have every `en` key → FAIL; other locales fall back → WARNING. In every
+  locale, keys must exist in `en` and use exactly the same `{placeholders}` as `en` → FAIL.
 
 Usage: python ops/ci/check_i18n.py
 """
@@ -39,6 +42,33 @@ def _flatten(obj: object, prefix: str = "") -> dict[str, str]:
     elif isinstance(obj, str):
         out[prefix] = obj
     return out
+
+
+def check_notifications(errors: list[str], warnings: list[str]) -> None:
+    en = _flatten(_load(SHARED / "i18n" / "en" / "notifications.json"))
+    if not en:
+        errors.append("en/notifications.json is missing or empty")
+        return
+    errors.extend(f"[en] notifications.{k} is empty" for k, v in en.items() if not v.strip())
+    for locale in LOCALES:
+        if locale == "en":
+            continue
+        texts = _flatten(_load(SHARED / "i18n" / locale / "notifications.json"))
+        missing = sorted(k for k in en if not texts.get(k, "").strip())
+        if missing:
+            (errors if locale in COMPLETE else warnings).append(
+                f"[{locale}] notifications.json missing {len(missing)} keys (falls back to en)"
+                + (f": {missing[:10]}" if locale in COMPLETE else "")
+            )
+        extra = sorted(set(texts) - set(en))
+        if extra:
+            errors.append(f"[{locale}] notifications.json has keys not in en: {extra[:10]}")
+        for key in sorted(set(texts) & set(en)):
+            want, got = set(PLACEHOLDER.findall(en[key])), set(PLACEHOLDER.findall(texts[key]))
+            if want != got:
+                errors.append(
+                    f"[{locale}] notifications.{key} placeholders {sorted(got)} != en {sorted(want)}"
+                )
 
 
 def main() -> int:
@@ -90,6 +120,7 @@ def main() -> int:
 
     if not en_checks:
         errors.append("en/checks.json is missing")
+    check_notifications(errors, warnings)
     for w in warnings:
         print(f"::warning::i18n {w}")
     for e in errors:

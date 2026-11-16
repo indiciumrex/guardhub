@@ -16,6 +16,7 @@ class ChallengeRequest(BaseModel):
 
 
 ScanStatus = Literal["queued", "running", "done", "failed"]
+ScanTrigger = Literal["manual", "scheduled", "ci"]
 CheckStatus = Literal["queued", "running", "done", "failed"]
 
 
@@ -32,8 +33,10 @@ class ScanSummary(BaseModel):
     project_id: uuid.UUID | None
     target_url: str
     status: ScanStatus
+    trigger: ScanTrigger
     score: int | None
     finding_counts: SeverityCounts
+    failed_checks: list[str]
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
@@ -68,3 +71,36 @@ class FindingView(BaseModel):
 class ScanView(ScanSummary):
     progress: list[ProgressItem]
     findings: list[FindingView]
+
+
+class DiffItem(BaseModel):
+    fingerprint: str
+    check_id: str
+    finding_key: str
+    severity: Severity
+    title: str
+    summary: str
+
+
+class ScanDiffView(BaseModel):
+    """docs/architecture.md §8.3: derived, never stored. Never carries evidence."""
+
+    scan_id: uuid.UUID
+    base_scan_id: uuid.UUID | None
+    project_id: uuid.UUID
+    score: int | None
+    base_score: int | None
+    score_delta: int | None
+    compared_checks: list[str]
+    skipped_checks: list[str]
+    new: list[DiffItem]
+    regressed: list[DiffItem]
+    fixed: list[DiffItem]
+    unchanged_count: int
+
+
+class TrendPoint(BaseModel):
+    scan_id: uuid.UUID
+    finished_at: datetime | None
+    score: int | None
+    trigger: ScanTrigger

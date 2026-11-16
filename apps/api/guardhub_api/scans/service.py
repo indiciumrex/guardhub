@@ -29,6 +29,7 @@ from guardhub_api.scans.schemas import (
     FindingView,
     ProgressItem,
     ScanSummary,
+    ScanTrigger,
     ScanView,
     SeverityCounts,
 )
@@ -47,6 +48,7 @@ async def create_and_enqueue(
     verification_id: uuid.UUID | None,
     public_token_hash: str | None,
     ctx: DbContext,
+    trigger: ScanTrigger = "manual",
 ) -> Scan:
     settings = get_settings()
     async with db_session(ctx) as session:
@@ -61,7 +63,7 @@ async def create_and_enqueue(
                 verification_id=verification_id,
                 target_url=target,
                 status="queued",
-                trigger="manual",
+                trigger=trigger,
                 checks=checks,
                 public_token_hash=public_token_hash,
             ),
@@ -88,8 +90,10 @@ def _summary(scan: Scan, counts: SeverityCounts) -> ScanSummary:
         project_id=scan.project_id,
         target_url=scan.target_url,
         status=scan.status,
+        trigger=scan.trigger,
         score=scan.score,
         finding_counts=counts,
+        failed_checks=list(scan.failed_checks or []),
         created_at=scan.created_at,
         started_at=scan.started_at,
         finished_at=scan.finished_at,

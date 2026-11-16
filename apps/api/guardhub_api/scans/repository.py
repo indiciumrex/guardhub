@@ -110,3 +110,58 @@ async def add_finding_with_evidence(session: AsyncSession, finding: Finding, evi
     await session.flush()
     finding.evidence_ref = evidence.id
     await session.flush()
+
+
+# ---- history, diff and trend (docs/architecture.md §8.3) ----
+
+
+async def previous_done(session: AsyncSession, project_id: uuid.UUID, before: datetime) -> Scan | None:
+    """The latest done scan of the project created before `before`."""
+    stmt = (
+        select(Scan)
+        .where(Scan.project_id == project_id, Scan.status == "done", Scan.created_at < before)
+        .order_by(Scan.created_at.desc())
+        .limit(1)
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def findings_for_diff(session: AsyncSession, scan_id: uuid.UUID) -> list[Finding]:
+    """A scan's findings WITHOUT evidence (a diff and an alert never carry evidence)."""
+    return list((await session.execute(select(Finding).where(Finding.scan_id == scan_id))).scalars().all())
+
+
+async def fingerprints_seen_before(
+    session: AsyncSession, project_id: uuid.UUID, before: datetime, candidates: set[str]
+) -> set[str]:
+    """Which of `candidates` appear in any done scan of the project created before `before`."""
+    if not candidates:
+        return set()
+    stmt = (
+        select(Finding.fingerprint)
+        .join(Scan, Scan.id == Finding.scan_id)
+        .where(
+            Scan.project_id == project_id,
+            Scan.status == "done",
+            Scan.created_at < before,
+            Finding.fingerprint.in_(sorted(candidates)),
+        )
+        .distinct()
+    )
+    return set((await session.execute(stmt)).scalars().all())
+
+
+async def done_trend(session: AsyncSession, project_id: uuid.UUID, limit: int) -> list[Scan]:
+    """The latest `limit` done scans of the project, returned oldest first."""
+    stmt = (
+        select(Scan)
+        .where(Scan.project_id == project_id, Scan.status == "done")
+        .order_by(Scan.created_at.desc())
+        .limit(limit)
+    )
+    return list(reversed((await session.execute(stmt)).scalars().all()))
+
+
+async def count_inflight_scheduled(session: AsyncSession) -> int:
+    stmt = select(func.count()).where(Scan.trigger == "scheduled", Scan.status.in_(("queued", "running")))
+    return int((await session.execute(stmt)).scalar_one())

@@ -2,8 +2,11 @@
 
 The scanner returns raw technical findings. This layer validates each one against the shared
 contract (packages/shared), keeps only known check/finding keys, takes the severity from the
-catalog (deterministic, §2.6), encrypts evidence at rest, and computes the score.
-Delivery is at-least-once, so every handler is idempotent (a finished scan is never rewritten).
+catalog (deterministic, §2.6), encrypts evidence at rest, and computes the score. It also stores
+which checks failed (so a diff never calls them "fixed", §8.3) and, once a PROJECT scan is done,
+queues its change alert (`notify_scan`, §8.4) after the commit.
+Delivery is at-least-once, so every handler is idempotent (a finished scan is never rewritten, and
+the alert job has a per-scan id plus per-scan notification rows).
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from guardhub_api.findings.catalog import text_key
 from guardhub_api.findings.contract_gen import CHECK_FINDING_KEYS, RawFinding
 from guardhub_api.findings.scoring import compute_score
 from guardhub_api.health import counters
+from guardhub_api.jobs import client as jobs
 from guardhub_api.scans import repository
 
 log = logging.getLogger("guardhub.ingest")
@@ -78,14 +82,17 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         return
     kind = event.get("type")
     at = _parse_time(event.get("at"))
+    notify = False
     async with db_session(DbContext.system()) as session:
         scan = await repository.get(session, scan_id, for_update=True)
         if scan is None:
             log.warning("event_for_unknown_scan", extra={"scan_id": str(scan_id)})
             return
         if scan.status in ("done", "failed"):
-            return  # idempotent: already final
-        if kind == "scan.started":
+            # Idempotent: already final. A redelivered completion re-queues the alert job, in case
+            # the first delivery committed the scan but failed to queue it (the job is idempotent).
+            notify = kind == "scan.completed" and scan.status == "done" and scan.project_id is not None
+        elif kind == "scan.started":
             scan.status = "running"
             scan.started_at = scan.started_at or at
         elif kind == "scan.failed":
@@ -96,8 +103,13 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         elif kind == "scan.completed":
             await _apply_completed(session, scan, event, at)
             await _record_check_health(redis, event.get("check_results"))
+            notify = scan.project_id is not None
         else:
             log.warning("unknown_event_type", extra={"type": str(kind)})
+    if notify:
+        # After the commit, so the job always sees the finished scan. If this raises, the event
+        # stays pending and is retried (see above).
+        await jobs.enqueue_notify_scan(scan_id)
 
 
 async def _apply_completed(session: AsyncSession, scan: Scan, event: dict[str, Any], at: datetime) -> None:
@@ -126,10 +138,29 @@ async def _apply_completed(session: AsyncSession, scan: Scan, event: dict[str, A
             ),
         )
         await repository.add_finding_with_evidence(session, finding, evidence)
+    scan.failed_checks = failed_check_ids(event.get("check_results"), scan.checks)
     scan.score = compute_score(f.severity for f in findings)
     scan.status = "done"
     scan.started_at = scan.started_at or at
     scan.finished_at = at
+
+
+def failed_check_ids(check_results: object, requested: list[str]) -> list[str]:
+    """Requested checks that did not report `done`, in the scan's check order (§8.3).
+
+    `failed` results count, and so does a requested check with no result at all: a check we have
+    no successful result for must never make its old findings look "fixed".
+    """
+    done: set[str] = set()
+    if isinstance(check_results, list):
+        done = {
+            item["check_id"]
+            for item in check_results
+            if isinstance(item, dict)
+            and isinstance(item.get("check_id"), str)
+            and item.get("status") == "done"
+        }
+    return [c for c in requested if c not in done]
 
 
 async def _record_check_health(redis: Redis, check_results: object) -> None:

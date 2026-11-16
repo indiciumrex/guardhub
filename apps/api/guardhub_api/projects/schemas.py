@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from guardhub_api.projects.verification import VerificationInstructions
 from guardhub_api.scans.schemas import ScanSummary
@@ -17,7 +18,18 @@ class CreateProjectRequest(BaseModel):
 
 
 class UpdateProjectRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
+    """Rename and/or set the monitoring schedule (§4.4, §8.2). At least one field is required."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    scan_frequency: Literal["off", "daily", "weekly"] | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> UpdateProjectRequest:
+        if self.name is None and self.scan_frequency is None:
+            raise ValueError("send name and/or scan_frequency")
+        if self.name is not None and not self.name.strip():
+            raise ValueError("name must not be blank")
+        return self
 
 
 class ClaimScanRequest(BaseModel):
@@ -34,4 +46,7 @@ class ProjectView(BaseModel):
     ownership_verified_at: datetime | None
     verification: VerificationInstructions
     last_scan: ScanSummary | None
+    scan_frequency: Literal["off", "daily", "weekly"]
+    next_scan_at: datetime | None
+    schedule_paused_reason: Literal["ownership_lost"] | None
     created_at: datetime
