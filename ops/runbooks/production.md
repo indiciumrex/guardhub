@@ -1,38 +1,71 @@
 # Runbook — running GuardHub in production (guardhub.dev)
 
-## 1. TLS in front of `web` (required, §9.1: TLS 1.3 in transit)
+## 1. Where it runs (shared host)
 
-Compose publishes only `web:3000`. Put a TLS-terminating reverse proxy in front of it and expose
-**only** ports 80/443. Example with Caddy (automatic certificates, TLS 1.3, HTTP→HTTPS):
+guardhub.dev runs on a **shared** Ubuntu host next to other projects. Rules: touch nothing outside
+`/opt/guardhub`, the compose project `guardhub`, `/etc/nginx/sites-enabled/guardhub.dev.conf`,
+`/etc/cron.d/guardhub-backup` and the `guardhub.dev` certbot renewal file.
 
-```caddy
-guardhub.dev {
-  tls { protocols tls1.3 }
-  encode zstd gzip
-  reverse_proxy 127.0.0.1:3000
-}
-www.guardhub.dev { redir https://guardhub.dev{uri} permanent }
+| Path | What |
+|---|---|
+| `/opt/guardhub/releases/<sha>` | one directory per release (git archive of that commit) |
+| `/opt/guardhub/current`, `previous` | symlinks used by deploy/rollback |
+| `/opt/guardhub/shared/.env` | production secrets, `root:root 600`, generated on the server; **keep an offline copy of `DATA_ENCRYPTION_KEY`** (backups are useless without it) |
+| `/opt/guardhub/backups` | `pg_dump -Fc` + manifest, 14-day retention (`700`) |
+| `/opt/guardhub/acme`, `selfverify` | certbot webroot; our own ownership-proof file for the self-scan |
+
+- **Proxy:** the host's existing nginx owns 80/443. `ops/deploy/nginx/guardhub.dev.conf` is the
+  only GuardHub vhost: TLS 1.2/1.3, `server_tokens off`, `X-Forwarded-For` **overwritten** with
+  the peer address (so `TRUSTED_PROXY_HOPS=2`: nginx + the web `/api` rewrite). No `http2` on the
+  listen line: on nginx 1.24 that flips HTTP/2 for every site on :443. Always `nginx -t` before
+  `systemctl reload nginx`. The certificate renews via the host certbot timer; the `renew_hook`
+  in `/etc/letsencrypt/renewal/guardhub.dev.conf` reloads nginx.
+- **Network exposure:** only `web` is published, on `127.0.0.1:18700`. Postgres, Redis, the API
+  and the relay are never published (Docker-published ports bypass UFW, so never bind `0.0.0.0`).
+  `guardhub_backend` is `internal: true`. UFW allows 22/80/443 only.
+- **Neighbours:** `docker-compose.prod.yml` caps CPU/memory/pids per container and the scanner at
+  2 scans x 2 checks. Images are built off-host, so builds never compete for the host CPU.
+
+## 2. Deploy, rollback, status
+
+From a clean checkout on a workstation with Docker and SSH access:
+
+```bash
+ops/deploy/deploy.sh root@<host>     # build images here, ship release + images, activate
 ```
 
-Then set in `.env`: `PUBLIC_BASE_URL=https://guardhub.dev`, `COOKIE_SECURE=true`, and
-`TRUSTED_PROXY_HOPS=2` (Caddy + the web rewrite both append `X-Forwarded-For`). If this
-value is wrong, per-IP rate limits apply to the proxy instead of the client.
+`activate` takes a pre-deploy backup, starts the release with `--no-build`, and waits for
+`/api/v1/health` = ok. If the new release is not healthy it **rolls back automatically**.
 
-## 2. First deploy
+```bash
+ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh status
+ssh root@<host> /opt/guardhub/current/ops/deploy/guardhub-ctl.sh rollback   # to `previous`
+```
 
-1. `python ops/scripts/gen_secrets.py` on the server, then store `.env` in your secret manager
-   and keep the file `chmod 600`. Keep `SCANNER_ALLOW_PRIVATE_HOSTS` **empty**.
-2. `docker compose up -d --build`. `migrate` runs Alembic as the owner role, then exits.
-3. Register your account on the site and enable 2FA, then promote it:
-   `docker compose exec api python -m guardhub_api.admin.bootstrap promote you@hksolutions…`
-4. Check `/admin` → System health: database, redis and scanner should all be `ok`.
-5. **Dogfooding (§2.5, §9.1):** run `python ops/scripts/self_scan.py https://guardhub.dev`
-   before each release. Any critical/high finding blocks the release.
+Rollback takes a backup, downgrades the schema first if the newer release migrated it, then starts
+the previous images. Measured on 2026-11-16: about 30 s end to end, with a ~14 s window of 502/503
+while api/web restart. The database container is not restarted. Rolling forward again is
+`guardhub-ctl.sh activate <sha>`.
 
-## 3. Backups and data
+**After every deploy:**
+1. Self-scan (dogfooding, §2.5): publish a token in `/opt/guardhub/selfverify/guardhub-verify.txt`,
+   then `docker run --rm --read-only --cap-drop ALL guardhub-scanner:<sha> selfscan https://guardhub.dev <token>`.
+   Exit 0 = no critical/high; 3 = release blocked; 4 = ownership not proven.
+2. Live smoke test: `cd e2e && npx playwright test -c playwright.smoke.config.ts` with
+   `SMOKE_SSH`, `SMOKE_TOKEN_PATH`, `SMOKE_RAW_SECRET` set (see the spec header). Use an owned
+   target only; remove any temporary test site afterwards.
 
-- PostgreSQL volume `pgdata`: take a nightly `pg_dump -Fc` as the owner role and store it
-  encrypted off-host. Test a restore monthly.
+**First admin:** the person registers on the site and enables 2FA, then
+`docker exec guardhub-api-1 python -m guardhub_api.admin.bootstrap promote <email>`.
+
+## 3. Backups and restore drills
+
+- Nightly 03:17 UTC `guardhub-ctl.sh backup`: `pg_dump -Fc` plus a manifest with row counts
+  taken in a quiet window, schema version and sha256. Weekly (Sunday 03:47 UTC)
+  `guardhub-ctl.sh restore-drill`: restores the newest dump into a throwaway Postgres on an
+  internal-only network and **proves** row counts, schema version, RLS, the audit trigger, and that
+  encrypted TOTP secrets/evidence decrypt with the production key. Log: `/var/log/guardhub-backup.log`.
+- Backups currently live on the same disk. Off-host, encrypted copies are a fast-follow item.
 - Redis holds only queues, rate limits, progress and session revocations. Losing it is safe:
   in-flight scans are reaped as `timeout` and users simply rescan.
 - Evidence is masked by the scanner and encrypted with `DATA_ENCRYPTION_KEY`.
@@ -99,3 +132,11 @@ docker exec guardhub-web-1        node apps/web/scripts/sentry-test.mjs
 - Browser reporting has no CLI (no extra public surface): open the site, and in the DevTools
   console run `setTimeout(() => { throw new Error("guardhub browser test") })`. The request to
   `/monitoring` must answer 200 and the event shows up with `runtime=browser`.
+
+**Production setting (2026-11-16): `SENTRY_BROWSER=off`.** `/monitoring` is public: anyone can post
+up to the tunnel's rate limit and burn the web project's monthly quota, which would also hide real
+web server errors. Before turning browser reporting on, give it its own Sentry project and set a
+per-project rate limit (and spike protection) in Sentry. Also enable "Prevent Storing of IP
+Addresses" in each project: the relay adds its own internal address as `X-Forwarded-For`.
+Delivery was proven on 2026-11-16 from api, api-worker, scanner and web (`test-event` /
+`sentry-test` all accepted).
