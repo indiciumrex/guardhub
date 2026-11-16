@@ -14,6 +14,11 @@ from datetime import UTC, datetime, timedelta
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from guardhub_api.admin.trusted_domains.ownership import (
+    TRUSTED_DOMAIN_METHOD,
+    require_trusted_domain,
+    trusted_domain_covers,
+)
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit, ratelimit
 from guardhub_api.common.crypto import keyed_hash
@@ -81,6 +86,8 @@ async def get_project(claims: SessionClaims, project_id: uuid.UUID) -> ProjectVi
 
 async def create_project(claims: SessionClaims, *, name: str, target_url: str) -> ProjectView:
     origin = normalize_origin(target_url, allow_private_hosts=get_settings().private_host_allowlist)
+    # ADR-0003: an admin's ACTIVE trusted domain for exactly this origin counts as the proof.
+    trusted = await trusted_domain_covers(claims.user_id, origin)
     async with db_session(_ctx(claims)) as session:
         if await repository.count_for_user(session, claims.user_id) >= MAX_PROJECTS_PER_USER:
             raise UnprocessableError("project_limit_reached", "Project limit reached.")
@@ -89,10 +96,21 @@ async def create_project(claims: SessionClaims, *, name: str, target_url: str) -
         project = await repository.add(
             session,
             Project(
-                user_id=claims.user_id, name=name.strip(), target_url=origin, verification_token=new_token()
+                user_id=claims.user_id,
+                name=name.strip(),
+                target_url=origin,
+                verification_token=new_token(),
+                ownership_verified_at=datetime.now(UTC) if trusted else None,
+                ownership_method=TRUSTED_DOMAIN_METHOD if trusted else None,
             ),
         )
-        await audit.record(session, actor=_actor(claims), action="project.create", target=str(project.id))
+        await audit.record(
+            session,
+            actor=_actor(claims),
+            action="project.create",
+            target=str(project.id),
+            metadata={"ownership_method": TRUSTED_DOMAIN_METHOD} if trusted else None,
+        )
         return _view(project, None)
 
 
@@ -138,9 +156,12 @@ async def rescan(redis: Redis, claims: SessionClaims, project_id: uuid.UUID) -> 
             raise UnprocessableError("ownership_not_verified", "Verify that you own this site first.")
         if await scan_repo.has_active(session, project.id):
             raise ConflictError("scan_in_progress", "A scan is already running for this project.")
+        via_trusted_domain = project.ownership_method == TRUSTED_DOMAIN_METHOD
         stale = datetime.now(UTC) - project.ownership_verified_at > REVERIFY_AFTER
         origin = project.target_url
-    if stale:
+    if via_trusted_domain:  # ADR-0003: the domain must be active now (422, never a silent scan)
+        await require_trusted_domain(claims.user_id, origin)
+    elif stale:
         await verify_project(redis, claims, project_id)
     scan = await scan_service.create_and_enqueue(
         redis,
