@@ -265,3 +265,15 @@ def test_smtp_settings_validation() -> None:
         _settings(smtp_host="smtp.example.com")  # no From
     with pytest.raises(ValidationError):
         _settings(smtp_security="ssl")
+
+
+def test_http_client_request_urls_are_not_logged() -> None:
+    import logging
+
+    from guardhub_api.common.logging import configure_logging
+
+    configure_logging("info")
+    try:
+        assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)  # would print the webhook URL
+    finally:
+        configure_logging("warning")

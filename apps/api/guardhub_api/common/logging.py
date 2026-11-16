@@ -38,5 +38,6 @@ def configure_logging(level: str = "info") -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
-    for noisy in ("uvicorn.access",):
+    # httpx/httpcore log every request URL at INFO: a Slack webhook URL is a secret (§8.4).
+    for noisy in ("uvicorn.access", "httpx", "httpcore"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
