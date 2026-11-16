@@ -140,3 +140,25 @@ per-project rate limit (and spike protection) in Sentry. Also enable "Prevent St
 Addresses" in each project: the relay adds its own internal address as `X-Forwarded-For`.
 Delivery was proven on 2026-11-16 from api, api-worker, scanner and web (`test-event` /
 `sentry-test` all accepted).
+
+## 7. Trusted domains (ADR-0003)
+
+Admins can prove a host once at `/admin/trusted-domains` and then scan exactly that origin
+(same scheme, host and port; never subdomains) without the proof prompt. Operator notes:
+
+- **Re-check job:** `recheck_trusted_domains` (api-jobs, daily 04:10 UTC) re-runs the verify job
+  for every `active` and `suspended` domain, at most 2 at a time. Proof gone → `suspended`, back →
+  `active`; both are audited as `admin.trusted_domain.{suspended,reactivated}` with actor
+  `system:trusted-domain-recheck`. A queue outage leaves domains untouched (counted as `errors`).
+- **If the job stops running,** trust lapses on its own: a domain only counts while its last
+  successful proof is under 30 days old. Admins then see `trusted_domain_inactive`, or "Scan now"
+  re-proves inline. Nothing is ever scanned on an old proof.
+- **Who has what:** `SELECT a.email, d.host, d.status, d.verified_at, d.last_checked_at,
+  d.last_check_error FROM admin_trusted_domains d JOIN users a ON a.id = d.admin_user_id
+  WHERE d.status <> 'revoked';` (owner role; the app role only sees its own rows via RLS).
+- **Emergency stop for one domain:** have the admin remove it in the UI. If that's not possible,
+  `UPDATE admin_trusted_domains SET status = 'revoked', revoked_at = now() WHERE id = '<id>';`
+  as the owner role, and note why in the incident log (the audit log is append-only and is
+  written by the app, not by manual SQL).
+- **Demoting an admin** (`python -m guardhub_api.admin.bootstrap demote <email>`) disables their
+  trusted domains at once: the role is re-read from the database on every request.
