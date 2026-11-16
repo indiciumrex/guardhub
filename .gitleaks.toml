@@ -11,6 +11,7 @@ description = "Deliberately fake secrets in scanner test fixtures and the local 
 paths = [
   '''apps/scanner/.*_test\.go''',
   '''apps/scanner/.*/testdata/.*''',
+  '''apps/api/tests/.*''',
   '''ops/demo-target/site/.*''',
   '''\.env\.example''',
 ]
