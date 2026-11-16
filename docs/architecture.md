@@ -77,6 +77,11 @@ hash for the visible-scan UI (§8.2).
  "error":"target_unreachable|target_blocked|timeout|internal"}
 ```
 A scan with some failed checks still `completed`; the failure shows in `check_results`.
+`check_results[].error` is one of `target_unreachable | target_blocked | timeout | internal |
+unknown_check | budget_exceeded`. A malformed job that still carries a usable `scan_id` gets
+`scan.failed`/`internal`, and one with a usable `reply_key` gets `verified:false`/`target_unreachable`.
+A message reclaimed more than 3 times is acked and dropped, so it can't loop forever. The scanner
+never creates the `gh-api` group; the API owns it.
 `scan.failed` is only for when the scan can't run at all (e.g. target resolves to a private IP).
 
 ## 3. Scanner safety envelope (§9.2 do-no-harm) — enforced in `scanner/internal/probe`
@@ -94,6 +99,16 @@ A scan with some failed checks still `completed`; the failure shows in `check_re
 | Address guard | dial-time check; loopback/private/link-local/CGNAT/multicast/unspecified/metadata IPs are refused (anti-SSRF, anti-DNS-rebinding). `SCANNER_ALLOW_PRIVATE_HOSTS` (comma list of hostnames) exists **only** for the local e2e demo target |
 | Workers | pool of `SCANNER_WORKERS` (default 4) jobs; per scan `SCANNER_CHECK_CONCURRENCY` (default 3) checks |
 | Scan deadline | `deadline_seconds` from the job (max 300) |
+| Certificates | scan probes skip certificate validation (so a broken cert is *reported* by `tls_cert`, not fatal); ownership-verify probes always validate |
+| Per-scan GET cache | identical GETs within one scan are served once (fewer requests to the target); checks still share no state |
+| Optional tuning | `SCANNER_HOST_BURST`, `SCANNER_VERIFY_DEADLINE` (30s), `SCANNER_SHUTDOWN_TIMEOUT` (25s), `SCANNER_CONSUMER_NAME` |
+| Secret masking | values ≥ 9 chars → `****` + last 4; shorter values → `****` (the last 4 would reveal most of it) |
+
+**One-shot self-scan (dogfooding):** `scanner selfscan <origin> <token>` verifies ownership
+with the same verifier, runs every check through the same probe envelope without Redis, and
+prints the raw JSON report. Exit codes: 0 means no critical/high findings, 3 means
+critical/high findings, and 4 means not verified (nothing scanned). Wrapped by
+`ops/scripts/self_scan.py`.
 
 ## 4. Public HTTP API (`/api/v1`, JSON)
 

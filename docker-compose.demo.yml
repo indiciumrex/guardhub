@@ -1,0 +1,21 @@
+# Local end-to-end demo: adds a DELIBERATELY VULNERABLE target on the private network and allows
+# ONLY that hostname past the scanner's private-IP guard. Never use this override in production.
+#   python ops/scripts/gen_secrets.py --force --demo
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
+services:
+  demo-target:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./ops/demo-target/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/demo-target/site:/usr/share/nginx/html:ro
+    networks: [egress]
+
+  api:
+    environment:
+      SCANNER_ALLOW_PRIVATE_HOSTS: demo-target
+  api-worker:
+    environment:
+      SCANNER_ALLOW_PRIVATE_HOSTS: demo-target
+  scanner:
+    environment:
+      SCANNER_ALLOW_PRIVATE_HOSTS: demo-target

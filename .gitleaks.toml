@@ -1,0 +1,16 @@
+# Secret scanning (GUARDHUB_STANDARDS §7.1, §9.1). CI fails on any finding.
+# Only test fixtures that deliberately contain FAKE secrets (to test the scanner's own
+# detection and masking) are allowlisted, by path, never by value.
+title = "GuardHub gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Deliberately fake secrets in scanner test fixtures and the local demo target"
+paths = [
+  '''apps/scanner/.*_test\.go''',
+  '''apps/scanner/.*/testdata/.*''',
+  '''ops/demo-target/site/.*''',
+  '''\.env\.example''',
+]

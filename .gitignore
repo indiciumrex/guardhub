@@ -28,3 +28,8 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 *.log
+
+# demo target: the fake .env is intentional; the verification token is written at runtime
+!ops/demo-target/site/.env
+ops/demo-target/site/.well-known/
+
