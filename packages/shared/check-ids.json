@@ -1,0 +1,71 @@
+{
+  "$comment": "Single catalog of check ids (GUARDHUB_STANDARDS §7.4). ids and finding_keys are permanent: never rename or reuse one. i18n keys: checks.<id>.<finding_key>.{title,summary,why,fix}.",
+  "version": 1,
+  "checks": [
+    {
+      "id": "exposed_env",
+      "category": "exposure",
+      "finding_keys": [
+        { "key": "env_file_exposed", "severity": "critical", "params": ["path", "secret_count"] },
+        { "key": "git_repository_exposed", "severity": "high", "params": ["path"] },
+        { "key": "cloud_credentials_exposed", "severity": "critical", "params": ["path"] }
+      ]
+    },
+    {
+      "id": "security_headers",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "csp_missing", "severity": "medium", "params": [] },
+        { "key": "hsts_missing", "severity": "medium", "params": [] },
+        { "key": "hsts_weak", "severity": "low", "params": ["max_age"] },
+        { "key": "nosniff_missing", "severity": "low", "params": [] },
+        { "key": "clickjacking_unprotected", "severity": "low", "params": [] },
+        { "key": "cookie_flags_missing", "severity": "medium", "params": ["cookie_name", "missing_flags"] }
+      ]
+    },
+    {
+      "id": "tls_cert",
+      "category": "transport",
+      "finding_keys": [
+        { "key": "https_unavailable", "severity": "high", "params": [] },
+        { "key": "http_not_redirected", "severity": "medium", "params": [] },
+        { "key": "cert_expired", "severity": "critical", "params": ["expired_on"] },
+        { "key": "cert_expiring_soon", "severity": "medium", "params": ["days_left", "expires_on"] },
+        { "key": "cert_hostname_mismatch", "severity": "high", "params": ["host"] },
+        { "key": "cert_untrusted", "severity": "high", "params": [] },
+        { "key": "legacy_tls_supported", "severity": "medium", "params": ["version"] }
+      ]
+    },
+    {
+      "id": "open_admin",
+      "category": "exposure",
+      "finding_keys": [
+        { "key": "debug_console_exposed", "severity": "critical", "params": ["product", "path"] },
+        { "key": "debug_endpoint_exposed", "severity": "high", "params": ["product", "path"] },
+        { "key": "db_admin_exposed", "severity": "high", "params": ["product", "path"] },
+        { "key": "server_status_exposed", "severity": "medium", "params": ["path"] },
+        { "key": "admin_login_exposed", "severity": "low", "params": ["path"] }
+      ]
+    },
+    {
+      "id": "default_creds",
+      "category": "access",
+      "finding_keys": [
+        { "key": "installer_exposed", "severity": "critical", "params": ["product", "path"] },
+        { "key": "setup_wizard_exposed", "severity": "critical", "params": ["product", "path"] },
+        { "key": "default_login_product", "severity": "medium", "params": ["product", "path"] }
+      ]
+    },
+    {
+      "id": "info_leak",
+      "category": "disclosure",
+      "finding_keys": [
+        { "key": "server_version_disclosed", "severity": "low", "params": ["header", "value"] },
+        { "key": "framework_version_disclosed", "severity": "low", "params": ["header", "value"] },
+        { "key": "stack_trace_exposed", "severity": "medium", "params": ["path"] },
+        { "key": "debug_mode_enabled", "severity": "high", "params": ["framework"] },
+        { "key": "directory_listing_enabled", "severity": "medium", "params": ["path"] }
+      ]
+    }
+  ]
+}

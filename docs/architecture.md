@@ -1,0 +1,174 @@
+# GuardHub — Architecture & Inter-service Contracts
+
+> Companion to `GUARDHUB_STANDARDS.md` (which wins on any conflict). This file pins the exact
+> wire contracts between web ↔ API ↔ Redis ↔ scanner so each service can be built and tested
+> on its own.
+
+## 1. Request flow
+
+```
+browser ──HTTPS──▶ web (Next.js :3000) ──/api/* rewrite──▶ api (FastAPI :8000)
+                                                         │        │
+                                              XADD gh:jobs│        │ SQL (RLS)
+                                                         ▼        ▼
+                                  scanner (Go) ◀── Redis 7    PostgreSQL 16
+                                      │  XADD gh:events / HSET progress / LPUSH verify reply
+                                      ▼
+                         api-worker (python -m guardhub_api.worker) ──▶ PostgreSQL
+```
+
+- The browser only talks to **web**. Web rewrites `/api/:path*` to `API_INTERNAL_URL` so the
+  session cookie is first-party (`SameSite=Strict`, `HttpOnly`, `Secure`).
+- **Python decides what to scan** (target, enabled checks from the module registry). **Go
+  scans.** The scanner never touches PostgreSQL.
+
+## 2. Queue protocol (Redis) — see ADR-0002
+
+All payloads are UTF-8 JSON in a single stream field named `payload`, with `"v": 1`.
+
+### 2.1 Jobs — stream `gh:jobs`, consumer group `gh-scanners`
+
+The API does `XADD gh:jobs MAXLEN ~ 10000 * payload <json>`. The scanner uses
+`XREADGROUP GROUP gh-scanners <consumer> BLOCK 5000 COUNT 1 STREAMS gh:jobs >`, then
+`XACK` after it has published the result. Messages pending for more than 10 minutes are
+reclaimed with `XAUTOCLAIM`. Whoever starts first creates the group (`XGROUP CREATE … $ MKSTREAM`,
+ignoring `BUSYGROUP`).
+
+**Scan job**
+```json
+{"v":1,"kind":"scan","job_id":"<uuid>","scan_id":"<uuid>",
+ "target":"https://example.com","checks":["exposed_env","security_headers"],
+ "deadline_seconds":180}
+```
+- `target` is always an origin: `scheme://host[:port]` with no path. The API normalises it.
+- `checks` lists only globally-enabled modules, in catalog order. Unknown ids → skipped and
+  reported `failed` with error `unknown_check`.
+
+**Verify job** (ownership proof, ADR-0001)
+```json
+{"v":1,"kind":"verify","job_id":"<uuid>","target":"https://example.com",
+ "token":"ghv_…","reply_key":"gh:verify-reply:<job_id>"}
+```
+The scanner tries, in order: `GET <target>/.well-known/guardhub-verify.txt` (body trimmed equals
+the token, or a line equals it); `GET <target>/` and looks for
+`<meta name="guardhub-verification" content="<token>">`; DNS TXT `guardhub-verify=<token>` on
+`_guardhub.<host>` then `<host>`. It replies with
+`LPUSH <reply_key> <json>` + `EXPIRE <reply_key> 120`:
+```json
+{"v":1,"job_id":"<uuid>","verified":true,"method":"well_known|meta_tag|dns_txt|null",
+ "error":null}
+```
+`error` is one of `null | "not_found" | "target_unreachable" | "target_blocked" | "timeout"`.
+
+### 2.2 Live progress — hash `gh:scan:{scan_id}:progress`
+
+When a scan starts, the scanner does `HSET` with every requested check set to `queued` and
+`EXPIRE 86400`. Each check then moves `queued → running → done | failed`. The API reads this
+hash for the visible-scan UI (§8.2).
+
+### 2.3 Events — stream `gh:events`, consumer group `gh-api`
+
+```json
+{"v":1,"type":"scan.started","scan_id":"<uuid>","at":"<RFC3339>"}
+{"v":1,"type":"scan.completed","scan_id":"<uuid>","at":"<RFC3339>",
+ "findings":[<RawFinding per packages/shared/finding.schema.json>],
+ "check_results":[{"check_id":"tls_cert","status":"done","error":null}]}
+{"v":1,"type":"scan.failed","scan_id":"<uuid>","at":"<RFC3339>",
+ "error":"target_unreachable|target_blocked|timeout|internal"}
+```
+A scan with some failed checks still `completed`; the failure shows in `check_results`.
+`scan.failed` is only for when the scan can't run at all (e.g. target resolves to a private IP).
+
+## 3. Scanner safety envelope (§9.2 do-no-harm) — enforced in `scanner/internal/probe`
+
+| Rule | Value (env override) |
+|---|---|
+| Methods | **GET and HEAD only**; anything else is refused by the client |
+| User-Agent | `GuardHub-Scanner/1.0 (+https://guardhub.dev/scanner)` |
+| Per-request timeout | 10s (`SCANNER_REQUEST_TIMEOUT`) |
+| Per-host rate | 4 req/s, burst 2 (`SCANNER_HOST_RPS`) |
+| Max requests per scan | 80 (`SCANNER_MAX_REQUESTS_PER_SCAN`) |
+| Retries | max 2, exponential backoff 500ms·2ⁿ, only on network error / 429 / 503 |
+| Redirects | max 3; each hop must stay on the same host (http→https allowed) |
+| Body read cap | 256 KiB |
+| Address guard | dial-time check; loopback/private/link-local/CGNAT/multicast/unspecified/metadata IPs are refused (anti-SSRF, anti-DNS-rebinding). `SCANNER_ALLOW_PRIVATE_HOSTS` (comma list of hostnames) exists **only** for the local e2e demo target |
+| Workers | pool of `SCANNER_WORKERS` (default 4) jobs; per scan `SCANNER_CHECK_CONCURRENCY` (default 3) checks |
+| Scan deadline | `deadline_seconds` from the job (max 300) |
+
+## 4. Public HTTP API (`/api/v1`, JSON)
+
+Errors are always `{"error":{"code":"<snake_code>","message":"<english dev message>"}}`. The web
+maps `code` to localised text. A session is a JWT in cookie `gh_session`. Every non-GET request
+that carries the cookie must also send header `X-GuardHub-CSRF: 1` (CSRF defence); otherwise
+the API returns 403 `csrf_header_missing`.
+
+Locale for localised payloads: `?locale=` → user profile locale → `Accept-Language` → `en`.
+
+### 4.1 Health and catalog
+- `GET /health` → `{"status":"ok|degraded|down","components":{"database":"ok","redis":"ok","scanner":"ok|unknown"}}`
+- `GET /checks?locale=` → `[{"id":"exposed_env","name":"…","description":"…","enabled":true}]`
+
+### 4.2 Anonymous free scan (ADR-0001)
+- `POST /public/challenges` `{"target_url":"example.com"}` → 201
+  `{"challenge_id","target_origin","token","expires_at","instructions":{"well_known_url","meta_tag","dns_name","dns_value"}}`
+- `POST /public/challenges/{id}/scan` → verifies, then queues → 202
+  `{"scan_id","access_token"}`. Errors: 422 `ownership_not_verified` (+ `details.reason`),
+  429 `rate_limited`.
+- `GET /public/scans/{scan_id}?locale=` with header `X-Scan-Token: <access_token>` → `ScanView`.
+
+### 4.3 Auth
+- `POST /auth/register` `{"email","password","locale"}` → 201 `{"user":User,"mfa":"setup_required"}`, sets a pre-MFA cookie
+- `POST /auth/login` `{"email","password"}` → 200 `{"mfa":"setup_required"|"required"}`, sets a pre-MFA cookie
+- `POST /auth/2fa/setup` (pre-MFA) → `{"secret","otpauth_uri"}`
+- `POST /auth/2fa/verify` `{"code"}` → 200 `{"user":User}`, sets a full cookie
+- `POST /auth/logout` → 204
+- `GET /auth/me` → `User` (any session; `"mfa_complete": bool`)
+- `PATCH /auth/me` `{"locale"}` → `User`
+
+`User = {"id","email","role":"user|admin","locale","totp_enabled","mfa_complete","created_at"}`
+
+All routes below need a **full (MFA-complete) session**, because §9.1 makes 2FA mandatory for the dashboard.
+
+### 4.4 Projects and scans
+- `GET /projects` → `[Project]`
+- `POST /projects` `{"name","target_url"}` → 201 `Project`
+- `GET /projects/{id}` · `PATCH /projects/{id}` `{"name"}` · `DELETE /projects/{id}` → 204
+- `POST /projects/{id}/verify` → `Project` (or 422 `ownership_not_verified`)
+- `POST /projects/claim` `{"scan_id","access_token","name"}` → 201 `Project` (anonymous scan → saved project)
+- `GET /projects/{id}/scans` → `[ScanSummary]` (newest first)
+- `POST /projects/{id}/scans` → 202 `ScanSummary` (re-scan; needs a verified project; 409 `scan_in_progress`)
+- `GET /scans/{scan_id}?locale=` → `ScanView`
+
+```
+Project      = {"id","name","target_url","verified":bool,"ownership_verified_at"|null,
+                "verification":{"token","well_known_url","meta_tag","dns_name","dns_value"},
+                "last_scan": ScanSummary|null,"created_at"}
+ScanSummary  = {"id","project_id"|null,"target_url","status":"queued|running|done|failed",
+                "score":int|null,"finding_counts":{"critical":0,"high":0,"medium":0,"low":0,"info":0},
+                "created_at","started_at"|null,"finished_at"|null,"error"|null}
+ScanView     = ScanSummary + {"progress":[{"check_id","name","status":"queued|running|done|failed"}],
+                "findings":[FindingView]}
+FindingView  = {"id","check_id","finding_key","severity","title","summary","why","fix",
+                "evidence":{"kind","location","redacted_payload"},"status":"open|fixed|ignored"}
+```
+
+### 4.5 Admin (role `admin` + full MFA session)
+- `GET /admin/users?limit&offset` · `GET /admin/scans?limit&offset`
+- `GET /admin/modules` → `[{"key","name","category","enabled_global","min_plan"}]`
+- `PATCH /admin/modules/{key}` `{"enabled_global":bool}` → module (audited)
+- `GET /admin/health` → latest `HealthCheck` per module · `GET /admin/audit?limit`
+- `GET /admin/ai` → `{"provider":null,"enabled":false,"active":false}` (no-op seam)
+
+## 5. Score
+
+`score = max(0, 100 − Σ weight(severity))` with weights critical 30, high 15, medium 7, low 2,
+info 0. It's deterministic: the same findings always give the same score.
+
+## 6. i18n catalog layout — `packages/shared/i18n/<locale>/`
+
+- `ui.json` — web UI strings (namespaced objects, e.g. `nav.scan`).
+- `checks.json` — `{"<check_id>": {"name","description","findings":{"<finding_key>":{"title","summary","why","fix"}}}}`.
+  Texts use `{param}` placeholders from `check-ids.json`. Terms in `glossary.json` (CSP, HSTS,
+  TLS, CVE…) are never translated.
+- Locales: `en` (source, must be complete), `tr` (complete for MVP), and `de fr it es zh-CN hi ru`
+  (fallback to `en`; `ops/ci/check_i18n.py` warns about missing keys).
