@@ -228,3 +228,123 @@ DSN is empty. With no DSN no SDK is initialised and nothing changes.
   server-side, rate-limits (30 burst, 30/min per process) and forwards no client headers or IPs.
 - **Proving delivery:** see `ops/runbooks/production.md` §6 (one command per service; each exits
   non-zero if the DSN is missing or the server rejects the event).
+
+## 8. Phase 1 contracts — monitoring, diff, alerts, trusted domains
+
+Schema: `ops/migrations/versions/0003_phase1_monitoring.py`. Trusted domains: ADR-0003.
+
+### 8.1 Background jobs (Arq, ADR-0002)
+
+A new service **`api-jobs`** (`python -m guardhub_api.jobs`, an Arq worker, same image as api) runs
+Python-only background work. API ↔ scanner stays on Redis Streams. Arq uses its own key prefix
+(`arq:`) in the same Redis. `api-jobs` sits on `backend` **and** `egress`: it is the only Python
+process with internet, and only to send alerts (operator-configured SMTP host; Slack webhooks
+that pass the strict URL check in §8.4). Registered functions (`guardhub_api/jobs/worker.py`):
+
+| Function | Trigger | What |
+|---|---|---|
+| `enqueue_due_scans` | cron, every 5 min | §8.2 scheduler |
+| `notify_scan(scan_id)` | enqueued by `api-worker` after a project scan completes | §8.4 alerts |
+| `recheck_trusted_domains` | cron, daily 04:10 UTC | ADR-0003 background re-proof |
+
+Arq cron jobs are `unique` (one run per tick across workers), so two colours running briefly
+during a blue/green switch never double-schedule.
+
+### 8.2 Scheduled monitoring
+
+`Project` gains `"scan_frequency": "off|daily|weekly"`, `"next_scan_at": ISO|null`,
+`"schedule_paused_reason": null|"ownership_lost"`.
+
+- `PATCH /projects/{id}` accepts `{"scan_frequency": "off|daily|weekly"}` (alongside `name`).
+  `daily`/`weekly` need a verified project (422 `ownership_not_verified`). Setting it computes
+  `next_scan_at = now + interval + jitter`, jitter = stable per project in [0, 3600) s (spreads
+  load). Setting it again clears `schedule_paused_reason`. Audited (`project.schedule_set`).
+- `enqueue_due_scans`: picks due projects (`next_scan_at <= now`, not off, not paused) with
+  `FOR UPDATE SKIP LOCKED`, at most `SCHEDULER_BATCH` (default 10) per tick, and never more than
+  `SCHEDULER_MAX_INFLIGHT` (default 2) scheduled scans queued/running at once (shared host,
+  §7.2). For each: if a scan of the project is already in progress, move `next_scan_at` on.
+  Ownership is checked exactly like a manual rescan (re-verify when the proof is older than 30
+  days; `trusted_domain` projects need their domain `active`). If the proof is gone: set
+  `schedule_paused_reason = 'ownership_lost'`, audit `project.schedule_paused`, and send an
+  alert (§8.4, kind `paused`). Otherwise create a scan with `trigger = 'scheduled'`, enqueue it
+  through the existing `scans.queue.enqueue_scan`, and advance `next_scan_at` by one interval.
+  The scanner's do-no-harm envelope (§3) applies unchanged.
+
+### 8.3 Scan history, diff and trend
+
+`api-worker` stores `scans.failed_checks` (check ids whose `check_results[].status == "failed"`).
+`ScanSummary` gains `"trigger": "manual|scheduled|ci"` and `"failed_checks": [check_id]`.
+
+**ScanDiff** (derived, never stored) between a `done` scan *S* and an earlier `done` scan *B* of
+the same project (default *B* = the latest `done` scan created before *S*). Only checks that ran
+successfully in **both** (`checks - failed_checks` of each) are compared; findings of other
+checks are excluded from all three lists. Findings match by `fingerprint`.
+- **new:** in *S*, not in *B*, and never in any earlier `done` scan of the project.
+- **regressed:** in *S*, not in *B*, but present in some `done` scan before *B* (it came back).
+- **fixed:** in *B*, not in *S*.
+
+```
+GET /scans/{scan_id}/diff?against=<scan_id>&locale=   (owner; 404 otherwise)
+-> {"scan_id","base_scan_id"|null,"project_id","score","base_score"|null,"score_delta"|null,
+    "compared_checks":[check_id],"skipped_checks":[check_id],
+    "new":[DiffItem],"regressed":[DiffItem],"fixed":[DiffItem],"unchanged_count":int}
+DiffItem = {"fingerprint","check_id","finding_key","severity","title","summary"}
+```
+`base_scan_id = null` when *S* is the first done scan (baseline: all lists empty,
+`unchanged_count` = number of findings). `against` must be an earlier done scan of the same
+project (422 `invalid_comparison` otherwise). Lists are sorted by severity, then title.
+
+`GET /projects/{id}/trend?limit=30` (1-90) -> `[{"scan_id","finished_at","score","trigger"}]`,
+done scans, oldest first.
+
+### 8.4 Alerts (e-mail + optional Slack)
+
+Only **changes** alert. After a project scan completes, `notify_scan` computes the ScanDiff
+against the previous done scan. No previous scan: baseline, no alert. Per enabled channel:
+- `new` or `regressed` non-empty (and the matching `notify_*` flag on): **alert** listing them
+  (title + severity + one-line summary, never evidence), plus fixed ones as a summary line.
+- only `fixed` non-empty and `notify_fixed` on: short **fixed summary**.
+- nothing changed: nothing is sent.
+Each send is a `notifications` row (unique per scan x channel): retries (max 3, backoff) never
+duplicate. Text comes from `packages/shared/i18n/<locale>/notifications.json` in the user's
+locale (`en`, `tr` complete), carries the GuardHub brand + "Powered by HKSolutions" (§8.1) and
+links to `{PUBLIC_BASE_URL}/account/projects/{project_id}/compare/{scan_id}`.
+
+- **E-mail:** SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`,
+  `SMTP_SECURITY=starttls|tls`; plaintext only for a local sink: `SMTP_SECURITY=none` AND
+  `SMTP_HOST` listed in `SMTP_INSECURE_HOSTS`). Empty `SMTP_HOST`: status `skipped`
+  (`email_not_configured`).
+- **Slack:** incoming webhook only. Accepted URL:
+  `^https://hooks\.slack\.com/services/[A-Za-z0-9_/-]{10,200}$`. Stored encrypted (AAD = user
+  id); never returned by the API. POST with 5 s timeout, no redirects, no other hosts.
+
+```
+GET  /account/notifications -> {"email_enabled","notify_new","notify_regression","notify_fixed",
+                                "slack_configured":bool,"email":"<user email>"}
+PUT  /account/notifications   {"email_enabled","notify_new","notify_regression","notify_fixed",
+                               "slack_webhook_url"?: string|null}  (omitted = keep, null = remove)
+     422 invalid_slack_webhook. Audited (account.notifications_updated; never the URL).
+POST /account/notifications/test {"channel":"email|slack"} -> 202; 429 after 3/hour.
+GET  /account/notifications/history?limit=20 -> [{"id","scan_id","project_id","channel","status",
+      "new_count","regression_count","fixed_count","created_at","sent_at"}]
+```
+
+### 8.5 Admin trusted domains (ADR-0003)
+
+All routes: role `admin` re-checked from the DB + full MFA session; anyone else gets 404.
+```
+GET    /admin/trusted-domains -> [TrustedDomain]
+POST   /admin/trusted-domains {"target_url"} -> 201 TrustedDomain (status "pending")
+POST   /admin/trusted-domains/{id}/verify -> TrustedDomain ("active") | 422 ownership_not_verified
+DELETE /admin/trusted-domains/{id} -> 204 (status "revoked")
+POST   /admin/trusted-domains/{id}/scan -> 202 ScanSummary (creates or reuses the admin's project
+        for that origin, ownership_method "trusted_domain"; 422 trusted_domain_inactive if not active)
+TrustedDomain = {"id","host","target_origin","status":"pending|active|suspended|revoked",
+                 "verification":{"token","well_known_url","meta_tag","dns_name","dns_value"},
+                 "method"|null,"verified_at"|null,"last_checked_at"|null,"suspended_at"|null,"created_at"}
+```
+`POST /projects` by an admin whose active trusted domains include the target's exact host
+(`host[:port]` of the normalised origin, same scheme) creates the project already verified with
+`ownership_method = 'trusted_domain'`. Any other target (any user, admins included) follows the
+normal proof flow. Rescans of `trusted_domain` projects require the domain to be `active`.
+Audit actions: `admin.trusted_domain.{added,verified,suspended,reactivated,revoked,scan}`.

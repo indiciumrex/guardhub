@@ -47,6 +47,9 @@ class Project(Base):
     verification_token: Mapped[str] = mapped_column(Text)
     ownership_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ownership_method: Mapped[str | None] = mapped_column(String)
+    scan_frequency: Mapped[str] = mapped_column(String, default="off")  # off | daily | weekly
+    next_scan_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    schedule_paused_reason: Mapped[str | None] = mapped_column(String)  # ownership_lost
     created_at: Mapped[datetime] = _now()
 
 
@@ -74,6 +77,7 @@ class Scan(Base):
     score: Mapped[int | None] = mapped_column(Integer)
     trigger: Mapped[str] = mapped_column(String, default="manual")
     checks: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    failed_checks: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)  # could not run
     public_token_hash: Mapped[str | None] = mapped_column(Text)
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _now()
@@ -106,6 +110,57 @@ class Evidence(Base):
     location: Mapped[str] = mapped_column(Text)
     redacted_payload: Mapped[str] = mapped_column(Text)  # masked by scanner AND encrypted at rest
     captured_at: Mapped[datetime] = _now()
+
+
+class NotificationSettings(Base):
+    """Per-user alert preferences (Phase 1). The Slack webhook URL is a secret: encrypted."""
+
+    __tablename__ = "notification_settings"
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    slack_webhook_enc: Mapped[str | None] = mapped_column(Text)  # AES-GCM, AAD = user id
+    notify_new: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_regression: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_fixed: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = _now()
+
+
+class Notification(Base):
+    """One alert per (scan, channel): idempotent sending + the user's alert history."""
+
+    __tablename__ = "notifications"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
+    scan_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("scans.id"))
+    channel: Mapped[str] = mapped_column(String)  # email | slack
+    status: Mapped[str] = mapped_column(String)  # pending | sent | failed | skipped
+    new_count: Mapped[int] = mapped_column(Integer, default=0)
+    regression_count: Mapped[int] = mapped_column(Integer, default=0)
+    fixed_count: Mapped[int] = mapped_column(Integer, default=0)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now()
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AdminTrustedDomain(Base):
+    """A host an admin proved once (ADR-0003). Exact host only; re-checked in the background."""
+
+    __tablename__ = "admin_trusted_domains"
+    id: Mapped[uuid.UUID] = _pk()
+    admin_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    host: Mapped[str] = mapped_column(Text)  # lowercase host[:port]
+    target_origin: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, default="pending")  # pending|active|suspended|revoked
+    verification_token: Mapped[str] = mapped_column(Text)
+    method: Mapped[str | None] = mapped_column(String)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_check_error: Mapped[str | None] = mapped_column(Text)
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now()
 
 
 class Module(Base):
