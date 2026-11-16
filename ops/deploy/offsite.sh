@@ -11,6 +11,7 @@
 #                                        print the dump's path on stdout
 #   offsite.sh check                     verify repository integrity + show the newest snapshot
 #   offsite.sh status                    one line for `guardhub-ctl.sh status`
+#   offsite.sh unlock                    remove stale locks left by an interrupted run
 #
 # Configuration comes ONLY from $GUARDHUB_ROOT/shared/.env (default /opt/guardhub):
 #   RESTIC_REPOSITORY  e.g. s3:https://<endpoint>/<bucket>/guardhub
@@ -144,6 +145,11 @@ cmd_status() {
   fi
 }
 
+cmd_unlock() {
+  load_config
+  run_restic -- unlock >&2 || die "unlock failed"
+}
+
 case ${1:-} in
   configured) is_configured ;;
   init) cmd_init ;;
@@ -152,5 +158,6 @@ case ${1:-} in
   restore-latest) cmd_restore_latest "${2:-}" ;;
   check) cmd_check ;;
   status) cmd_status ;;
-  *) sed -n '2,14p' "$0"; exit 2 ;;
+  unlock) cmd_unlock ;;
+  *) sed -n '2,15p' "$0"; exit 2 ;;
 esac
