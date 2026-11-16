@@ -64,7 +64,7 @@ log "legacy layout: $LEGACY as the single project 'guardhub' on :18700"
 GUARDHUB_VERSION=$LEGACY docker compose -p guardhub --project-directory "$RH/releases/$LEGACY" --env-file "$RH/shared/.env" \
   -f "$RH/releases/$LEGACY/docker-compose.yml" -f "$RH/releases/$LEGACY/docker-compose.prod.yml" up -d --no-build >/dev/null
 ln -sfn "$RH/releases/$LEGACY" "$RH/current"
-for i in $(seq 1 90); do curl -fsS "http://127.0.0.1:$PROXY_PORT/api/v1/health" 2>/dev/null | grep -q '"ok"' && break; sleep 2; done
+for _ in $(seq 1 90); do curl -fsS "http://127.0.0.1:$PROXY_PORT/api/v1/health" 2>/dev/null | grep -q '"ok"' && break; sleep 2; done
 curl -fsS "http://127.0.0.1:$PROXY_PORT/api/v1/health"; echo
 MARK="rehearsal-marker-$(date +%s)"
 docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTGRES_DB)" -qc \
