@@ -24,6 +24,10 @@ _hasher = PasswordHasher()  # argon2id with library defaults (RFC 9106 low-memor
 _DUMMY_HASH = _hasher.hash(secrets.token_urlsafe(16))  # equalises timing for unknown emails
 JWT_ALG = "HS256"
 ISSUER = "guardhub-api"
+# Tolerated clock skew between the host that issued a token and the one checking it (NTP steps,
+# VM clock resyncs, several API replicas). Without it a fresh token can look "issued in the
+# future" for a moment and the user is bounced to login mid-2FA.
+CLOCK_SKEW_LEEWAY_SECONDS = 30
 TOTP_ISSUER = "GuardHub"
 
 
@@ -80,6 +84,7 @@ def decode_session(secret: str, token: str) -> SessionClaims | None:
             secret,
             algorithms=[JWT_ALG],
             issuer=ISSUER,
+            leeway=CLOCK_SKEW_LEEWAY_SECONDS,
             options={"require": ["sub", "exp", "jti", "iss"]},
         )
         role = data.get("role")

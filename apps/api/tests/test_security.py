@@ -4,11 +4,13 @@ import base64
 import time
 import uuid
 
+import jwt
 import pyotp
 import pytest
 from pydantic import ValidationError
 
 from guardhub_api.auth.security import (
+    CLOCK_SKEW_LEEWAY_SECONDS,
     decode_session,
     encode_session,
     hash_password,
@@ -57,7 +59,8 @@ def test_session_token_roundtrip_and_tamper() -> None:
 
 
 def test_expired_and_alg_none_tokens_rejected() -> None:
-    claims = issue_session(user_id=uuid.uuid4(), role="user", mfa=False, ttl_seconds=-5)
+    expired = -(CLOCK_SKEW_LEEWAY_SECONDS + 5)
+    claims = issue_session(user_id=uuid.uuid4(), role="user", mfa=False, ttl_seconds=expired)
     assert decode_session(SECRET, encode_session(SECRET, claims)) is None
     unsigned = (
         base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').rstrip(b"=").decode()
@@ -71,6 +74,18 @@ def test_expired_and_alg_none_tokens_rejected() -> None:
         + "."
     )
     assert decode_session(SECRET, unsigned) is None
+
+
+def test_small_clock_skew_tolerated_large_skew_rejected() -> None:
+    """A token stamped by a host whose clock is slightly ahead (NTP step, VM resync) still works."""
+    now = int(time.time())
+
+    def token(iat: int) -> str:
+        payload = {"sub": str(uuid.uuid4()), "role": "user", "mfa": False, "jti": "j", "iss": "guardhub-api"}
+        return jwt.encode({**payload, "iat": iat, "exp": iat + 600}, SECRET, algorithm="HS256")
+
+    assert decode_session(SECRET, token(now + 2)) is not None
+    assert decode_session(SECRET, token(now + CLOCK_SKEW_LEEWAY_SECONDS + 60)) is None
 
 
 def test_unknown_role_downgrades_to_user() -> None:
