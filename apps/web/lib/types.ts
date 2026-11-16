@@ -1,5 +1,6 @@
 /**
- * TypeScript shapes of the public HTTP API payloads (docs/architecture.md §4).
+ * TypeScript shapes of the public HTTP API payloads (docs/architecture.md §4 and the Phase 1
+ * contracts in §8.2–§8.4: schedule, scan diff, score trend, alerts).
  * Finding primitives (Severity, Evidence) come from the generated contract.
  */
 import type { Evidence, Severity } from "./contract.gen";
@@ -86,7 +87,11 @@ export interface VerifyTotpResponse {
   user: User;
 }
 
-// §4.4
+// §4.4 (+ §8.2/§8.3 fields)
+export type ScanTrigger = "manual" | "scheduled" | "ci";
+export type ScanFrequency = "off" | "daily" | "weekly";
+export type SchedulePausedReason = "ownership_lost";
+
 export interface ScanSummary {
   id: string;
   project_id: string | null;
@@ -98,6 +103,9 @@ export interface ScanSummary {
   started_at: string | null;
   finished_at: string | null;
   error: string | null;
+  trigger: ScanTrigger;
+  /** Check ids that could not run in this scan (never compared in a diff). */
+  failed_checks: string[];
 }
 
 export interface ProgressItem {
@@ -137,6 +145,85 @@ export interface Project {
   verification: ProjectVerification;
   last_scan: ScanSummary | null;
   created_at: string;
+  scan_frequency: ScanFrequency;
+  next_scan_at: string | null;
+  schedule_paused_reason: SchedulePausedReason | null;
+}
+
+// §8.3 scan diff and trend
+export interface DiffItem {
+  fingerprint: string;
+  check_id: string;
+  finding_key: string;
+  severity: Severity;
+  title: string;
+  summary: string;
+}
+
+export interface ScanDiff {
+  scan_id: string;
+  /** null when this is the project's first finished scan (the baseline). */
+  base_scan_id: string | null;
+  project_id: string;
+  score: number;
+  base_score: number | null;
+  score_delta: number | null;
+  compared_checks: string[];
+  /** Checks that could not run in one of the two scans, so they were not compared. */
+  skipped_checks: string[];
+  new: DiffItem[];
+  regressed: DiffItem[];
+  fixed: DiffItem[];
+  unchanged_count: number;
+}
+
+export interface TrendPoint {
+  scan_id: string;
+  finished_at: string;
+  score: number;
+  trigger: ScanTrigger;
+}
+
+// §8.4 alerts
+export type NotificationChannel = "email" | "slack";
+export type NotificationStatus = "pending" | "sent" | "failed" | "skipped";
+
+export interface NotificationSettings {
+  email_enabled: boolean;
+  notify_new: boolean;
+  notify_regression: boolean;
+  notify_fixed: boolean;
+  slack_configured: boolean;
+  email: string;
+}
+
+/** PUT body. `slack_webhook_url`: omitted = keep the stored one, null = remove it. */
+export interface NotificationSettingsUpdate {
+  email_enabled: boolean;
+  notify_new: boolean;
+  notify_regression: boolean;
+  notify_fixed: boolean;
+  slack_webhook_url?: string | null;
+}
+
+export interface NotificationHistoryItem {
+  id: string;
+  scan_id: string;
+  project_id: string | null;
+  channel: NotificationChannel;
+  status: NotificationStatus;
+  new_count: number;
+  regression_count: number;
+  fixed_count: number;
+  created_at: string;
+  sent_at: string | null;
+}
+
+/** Same rule the API enforces (§8.4); the server stays authoritative. */
+export const SLACK_WEBHOOK_PATTERN = /^https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9_/-]{10,200}$/;
+
+export function isSlackWebhookUrl(value: string): boolean {
+  return SLACK_WEBHOOK_PATTERN.test(value);
 }
 
 // §4.5
