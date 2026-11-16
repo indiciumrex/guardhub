@@ -23,7 +23,7 @@ from guardhub_api.alerts.schemas import (
 from guardhub_api.auth import repository as user_repo
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit, ratelimit
-from guardhub_api.common.crypto import Cipher
+from guardhub_api.common.crypto import Keyring
 from guardhub_api.common.errors import NotFoundError, ServiceUnavailableError, UnprocessableError
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session
@@ -36,8 +36,10 @@ def _ctx(claims: SessionClaims) -> DbContext:
     return DbContext.for_user(claims.user_id, claims.role)
 
 
-def _cipher() -> Cipher:
-    return Cipher(get_settings().encryption_key_bytes)
+def _cipher() -> Keyring:
+    # The keyring, never a single-key Cipher: during a key rotation, webhooks still under the
+    # previous key must keep decrypting (ops/rotate_encryption_key re-encrypts them).
+    return get_settings().keyring
 
 
 def slack_aad(user_id: uuid.UUID) -> bytes:

@@ -8,11 +8,11 @@ import uuid
 
 import httpx
 import pytest
-from cryptography.exceptions import InvalidTag
 from pydantic import ValidationError
 
 from guardhub_api.alerts import delivery, render
 from guardhub_api.alerts.service import decrypt_webhook, encrypt_webhook
+from guardhub_api.common.crypto import DecryptionError
 from guardhub_api.common.errors import UnprocessableError
 from guardhub_api.config import Settings, get_settings
 
@@ -66,7 +66,7 @@ def test_webhook_ciphertext_is_bound_to_the_user() -> None:
     token = encrypt_webhook(alice, GOOD)
     assert token.startswith("v1.") and "slack" not in token
     assert decrypt_webhook(alice, token) == GOOD
-    with pytest.raises(InvalidTag):  # AAD = user id: copying the ciphertext to Bob doesn't work
+    with pytest.raises(DecryptionError):  # AAD = user id: copying the ciphertext to Bob doesn't work
         decrypt_webhook(bob, token)
 
 
