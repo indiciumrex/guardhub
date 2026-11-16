@@ -1,0 +1,84 @@
+"""Application settings loaded from environment variables (Pydantic Settings).
+
+Secrets come ONLY from the environment (§7.1, §9.1); there are no defaults for secrets, and
+weak or placeholder values are refused at startup.
+"""
+
+from __future__ import annotations
+
+import base64
+import binascii
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_PLACEHOLDER_MARK = "change-me"
+
+
+def _default_shared_dir() -> Path:
+    # repo layout: <root>/apps/api/guardhub_api/config.py → <root>/packages/shared
+    return Path(__file__).resolve().parents[3] / "packages" / "shared"
+
+
+class Settings(BaseSettings):
+    """Runtime configuration. See .env.example for documentation of each value."""
+
+    model_config = SettingsConfigDict(env_file=None, extra="ignore", case_sensitive=False)
+
+    database_url: SecretStr = Field(description="postgresql+asyncpg:// URL for the RLS-bound app role")
+    redis_url: SecretStr = Field(description="redis:// URL")
+    jwt_secret: SecretStr
+    data_encryption_key: SecretStr
+    hash_pepper: SecretStr
+
+    public_base_url: str = "http://localhost:3000"
+    cookie_secure: bool = True
+    trusted_proxy_hops: int = Field(default=1, ge=0, le=5)
+    shared_dir: Path = Field(default_factory=_default_shared_dir)
+    log_level: str = "info"
+
+    session_ttl_seconds: int = 8 * 3600
+    pre_mfa_ttl_seconds: int = 10 * 60
+    scan_deadline_seconds: int = Field(default=180, ge=30, le=300)
+    verify_timeout_seconds: float = Field(default=25.0, ge=5, le=60)
+    challenge_ttl_hours: int = 24
+
+    ai_provider: str = ""
+    ai_api_key: SecretStr = SecretStr("")
+
+    # Mirrors the scanner's allowlist: only for the local e2e demo target. Empty in production.
+    scanner_allow_private_hosts: str = ""
+
+    @property
+    def private_host_allowlist(self) -> frozenset[str]:
+        return frozenset(h.strip().lower() for h in self.scanner_allow_private_hosts.split(",") if h.strip())
+
+    @field_validator("jwt_secret", "hash_pepper")
+    @classmethod
+    def _strong_secret(cls, v: SecretStr) -> SecretStr:
+        raw = v.get_secret_value()
+        if _PLACEHOLDER_MARK in raw or len(raw) < 32:
+            raise ValueError("must be a real random secret of at least 32 characters")
+        return v
+
+    @field_validator("data_encryption_key")
+    @classmethod
+    def _aes_key(cls, v: SecretStr) -> SecretStr:
+        try:
+            key = base64.b64decode(v.get_secret_value(), validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise ValueError("must be base64") from exc
+        if len(key) != 32:
+            raise ValueError("must decode to exactly 32 bytes (AES-256)")
+        return v
+
+    @property
+    def encryption_key_bytes(self) -> bytes:
+        return base64.b64decode(self.data_encryption_key.get_secret_value())
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()

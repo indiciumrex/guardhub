@@ -1,0 +1,214 @@
+"""Project business logic: CRUD, ownership verification, re-scan, and claiming anonymous scans.
+
+Rules: a project can only be scanned once ownership has been verified (§9.2). Verification
+older than `REVERIFY_AFTER` is re-checked automatically before the next scan. All operations run
+in the caller's RLS context. Only the claim's ownership transfer uses 'system', and only after
+the scan access token has been validated.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime, timedelta
+
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from guardhub_api.auth.security import SessionClaims
+from guardhub_api.common import audit, ratelimit
+from guardhub_api.common.crypto import keyed_hash
+from guardhub_api.common.errors import ConflictError, NotFoundError, UnprocessableError
+from guardhub_api.common.urls import normalize_origin
+from guardhub_api.config import get_settings
+from guardhub_api.db.models import Project, Scan
+from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.projects import repository
+from guardhub_api.projects.schemas import ProjectView
+from guardhub_api.projects.verification import instructions, new_token, prove_ownership
+from guardhub_api.scans import repository as scan_repo
+from guardhub_api.scans import service as scan_service
+from guardhub_api.scans.schemas import ScanSummary
+
+MAX_PROJECTS_PER_USER = 25
+REVERIFY_AFTER = timedelta(days=30)
+
+
+def _ctx(claims: SessionClaims) -> DbContext:
+    return DbContext.for_user(claims.user_id, claims.role)
+
+
+def _actor(claims: SessionClaims) -> str:
+    return f"user:{claims.user_id}"
+
+
+def _view(project: Project, last_scan: ScanSummary | None) -> ProjectView:
+    return ProjectView(
+        id=project.id,
+        name=project.name,
+        target_url=project.target_url,
+        verified=project.ownership_verified_at is not None,
+        ownership_verified_at=project.ownership_verified_at,
+        verification=instructions(project.target_url, project.verification_token),
+        last_scan=last_scan,
+        created_at=project.created_at,
+    )
+
+
+async def list_projects(claims: SessionClaims) -> list[ProjectView]:
+    async with db_session(_ctx(claims)) as session:
+        projects = await repository.list_for_user(session, claims.user_id)
+        latest = await scan_repo.latest_for_projects(session, [p.id for p in projects])
+        summaries = {s.id: s for s in await scan_service.summaries(session, list(latest.values()))}
+        return [_view(p, summaries.get(latest[p.id].id) if p.id in latest else None) for p in projects]
+
+
+async def _get_owned(session: AsyncSession, project_id: uuid.UUID) -> Project:
+    project = await repository.get(session, project_id)
+    if project is None:  # RLS hides other users' projects: "not yours" looks the same as "missing"
+        raise NotFoundError("project_not_found", "Project not found.")
+    return project
+
+
+async def get_project(claims: SessionClaims, project_id: uuid.UUID) -> ProjectView:
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        latest = await scan_repo.latest_for_projects(session, [project.id])
+        last = (
+            (await scan_service.summaries(session, [latest[project.id]]))[0] if project.id in latest else None
+        )
+        return _view(project, last)
+
+
+async def create_project(claims: SessionClaims, *, name: str, target_url: str) -> ProjectView:
+    origin = normalize_origin(target_url, allow_private_hosts=get_settings().private_host_allowlist)
+    async with db_session(_ctx(claims)) as session:
+        if await repository.count_for_user(session, claims.user_id) >= MAX_PROJECTS_PER_USER:
+            raise UnprocessableError("project_limit_reached", "Project limit reached.")
+        if await repository.by_target(session, claims.user_id, origin) is not None:
+            raise ConflictError("project_exists", "You already have a project for this address.")
+        project = await repository.add(
+            session,
+            Project(
+                user_id=claims.user_id, name=name.strip(), target_url=origin, verification_token=new_token()
+            ),
+        )
+        await audit.record(session, actor=_actor(claims), action="project.create", target=str(project.id))
+        return _view(project, None)
+
+
+async def rename_project(claims: SessionClaims, project_id: uuid.UUID, name: str) -> ProjectView:
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        project.name = name.strip()
+    return await get_project(claims, project_id)
+
+
+async def delete_project(claims: SessionClaims, project_id: uuid.UUID) -> None:
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        await repository.delete(session, project)
+        await audit.record(session, actor=_actor(claims), action="project.delete", target=str(project_id))
+
+
+async def verify_project(redis: Redis, claims: SessionClaims, project_id: uuid.UUID) -> ProjectView:
+    await ratelimit.enforce(redis, "verify-project", str(project_id), limit=10, window=600)
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        origin, token = project.target_url, project.verification_token
+    method = await prove_ownership(redis, origin=origin, token=token)
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        project.ownership_verified_at = datetime.now(UTC)
+        project.ownership_method = method
+        await audit.record(
+            session,
+            actor=_actor(claims),
+            action="project.verified",
+            target=str(project_id),
+            metadata={"method": method},
+        )
+    return await get_project(claims, project_id)
+
+
+async def rescan(redis: Redis, claims: SessionClaims, project_id: uuid.UUID) -> ScanSummary:
+    await ratelimit.enforce(redis, "rescan", str(project_id), limit=10, window=3600)
+    async with db_session(_ctx(claims)) as session:
+        project = await _get_owned(session, project_id)
+        if project.ownership_verified_at is None:
+            raise UnprocessableError("ownership_not_verified", "Verify that you own this site first.")
+        if await scan_repo.has_active(session, project.id):
+            raise ConflictError("scan_in_progress", "A scan is already running for this project.")
+        stale = datetime.now(UTC) - project.ownership_verified_at > REVERIFY_AFTER
+        origin = project.target_url
+    if stale:
+        await verify_project(redis, claims, project_id)
+    scan = await scan_service.create_and_enqueue(
+        redis,
+        target=origin,
+        project_id=project_id,
+        user_id=claims.user_id,
+        verification_id=None,
+        public_token_hash=None,
+        ctx=_ctx(claims),
+    )
+    async with db_session(_ctx(claims)) as session:
+        await audit.record(session, actor=_actor(claims), action="scan.create", target=str(scan.id))
+        return (await scan_service.summaries(session, [scan]))[0]
+
+
+async def list_scans(claims: SessionClaims, project_id: uuid.UUID) -> list[ScanSummary]:
+    async with db_session(_ctx(claims)) as session:
+        await _get_owned(session, project_id)
+        return await scan_service.summaries(session, await scan_repo.list_for_project(session, project_id))
+
+
+async def claim_anonymous_scan(
+    claims: SessionClaims, *, scan_id: uuid.UUID, access_token: str, name: str
+) -> ProjectView:
+    """Attach a verified anonymous scan to the user's account (the ADR-0001 'save this scan' flow)."""
+    token_hash = keyed_hash(get_settings().hash_pepper.get_secret_value(), access_token)
+    async with db_session(DbContext.anon(token_hash)) as session:
+        scan = await scan_repo.get(session, scan_id)  # RLS: visible only with the right token
+        if scan is None or scan.project_id is not None:
+            raise NotFoundError("scan_not_found", "Scan not found or already saved.")
+        origin, verification_id = scan.target_url, scan.verification_id
+
+    async with db_session(_ctx(claims)) as session:
+        project = await repository.by_target(session, claims.user_id, origin)
+        if project is None:
+            if await repository.count_for_user(session, claims.user_id) >= MAX_PROJECTS_PER_USER:
+                raise UnprocessableError("project_limit_reached", "Project limit reached.")
+            project = await repository.add(
+                session,
+                Project(
+                    user_id=claims.user_id,
+                    name=name.strip(),
+                    target_url=origin,
+                    verification_token=new_token(),
+                ),
+            )
+        project_id = project.id
+
+    # Ownership transfer of the anonymous rows: 'system' context, after the token was validated above.
+    async with db_session(DbContext.system()) as session:
+        scan_row: Scan | None = await scan_repo.get(session, scan_id, for_update=True)
+        if scan_row is None or scan_row.project_id is not None or scan_row.public_token_hash != token_hash:
+            raise NotFoundError("scan_not_found", "Scan not found or already saved.")
+        scan_row.project_id = project_id
+        scan_row.user_id = claims.user_id
+        scan_row.public_token_hash = None
+        challenge = await repository.get_challenge(session, verification_id) if verification_id else None
+        owned = await repository.get(session, project_id)
+        verified_challenge = challenge is not None and challenge.verified_at is not None
+        if verified_challenge and owned is not None and owned.ownership_verified_at is None:
+            assert challenge is not None
+            owned.ownership_verified_at = challenge.verified_at
+            owned.ownership_method = challenge.method
+        await audit.record(
+            session,
+            actor=_actor(claims),
+            action="scan.claim",
+            target=str(scan_id),
+            metadata={"project": str(project_id)},
+        )
+    return await get_project(claims, project_id)

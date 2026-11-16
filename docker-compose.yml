@@ -1,0 +1,148 @@
+# GuardHub: the whole stack with one command.
+#   1) python ops/scripts/gen_secrets.py     (creates .env with strong random secrets)
+#   2) docker compose up --build
+#   3) open http://localhost:3000
+# Only `web` is published to the host. PostgreSQL, Redis and the API sit on an internal network;
+# only the scanner (which must reach customer targets) gets an egress network.
+
+name: guardhub
+
+x-api-env: &api-env
+  DATABASE_URL: postgresql+asyncpg://${GUARDHUB_APP_DB_USER:?}:${GUARDHUB_APP_DB_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+  REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379/0
+  JWT_SECRET: ${JWT_SECRET:?}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?}
+  HASH_PEPPER: ${HASH_PEPPER:?}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+  COOKIE_SECURE: ${COOKIE_SECURE:-true}
+  TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
+  SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
+  AI_PROVIDER: ${AI_PROVIDER:-}
+  AI_API_KEY: ${AI_API_KEY:-}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      GUARDHUB_APP_DB_USER: ${GUARDHUB_APP_DB_USER:?}
+      GUARDHUB_APP_DB_PASSWORD: ${GUARDHUB_APP_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ops/docker/postgres/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [backend]
+
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    image: guardhub-api:local
+    command: ["alembic", "-c", "/app/ops/migrations/alembic.ini", "upgrade", "head"]
+    environment:
+      MIGRATIONS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+      GUARDHUB_APP_DB_USER: ${GUARDHUB_APP_DB_USER:?}
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+
+  api:
+    image: guardhub-api:local
+    restart: unless-stopped
+    environment: *api-env
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4).status in (200,) else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks: [backend]
+
+  api-worker:
+    image: guardhub-api:local
+    restart: unless-stopped
+    command: ["python", "-m", "guardhub_api.worker"]
+    environment: *api-env
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    networks: [backend]
+
+  scanner:
+    build: { context: ./apps/scanner }
+    image: guardhub-scanner:local
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      SCANNER_WORKERS: ${SCANNER_WORKERS:-4}
+      SCANNER_CHECK_CONCURRENCY: ${SCANNER_CHECK_CONCURRENCY:-3}
+      SCANNER_HOST_RPS: ${SCANNER_HOST_RPS:-4}
+      SCANNER_MAX_REQUESTS_PER_SCAN: ${SCANNER_MAX_REQUESTS_PER_SCAN:-80}
+      SCANNER_REQUEST_TIMEOUT: ${SCANNER_REQUEST_TIMEOUT:-10s}
+      SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      redis: { condition: service_healthy }
+    networks: [backend, egress]
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    image: guardhub-web:local
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      api: { condition: service_healthy }
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks: [backend, frontend]
+
+networks:
+  backend:
+    internal: true # no internet access for postgres/redis/api
+  frontend: {}
+  egress: {}
+
+volumes:
+  pgdata: {}
+  redisdata: {}
