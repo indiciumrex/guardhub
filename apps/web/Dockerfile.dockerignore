@@ -1,0 +1,12 @@
+# Used by BuildKit for `docker build -f apps/web/Dockerfile .` (context = repo root).
+**/node_modules
+**/.next
+**/.git
+**/coverage
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+apps/api
+apps/scanner
+ops
+docs

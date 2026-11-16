@@ -1,0 +1,415 @@
+{
+  "meta": {
+    "siteName": "GuardHub",
+    "title": "GuardHub: sade dilde web sitesi güvenlik kontrolleri",
+    "description": "GuardHub, canlı sitenizde saldırganların gerçekten kullandığı güvenlik açıklarını bulur, sade bir dille anlatır ve nasıl kapatacağınızı adım adım gösterir. Pasif ve izne dayalı tarama."
+  },
+  "brand": {
+    "poweredBy": "Bir <strong>{company}</strong> ürünüdür"
+  },
+  "nav": {
+    "skipToContent": "Ana içeriğe geç",
+    "home": "GuardHub ana sayfası",
+    "primary": "Ana menü",
+    "scan": "Ücretsiz tarama",
+    "account": "Hesabım",
+    "language": "Dil"
+  },
+  "footer": {
+    "tagline": "Ürün geliştirenler için sakin ve anlaşılır güvenlik kontrolleri.",
+    "copyright": "© {year} HKSolutions. Tüm hakları saklıdır."
+  },
+  "notFound": {
+    "code": "Hata 404",
+    "title": "Aradığınız sayfayı bulamadık",
+    "body": "Bağlantı eskimiş ya da sayfa taşınmış olabilir. Sitenizde bir sorun yok.",
+    "home": "Ana sayfaya dön",
+    "scan": "Ücretsiz tarama başlat"
+  },
+  "errorPage": {
+    "title": "Bizim tarafımızda bir sorun oluştu",
+    "body": "Bu sayfayı şu an yükleyemedik. Lütfen biraz sonra tekrar deneyin. Sorun devam ederse ekibimiz zaten ilgileniyor olacak.",
+    "reference": "Referans: {digest}",
+    "retry": "Tekrar dene",
+    "home": "Ana sayfaya dön"
+  },
+  "common": {
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "copiedAnnouncement": "{label} panoya kopyalandı",
+    "loading": "Yükleniyor…",
+    "errorLabel": "Hata",
+    "retry": "Tekrar dene",
+    "working": "Lütfen bekleyin…"
+  },
+  "errors": {
+    "generic": "Bir şeyler ters gitti. Lütfen biraz sonra tekrar deneyin.",
+    "network_error": "GuardHub'a ulaşamadık. İnternet bağlantınızı kontrol edip tekrar deneyin.",
+    "http_error": "Sunucudan beklenmedik bir yanıt geldi. Lütfen biraz sonra tekrar deneyin.",
+    "internal_error": "Bizim tarafımızda bir sorun oluştu. Lütfen biraz sonra tekrar deneyin.",
+    "csrf_header_missing": "İsteğiniz güvenlik önlemi olarak engellendi. Sayfayı yenileyip tekrar deneyin.",
+    "rate_limited": "Kısa sürede çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar deneyin.",
+    "validation_error": "Girdiğiniz bilgilerin bazıları geçerli değil. Kontrol edip tekrar deneyin.",
+    "invalid_target_url": "Bu, tarayabileceğimiz herkese açık bir site adresine benzemiyor. ornek.com gibi bir adres deneyin.",
+    "targetReason": {
+      "ip_literal": "Lütfen IP adresi yerine sitenin alan adını girin.",
+      "internal_hostname": "Yalnızca herkese açık web sitelerini tarıyoruz. Bu adres özel ya da kurum içi bir ağa çıkıyor.",
+      "scheme": "Yalnızca http:// ve https:// ile başlayan adresler taranabilir.",
+      "credentials_in_url": "Lütfen adresteki kullanıcı adı ve şifreyi kaldırın."
+    },
+    "ownership_not_verified": "Bu sitenin size ait olduğunu henüz doğrulayamadık.",
+    "verifyReason": {
+      "not_found": "Doğrulama dosyasını, meta etiketini veya DNS kaydını bulamadık. Değerin birebir aynı olduğunu kontrol edin.",
+      "target_unreachable": "Kanıtı kontrol etmek için siteye ulaşamadık.",
+      "target_blocked": "Site doğrulama isteğimizi engelledi.",
+      "timeout": "Site çok geç yanıt verdi. Lütfen tekrar deneyin."
+    },
+    "challenge_not_found": "Bu doğrulama isteğinin süresi doldu. Yeni bir kod almak için baştan başlayın.",
+    "scan_not_found": "Bu taramayı bulamadık. Daha önce bir hesaba kaydedilmiş olabilir ya da yalnızca başlatıldığı sekmede açılabilir.",
+    "scan_in_progress": "Bu proje için zaten bir tarama sürüyor. Önce onun bitmesini bekleyin.",
+    "queue_unavailable": "Tarama şu an geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.",
+    "no_checks_enabled": "Şu anda tüm kontroller kapalı olduğu için tarama yapamıyoruz. Lütfen daha sonra tekrar deneyin.",
+    "project_not_found": "Bu projeyi bulamadık.",
+    "project_exists": "Bu adres için zaten bir projeniz var.",
+    "project_limit_reached": "En fazla proje sayısına ulaştınız. Yeni bir proje eklemek için birini silin.",
+    "not_found": "Aradığınızı bulamadık.",
+    "not_authenticated": "Devam etmek için lütfen giriş yapın.",
+    "session_invalid": "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
+    "user_not_found": "Oturumunuz sona erdi. Lütfen tekrar giriş yapın.",
+    "invalid_credentials": "E-posta adresi ile şifre eşleşmiyor. Lütfen tekrar deneyin.",
+    "email_taken": "Bu e-posta adresiyle açılmış bir hesap zaten var. Giriş yapmayı deneyin.",
+    "weak_password": "Lütfen daha uzun ve tahmin edilmesi zor bir şifre seçin (en az 12 karakter; yaygın bir şifre olmasın ve e-posta adresinizi içermesin).",
+    "invalid_totp": "Kod hatalı. Doğrulama uygulamanızdaki güncel 6 haneli kodu girin.",
+    "mfa_required": "Devam etmek için iki adımlı doğrulamayı tamamlayın.",
+    "totp_not_setup": "Önce iki adımlı doğrulamayı kurun.",
+    "totp_already_enabled": "İki adımlı doğrulama zaten kurulu. Doğrulama uygulamanızdaki kodu girin.",
+    "unsupported_locale": "Bu dil henüz desteklenmiyor.",
+    "module_not_found": "Böyle bir modül yok."
+  },
+  "severity": {
+    "critical": "Kritik",
+    "high": "Yüksek",
+    "medium": "Orta",
+    "low": "Düşük",
+    "info": "Bilgi"
+  },
+  "scanStatus": {
+    "queued": "Sırada",
+    "running": "Sürüyor",
+    "done": "Tamamlandı",
+    "failed": "Başarısız"
+  },
+  "health": {
+    "ok": "Sorunsuz",
+    "degraded": "Yavaşlamış",
+    "down": "Çalışmıyor",
+    "unknown": "Bilinmiyor"
+  },
+  "checks": {
+    "exposed_env": {
+      "name": "Sızan gizli bilgiler ve dosyalar",
+      "description": ".env dosyası, .git klasörü ya da bulut anahtarları gibi asla herkese açık olmaması gereken ve saldırganın eline şifrelerinizi, API anahtarlarınızı verebilecek dosyaları arar."
+    },
+    "security_headers": {
+      "name": "Tarayıcı güvenlik başlıkları",
+      "description": "Tarayıcılara ziyaretçilerinizi nasıl koruyacaklarını söyleyen koruyucu başlıkları (CSP, HSTS ve diğerleri) ve çerez ayarlarını kontrol eder."
+    },
+    "tls_cert": {
+      "name": "HTTPS ve sertifika",
+      "description": "Sitenizin HTTPS kullandığını, ziyaretçileri HTTPS'e yönlendirdiğini ve sertifikanızın geçerli olup yakında sona ermeyeceğini kontrol eder."
+    },
+    "open_admin": {
+      "name": "Açıkta kalan yönetim ve hata ayıklama sayfaları",
+      "description": "İnternetteki herkesin erişebildiği yönetim panellerini, veritabanı araçlarını ve hata ayıklama konsollarını bulur."
+    },
+    "default_creds": {
+      "name": "Yarım kalmış kurulumlar",
+      "description": "Açık unutulmuş kurulum sihirbazlarını ve yükleyicileri tespit eder; bunlar bir yabancının uygulamanızı ele geçirmesine yol açabilir."
+    },
+    "info_leak": {
+      "name": "Bilgi sızıntıları",
+      "description": "Sitenizin yazılım sürümlerini, hata ayrıntılarını, hata ayıklama modunu ya da klasör listelerini açığa çıkarıp çıkarmadığına bakar; bunlar saldırganın işini kolaylaştırır."
+    }
+  },
+  "landing": {
+    "eyebrow": "Girişimciler için web sitesi güvenliği",
+    "title": "Sitenizde neyin açıkta olduğunu sade bir dille öğrenin.",
+    "subtitle": "Sitenizin adresini girin, GuardHub saldırganların gerçekten kullandığı açıkları kontrol etsin: sızan gizli bilgiler, açıkta kalan yönetim sayfaları, zayıf HTTPS ayarları. Teknik jargon yerine net cevaplar ve adım adım çözümler alırsınız.",
+    "cta": "Ücretsiz tarama başlat",
+    "secondaryCta": "Hesap oluştur",
+    "ctaNote": "Kayıt gerekmez. Yalnızca sitenin size ait olduğunu göstermeniz yeterli.",
+    "how": {
+      "title": "Nasıl çalışır?",
+      "enter": {
+        "title": "Girin",
+        "body": "Sitenizin adresini yazın ve küçük bir dosya, bir meta etiketi ya da bir DNS kaydıyla sitenin size ait olduğunu gösterin. Yaklaşık iki dakika sürer."
+      },
+      "see": {
+        "title": "Görün",
+        "body": "Her kontrolün çalışmasını canlı izleyin. Raporunuz neyin açıkta olduğunu ve bunun neden önemli olduğunu anlatır; hata çıktısı da jargon da yoktur."
+      },
+      "fix": {
+        "title": "Düzeltin",
+        "body": "Her bulgu, net ve adım adım çözüm talimatlarıyla gelir. Açığın kapandığından emin olmak için istediğiniz zaman yeniden tarayın."
+      }
+    },
+    "checks": {
+      "title": "Neleri kontrol ediyoruz?",
+      "intro": "Küçük web uygulamalarına yönelik gerçek saldırıların çoğunun arkasındaki sorunları kapsayan altı odaklı kontrol."
+    },
+    "promise": {
+      "title": "Zarar vermeden, izninizle",
+      "intro": "Bir güvenlik aracı her şeyden önce güvenilir olmalı. Bu kurallar GuardHub'ın içine işlenmiştir; kâğıt üzerinde kalmaz.",
+      "permission": {
+        "title": "Önce izin",
+        "body": "Bir siteyi ancak onu sizin yönettiğinizi kanıtladıktan sonra tararız. Kimse GuardHub'ı başkasının sitesini yoklamak için kullanamaz."
+      },
+      "passive": {
+        "title": "Pasif ve nazik",
+        "body": "Kontrollerimiz yalnızca zaten herkese açık olanı okur. Veri değiştirmeyiz, şifre denemeyiz, sunucularınıza yük bindirmeyiz; her tarama hız sınırıyla çalışır."
+      },
+      "privacy": {
+        "title": "Verileriniz gizli kalır",
+        "body": "Bulduğumuz hassas bilgiler saklanmadan önce maskelenir; kanıtlarda bile tam bir gizli bilgi görünmez. Yalnızca raporunuz için gerekeni saklarız."
+      }
+    },
+    "final": {
+      "title": "Birkaç dakika içinde nerede durduğunuzu öğrenin",
+      "body": "İlk taramanız ücretsiz ve hesap gerektirmez."
+    }
+  },
+  "scanFlow": {
+    "metaTitle": "Ücretsiz güvenlik taraması",
+    "title": "Ücretsiz web sitesi güvenlik taraması",
+    "intro": "Canlı sitenizi saldırganların en sık kullandığı açıklara karşı kontrol edin. Hesap gerekmez.",
+    "steps": {
+      "step1": "Sitenizin adresini girin",
+      "step2": "Size ait olduğunu gösterin",
+      "step3": "Raporunuzu alın"
+    },
+    "permissionNote": "Yalnızca sizin yönettiğiniz siteleri tararız ve kontrollerimiz pasiftir: herkese açık olanı okuruz, hiçbir şeyi değiştirmeyiz.",
+    "urlLabel": "Sitenizin adresi",
+    "urlPlaceholder": "ornek.com",
+    "urlHint": "Örneğin ornek.com veya https://app.ornek.com. Sitenin ana adresini (origin) tararız.",
+    "continue": "Devam et",
+    "proveTitle": "{origin} adresini sizin yönettiğinizi gösterin",
+    "expires": "Aşağıdaki yöntemlerden birini seçmeniz yeterli. Bu kod {date} (UTC) tarihine kadar geçerli.",
+    "verifyAndScan": "Doğrula ve taramayı başlat",
+    "verifying": "Kanıtınız kontrol ediliyor…",
+    "startOver": "Başka bir adres kullan",
+    "dnsDelayHint": "DNS kaydını yeni mi eklediniz? Kaydın görünmesi birkaç dakika sürebilir. Doğrulama başarısız olursa biraz bekleyip tekrar deneyin."
+  },
+  "ownership": {
+    "intro": "Size en kolay gelen yöntemi seçin. Yalnızca birini yapmanız yeterli.",
+    "wellKnown": {
+      "title": "1. yol: Doğrulama dosyası yükleyin",
+      "body": "Aşağıdaki adreste düz metin bir dosya oluşturun. Dosyanın içinde yalnızca doğrulama kodu olmalı.",
+      "urlLabel": "Dosya adresi",
+      "contentLabel": "Dosya içeriği (doğrulama kodu)"
+    },
+    "meta": {
+      "title": "2. yol: Ana sayfanıza meta etiketi ekleyin",
+      "body": "Bu etiketi ana sayfanızın head bölümüne yapıştırın ve değişikliği yayına alın.",
+      "tagLabel": "Meta etiketi"
+    },
+    "dns": {
+      "title": "3. yol: DNS TXT kaydı ekleyin",
+      "body": "Alan adı sağlayıcınızın DNS ayarlarında, aşağıdaki ad ve değerle bir TXT kaydı oluşturun.",
+      "nameLabel": "Kayıt adı (host)",
+      "valueLabel": "Kayıt değeri"
+    }
+  },
+  "progress": {
+    "heading": "Kontroller",
+    "summary": "{total} kontrolden {done} tanesi tamamlandı.",
+    "nowRunning": "Şu an kontrol edilen: {name}.",
+    "waiting": "Taramanız sırada, birazdan başlayacak.",
+    "status": {
+      "queued": "Bekliyor",
+      "running": "Kontrol ediliyor…",
+      "done": "Tamamlandı",
+      "failed": "Tamamlanamadı"
+    }
+  },
+  "scanLive": {
+    "metaTitle": "Tarama raporu",
+    "noAccessLabel": "Rapor burada açılamıyor",
+    "noAccess": "Gizliliğiniz için ücretsiz tarama raporu yalnızca taramayı başlattığınız tarayıcı sekmesinde açılabilir. Yeni bir tarama başlatın ya da raporlarınızı saklamak için bir hesap oluşturun.",
+    "statusHeading": {
+      "queued": "Tarama sırada",
+      "running": "Tarama sürüyor",
+      "done": "Tarama tamamlandı",
+      "failed": "Tarama yapılamadı"
+    },
+    "runningIntro": "Sitenizi şu anda kontrol ediyoruz. Bu genellikle bir dakikadan kısa sürer; her kontrolü çalışırken izleyebilirsiniz.",
+    "failedLabel": "Tarama başarısız",
+    "failureReason": {
+      "target_unreachable": "Sitenize ulaşamadık. Sitenin açık ve internetten erişilebilir olduğundan emin olup tekrar deneyin.",
+      "target_blocked": "Bu adresi tarayamıyoruz: ya özel/kurum içi bir ağa çıkıyor ya da site kontrollerimizi engelledi.",
+      "timeout": "Tarama çok uzun sürdüğü için durduruldu. Siteniz şu an yavaş olabilir; lütfen daha sonra tekrar deneyin.",
+      "internal": "Tarama sırasında bizim tarafımızda bir sorun oluştu. Lütfen biraz sonra tekrar deneyin.",
+      "queue_unavailable": "Tarama geçici olarak kullanılamadığı için bu tarama başlamadı. Lütfen birkaç dakika sonra tekrar deneyin."
+    },
+    "saveBody": "Bu raporu saklamak, daha sonra yeniden taramak ve nelerin değiştiğini görmek ister misiniz? Ücretsiz bir hesaba kaydedin.",
+    "saveCta": "Taramayı kaydet, sonra yeniden tara"
+  },
+  "report": {
+    "heading": "{host} için güvenlik raporu",
+    "scannedAt": "Tarama tarihi: {date} (UTC)",
+    "countsHeading": "Önem derecesine göre sorunlar",
+    "outOf": "100 üzerinden",
+    "scoreLabel": "Güvenlik puanı: 100 üzerinden {score}.",
+    "rating": {
+      "good": "İyi durumda",
+      "fair": "İlgilenmek gerekiyor",
+      "poor": "Risk altında"
+    },
+    "partial": "Bazı kontroller tamamlanamadı ({names}), bu yüzden rapor eksik olabilir.",
+    "findingsHeading": "{count, plural, =0 {Sorun bulunamadı} one {# sorun bulundu} other {# sorun bulundu}}",
+    "cleanTitle": "Harika haber: hiçbir sorun bulmadık",
+    "cleanBody": "Kontrollerimizin hiçbiri açıkta kalmış bir gizli bilgi, erişime açık bir yönetim sayfası ya da zayıf bir HTTPS ayarı bulmadı. Büyük değişikliklerden sonra yeniden tarayarak durumu takip edin."
+  },
+  "finding": {
+    "whatsExposed": "Ne açıkta?",
+    "whyItMatters": "Neden önemli?",
+    "howToFix": "Nasıl düzeltilir?",
+    "evidence": "Kanıtı göster (maskelenmiş)",
+    "evidenceNote": "Hassas değerler maskelenir. Hiçbir gizli bilgiyi tam haliyle saklamayız.",
+    "evidenceKind": "Tür",
+    "evidenceLocation": "Konum",
+    "evidenceKinds": {
+      "http_response": "Sayfa yanıtı",
+      "http_header": "Yanıt başlığı",
+      "tls_handshake": "HTTPS bağlantısı",
+      "dns_record": "DNS kaydı"
+    },
+    "status": {
+      "open": "Açık",
+      "fixed": "Düzeltildi",
+      "ignored": "Yok sayıldı"
+    }
+  },
+  "auth": {
+    "loginTitle": "Giriş yap",
+    "loginIntro": "Tekrar hoş geldiniz. Ardından doğrulama uygulamanızla onay vereceksiniz.",
+    "registerTitle": "Hesabınızı oluşturun",
+    "registerIntro": "Taramalarınızı kaydedin, istediğiniz zaman yeniden tarayın ve ilerlemenizi takip edin. Raporlarınızı korumak için iki adımlı doğrulama zorunludur.",
+    "email": "E-posta adresi",
+    "password": "Şifre",
+    "loginSubmit": "Giriş yap",
+    "registerSubmit": "Hesap oluştur",
+    "noAccount": "GuardHub'da yeni misiniz?",
+    "registerLink": "Hesap oluşturun",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "loginLink": "Giriş yapın",
+    "passwordRules": "En az {min} karakter. Kolayca hatırlayacağınız kısa bir cümle iyi bir seçimdir.",
+    "strength": {
+      "tooShort": "Çok kısa: en az {min} karakter kullanın.",
+      "weak": "Zayıf: daha uzun ya da daha az tahmin edilebilir bir şifre deneyin.",
+      "fair": "Fena değil: birkaç karakter daha eklemek şifrenizi güçlendirir.",
+      "strong": "Güçlü şifre."
+    }
+  },
+  "twoFactor": {
+    "title": "İki adımlı doğrulama",
+    "setupIntro": "Hesabınızı bir doğrulama uygulamasından alacağınız kodla koruyun. Her GuardHub hesabı için zorunludur.",
+    "verifyIntro": "Doğrulama uygulamanızdaki 6 haneli kodu girin.",
+    "setupHeading": "Doğrulama uygulamanızı kurun",
+    "setupStep1": "Google Authenticator, Microsoft Authenticator veya 1Password gibi bir doğrulama uygulaması açın.",
+    "setupStep2": "QR kodunu okutun ya da gizli anahtarı elle girin.",
+    "setupStep3": "Kurulumu bitirmek için uygulamanın gösterdiği 6 haneli kodu girin.",
+    "qrAlt": "GuardHub'ı doğrulama uygulamanıza eklemek için QR kodu",
+    "secretLabel": "Gizli anahtar (QR kodunu okutamıyorsanız)",
+    "codeLabel": "6 haneli kod",
+    "codeHint": "Kod her 30 saniyede bir yenilenir.",
+    "submit": "Doğrula"
+  },
+  "account": {
+    "title": "Projeleriniz",
+    "intro": "Her proje, sahipliğini doğruladığınız bir web sitesidir. İstediğiniz zaman yeniden tarayın ve güvenliğinin nasıl değiştiğini takip edin.",
+    "navLabel": "Hesap menüsü",
+    "projectsNav": "Projeler",
+    "adminNav": "Yönetim",
+    "signedInAs": "{email} olarak giriş yapıldı",
+    "logout": "Çıkış yap",
+    "projectsHeading": "Projeler",
+    "noProjects": "Henüz bir projeniz yok. İlk sitenizi aşağıdan ekleyin.",
+    "verified": "Doğrulandı",
+    "notVerified": "Doğrulanmadı",
+    "lastScan": "Son tarama: {date}.",
+    "scoreValue": "Puan: {score}/100.",
+    "neverScanned": "Henüz taranmadı.",
+    "addHeading": "Proje ekle",
+    "addIntro": "Yönettiğiniz bir web sitesini ekleyin. Sahipliği bir sonraki ekranda doğrulayacaksınız.",
+    "projectName": "Proje adı",
+    "projectUrl": "Web sitesi adresi",
+    "addSubmit": "Projeyi ekle"
+  },
+  "project": {
+    "metaTitle": "Proje",
+    "back": "← Tüm projeler",
+    "backToProject": "← Projeye dön",
+    "ownershipHeading": "Sahiplik",
+    "verifiedOn": "Sahiplik {date} (UTC) tarihinde doğrulandı.",
+    "verifiedPlain": "Sahiplik doğrulandı.",
+    "verify": "Doğrula",
+    "verifying": "Kontrol ediliyor…",
+    "historyHeading": "Tarama geçmişi",
+    "historyCaption": "Bu projenin önceki taramaları, en yenisi en üstte",
+    "rescan": "Yeniden tara",
+    "rescanNeedsVerification": "Bu siteyi taramaya başlamak için önce sahipliğini doğrulayın.",
+    "scanInProgress": "Şu anda bir tarama sürüyor. Bittiğinde yenisini başlatabilirsiniz.",
+    "noScans": "Henüz tarama yok.",
+    "colDate": "Tarih",
+    "colScore": "Puan",
+    "colFindings": "Sorunlar",
+    "colStatus": "Durum",
+    "colReport": "Rapor",
+    "noScore": "–",
+    "viewReport": "Raporu gör"
+  },
+  "claim": {
+    "title": "Taramanızı kaydedin",
+    "working": "Taramanız hesabınıza kaydediliyor…",
+    "nothingLabel": "Kaydedilecek bir şey yok",
+    "nothing": "Bu tarayıcı sekmesinde kaydedilecek bir tarama bulamadık. Ücretsiz tarama raporları yalnızca başlatıldıkları sekmede tutulur.",
+    "toAccount": "Projelerinize gidin"
+  },
+  "admin": {
+    "title": "Yönetim",
+    "unavailable": "Bu bilgi şu anda alınamıyor.",
+    "healthHeading": "Sistem sağlığı",
+    "overall": "Genel durum",
+    "aiHeading": "Yapay zekâ sağlayıcısı",
+    "aiActive": "Etkin ({provider}). Yapay zekâ yalnızca isteğe bağlı ek özellikler sunar; çekirdek tarama ona bağlı değildir.",
+    "aiNotConfigured": "Yapılandırılmadı. Çekirdek ürün yapay zekâ olmadan da tam olarak çalışır.",
+    "modulesHeading": "Modüller",
+    "modulesIntro": "Kontrolleri ve özellikleri herkes için açıp kapatın. Her değişiklik denetim kaydına yazılır.",
+    "colModule": "Modül",
+    "colCategory": "Kategori",
+    "colPlan": "En düşük plan",
+    "colHealth": "Sağlık",
+    "colEnabled": "Etkin",
+    "latency": "{ms} ms",
+    "noData": "Veri yok",
+    "toggleLabel": "{name} modülünü etkinleştir",
+    "on": "Açık",
+    "off": "Kapalı",
+    "usersHeading": "Kullanıcılar",
+    "colEmail": "E-posta",
+    "colRole": "Rol",
+    "colTwoFactor": "2FA",
+    "colLocale": "Dil",
+    "colCreated": "Oluşturulma",
+    "roles": {
+      "user": "Kullanıcı",
+      "admin": "Yönetici"
+    },
+    "yes": "Evet",
+    "no": "Hayır",
+    "scansHeading": "Son taramalar",
+    "colTarget": "Web sitesi",
+    "colStatus": "Durum",
+    "colScore": "Puan"
+  }
+}

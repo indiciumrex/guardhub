@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-labelledby="gh-mark-title">
+  <title id="gh-mark-title">GuardHub</title>
+  <path d="M24 3.5 40.5 9.6v12.1c0 10.4-6.9 19.5-16.5 22.8C14.4 41.2 7.5 32.1 7.5 21.7V9.6Z" fill="#0B2545"/>
+  <path d="M24 3.5 40.5 9.6v12.1c0 10.4-6.9 19.5-16.5 22.8Z" fill="#13315C"/>
+  <path d="M24 8.9 35.5 13.2v8.5c0 7.6-4.8 14.4-11.5 17.1-6.7-2.7-11.5-9.5-11.5-17.1v-8.5Z" fill="none" stroke="#2DD4BF" stroke-opacity=".35" stroke-width="1.2"/>
+  <path d="m16.8 23.6 5 5 9.6-9.8" fill="none" stroke="#2DD4BF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

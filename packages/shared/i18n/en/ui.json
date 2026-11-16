@@ -1,0 +1,415 @@
+{
+  "meta": {
+    "siteName": "GuardHub",
+    "title": "GuardHub: plain-language website security checks",
+    "description": "GuardHub finds the security gaps attackers actually use on your live site, explains them in plain language and shows you how to fix them. Passive, permission-first scanning."
+  },
+  "brand": {
+    "poweredBy": "Powered by <strong>{company}</strong>"
+  },
+  "nav": {
+    "skipToContent": "Skip to main content",
+    "home": "GuardHub home",
+    "primary": "Main navigation",
+    "scan": "Free scan",
+    "account": "Account",
+    "language": "Language"
+  },
+  "footer": {
+    "tagline": "Calm, plain-language security checks for people who build things.",
+    "copyright": "© {year} HKSolutions. All rights reserved."
+  },
+  "notFound": {
+    "code": "Error 404",
+    "title": "We couldn't find that page",
+    "body": "The link may be out of date, or the page may have moved. Nothing is wrong with your site.",
+    "home": "Go to the home page",
+    "scan": "Start a free scan"
+  },
+  "errorPage": {
+    "title": "Something went wrong on our side",
+    "body": "We couldn't load this page. Please try again in a moment. If it keeps happening, our team will already be looking into it.",
+    "reference": "Reference: {digest}",
+    "retry": "Try again",
+    "home": "Go to the home page"
+  },
+  "common": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copiedAnnouncement": "{label} copied to the clipboard",
+    "loading": "Loading…",
+    "errorLabel": "Error",
+    "retry": "Try again",
+    "working": "Please wait…"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again in a moment.",
+    "network_error": "We couldn't reach GuardHub. Check your connection and try again.",
+    "http_error": "The server sent an unexpected response. Please try again in a moment.",
+    "internal_error": "Something went wrong on our side. Please try again in a moment.",
+    "csrf_header_missing": "Your request was blocked as a security precaution. Reload the page and try again.",
+    "rate_limited": "Too many attempts in a short time. Please wait a few minutes and try again.",
+    "validation_error": "Some of the details aren't valid. Please check them and try again.",
+    "invalid_target_url": "That doesn't look like a public website address we can scan. Try something like example.com.",
+    "targetReason": {
+      "ip_literal": "Please enter the site's domain name, not an IP address.",
+      "internal_hostname": "We only scan public websites. That address points to a private or internal network.",
+      "scheme": "Only http:// and https:// addresses can be scanned.",
+      "credentials_in_url": "Please remove the username and password from the address."
+    },
+    "ownership_not_verified": "We couldn't confirm that you control this website yet.",
+    "verifyReason": {
+      "not_found": "We didn't find the verification file, meta tag or DNS record. Check that the value matches exactly.",
+      "target_unreachable": "We couldn't reach the website to look for the proof.",
+      "target_blocked": "The website blocked our verification request.",
+      "timeout": "The website took too long to respond. Please try again."
+    },
+    "challenge_not_found": "This verification request has expired. Please start again to get a new code.",
+    "scan_not_found": "We couldn't find that scan. It may have been saved to an account already, or it can only be opened in the tab where it started.",
+    "scan_in_progress": "A scan is already running for this project. Wait for it to finish first.",
+    "queue_unavailable": "Scanning is temporarily unavailable. Please try again in a few minutes.",
+    "no_checks_enabled": "All checks are switched off at the moment, so we can't run a scan. Please try again later.",
+    "project_not_found": "We couldn't find that project.",
+    "project_exists": "You already have a project for this address.",
+    "project_limit_reached": "You've reached the maximum number of projects. Delete one to add another.",
+    "not_found": "We couldn't find what you were looking for.",
+    "not_authenticated": "Please log in to continue.",
+    "session_invalid": "Your session has ended. Please log in again.",
+    "user_not_found": "Your session has ended. Please log in again.",
+    "invalid_credentials": "That email and password don't match. Please try again.",
+    "email_taken": "An account with this email already exists. Try logging in instead.",
+    "weak_password": "Please choose a longer, harder-to-guess password (at least 12 characters, not a common one, not containing your email).",
+    "invalid_totp": "That code isn't right. Check your authenticator app and enter the current 6-digit code.",
+    "mfa_required": "Please finish two-factor authentication to continue.",
+    "totp_not_setup": "Set up two-factor authentication first.",
+    "totp_already_enabled": "Two-factor authentication is already set up. Enter the code from your authenticator app.",
+    "unsupported_locale": "That language isn't available.",
+    "module_not_found": "That module doesn't exist."
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Info"
+  },
+  "scanStatus": {
+    "queued": "Queued",
+    "running": "Running",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "health": {
+    "ok": "OK",
+    "degraded": "Degraded",
+    "down": "Down",
+    "unknown": "Unknown"
+  },
+  "checks": {
+    "exposed_env": {
+      "name": "Leaked secrets and files",
+      "description": "Looks for files that should never be public, like .env files, a .git folder or cloud keys, that can hand attackers your passwords and API keys."
+    },
+    "security_headers": {
+      "name": "Browser security headers",
+      "description": "Checks the protective headers (CSP, HSTS and others) and cookie settings that tell browsers how to keep your visitors safe."
+    },
+    "tls_cert": {
+      "name": "HTTPS and certificate",
+      "description": "Makes sure your site uses HTTPS, redirects to it, and has a valid certificate that isn't about to expire."
+    },
+    "open_admin": {
+      "name": "Exposed admin and debug pages",
+      "description": "Finds admin panels, database tools and debug consoles that are reachable by anyone on the internet."
+    },
+    "default_creds": {
+      "name": "Unfinished installers",
+      "description": "Spots setup wizards and installers that were left open, which could let a stranger take over your app."
+    },
+    "info_leak": {
+      "name": "Information leaks",
+      "description": "Notices when your site reveals software versions, error details, debug mode or folder listings that help attackers plan."
+    }
+  },
+  "landing": {
+    "eyebrow": "Website security for founders",
+    "title": "Know what's exposed on your site, in plain language.",
+    "subtitle": "Enter your site's address and GuardHub checks the gaps attackers actually use: leaked secrets, open admin pages, weak HTTPS. You get clear answers and step-by-step fixes, not jargon.",
+    "cta": "Start a free scan",
+    "secondaryCta": "Create an account",
+    "ctaNote": "No sign-up needed. You'll only need to prove the site is yours.",
+    "how": {
+      "title": "How it works",
+      "enter": {
+        "title": "Enter",
+        "body": "Type your website's address and prove it's yours with a small file, a meta tag or a DNS record. It takes about two minutes."
+      },
+      "see": {
+        "title": "See",
+        "body": "Watch each check run live. Your report shows what's exposed and why it matters, with no stack traces and no jargon."
+      },
+      "fix": {
+        "title": "Fix",
+        "body": "Every finding comes with clear, step-by-step fix instructions. Rescan any time to confirm the gap is closed."
+      }
+    },
+    "checks": {
+      "title": "What we check",
+      "intro": "Six focused checks that cover the problems behind most real-world break-ins of small web apps."
+    },
+    "promise": {
+      "title": "Do no harm, with your permission",
+      "intro": "A security tool has to be trustworthy first. These rules are built into GuardHub, not just written down.",
+      "permission": {
+        "title": "Permission first",
+        "body": "We only scan a website after you've proved you control it. Nobody can use GuardHub to probe someone else's site."
+      },
+      "passive": {
+        "title": "Passive and gentle",
+        "body": "Our checks only read what's already public. We never change data, try passwords or put load on your servers, and we keep every scan rate-limited."
+      },
+      "privacy": {
+        "title": "Your data stays private",
+        "body": "Anything sensitive we find is masked before it's stored, so even the evidence never shows a full secret. We keep only what your report needs."
+      }
+    },
+    "final": {
+      "title": "Find out where you stand in a few minutes",
+      "body": "Your first scan is free and doesn't need an account."
+    }
+  },
+  "scanFlow": {
+    "metaTitle": "Free security scan",
+    "title": "Free website security scan",
+    "intro": "Check your live site for the security gaps attackers use most. No account needed.",
+    "steps": {
+      "step1": "Enter your website",
+      "step2": "Prove it's yours",
+      "step3": "Get your report"
+    },
+    "permissionNote": "We only scan sites you control, and our checks are passive: we read what's public and never change anything.",
+    "urlLabel": "Your website address",
+    "urlPlaceholder": "example.com",
+    "urlHint": "For example example.com or https://app.example.com. We scan the site's main address (its origin).",
+    "continue": "Continue",
+    "proveTitle": "Prove that you control {origin}",
+    "expires": "Pick any one of the methods below. This code is valid until {date} (UTC).",
+    "verifyAndScan": "Verify & start scan",
+    "verifying": "Checking your proof…",
+    "startOver": "Use a different address",
+    "dnsDelayHint": "Just added a DNS record? It can take a few minutes to appear. If verification fails, wait a little and try again."
+  },
+  "ownership": {
+    "intro": "Choose whichever method is easiest for you. You only need one of them.",
+    "wellKnown": {
+      "title": "Option 1: Upload a verification file",
+      "body": "Create a plain text file at the address below. Its only content should be the verification code.",
+      "urlLabel": "File address",
+      "contentLabel": "File content (verification code)"
+    },
+    "meta": {
+      "title": "Option 2: Add a meta tag to your home page",
+      "body": "Paste this tag inside the head section of your home page, then publish the change.",
+      "tagLabel": "Meta tag"
+    },
+    "dns": {
+      "title": "Option 3: Add a DNS TXT record",
+      "body": "In your domain provider's DNS settings, add a TXT record with this name and value.",
+      "nameLabel": "Record name (host)",
+      "valueLabel": "Record value"
+    }
+  },
+  "progress": {
+    "heading": "Checks",
+    "summary": "{done} of {total} checks finished.",
+    "nowRunning": "Now checking: {name}.",
+    "waiting": "Your scan is in the queue and will start in a moment.",
+    "status": {
+      "queued": "Waiting",
+      "running": "Checking…",
+      "done": "Done",
+      "failed": "Couldn't finish"
+    }
+  },
+  "scanLive": {
+    "metaTitle": "Scan report",
+    "noAccessLabel": "Report unavailable here",
+    "noAccess": "For your privacy, a free scan report can only be opened in the browser tab where you started the scan. Start a new scan, or create an account to keep your reports.",
+    "statusHeading": {
+      "queued": "Scan queued",
+      "running": "Scan in progress",
+      "done": "Scan complete",
+      "failed": "Scan couldn't run"
+    },
+    "runningIntro": "We're checking your site now. This usually takes less than a minute, so you can watch each check as it runs.",
+    "failedLabel": "Scan failed",
+    "failureReason": {
+      "target_unreachable": "We couldn't reach your website. Check that it's online and publicly reachable, then try again.",
+      "target_blocked": "We can't scan this address because it points to a private or internal network, or the site blocked our checks.",
+      "timeout": "The scan took too long and was stopped. Your site may be slow right now. Please try again later.",
+      "internal": "Something went wrong on our side while scanning. Please try again in a moment.",
+      "queue_unavailable": "Scanning was temporarily unavailable, so this scan didn't start. Please try again in a few minutes."
+    },
+    "saveBody": "Want to keep this report, rescan later and see what changed? Save it to a free account.",
+    "saveCta": "Save this scan & rescan later"
+  },
+  "report": {
+    "heading": "Security report for {host}",
+    "scannedAt": "Scanned on {date} (UTC)",
+    "countsHeading": "Issues by severity",
+    "outOf": "out of 100",
+    "scoreLabel": "Security score: {score} out of 100.",
+    "rating": {
+      "good": "Looking good",
+      "fair": "Needs attention",
+      "poor": "At risk"
+    },
+    "partial": "Some checks couldn't finish ({names}), so this report may be incomplete.",
+    "findingsHeading": "{count, plural, =0 {No issues found} one {# issue found} other {# issues found}}",
+    "cleanTitle": "Great news: we didn't find any issues",
+    "cleanBody": "None of our checks found an exposed secret, open admin page or weak HTTPS setting. Rescan after big changes to stay on top of it."
+  },
+  "finding": {
+    "whatsExposed": "What's exposed",
+    "whyItMatters": "Why it matters",
+    "howToFix": "How to fix it",
+    "evidence": "Show evidence (masked)",
+    "evidenceNote": "Sensitive values are masked. We never store a full secret.",
+    "evidenceKind": "Type",
+    "evidenceLocation": "Where",
+    "evidenceKinds": {
+      "http_response": "Web page response",
+      "http_header": "Response header",
+      "tls_handshake": "HTTPS connection",
+      "dns_record": "DNS record"
+    },
+    "status": {
+      "open": "Open",
+      "fixed": "Fixed",
+      "ignored": "Ignored"
+    }
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginIntro": "Welcome back. You'll confirm with your authenticator app next.",
+    "registerTitle": "Create your account",
+    "registerIntro": "Save your scans, rescan any time and track your progress. Two-factor authentication is required to keep your reports safe.",
+    "email": "Email address",
+    "password": "Password",
+    "loginSubmit": "Log in",
+    "registerSubmit": "Create account",
+    "noAccount": "New to GuardHub?",
+    "registerLink": "Create an account",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "passwordRules": "At least {min} characters. A short sentence you'll remember works well.",
+    "strength": {
+      "tooShort": "Too short: use at least {min} characters.",
+      "weak": "Weak: try making it longer or less predictable.",
+      "fair": "Fair: a few more characters would make it stronger.",
+      "strong": "Strong password."
+    }
+  },
+  "twoFactor": {
+    "title": "Two-factor authentication",
+    "setupIntro": "Protect your account with a code from an authenticator app. It's required for every GuardHub account.",
+    "verifyIntro": "Enter the 6-digit code from your authenticator app.",
+    "setupHeading": "Set up your authenticator app",
+    "setupStep1": "Open an authenticator app such as Google Authenticator, Microsoft Authenticator or 1Password.",
+    "setupStep2": "Scan the QR code, or enter the secret key by hand.",
+    "setupStep3": "Enter the 6-digit code the app shows to finish.",
+    "qrAlt": "QR code for adding GuardHub to your authenticator app",
+    "secretLabel": "Secret key (if you can't scan the code)",
+    "codeLabel": "6-digit code",
+    "codeHint": "The code changes every 30 seconds.",
+    "submit": "Verify"
+  },
+  "account": {
+    "title": "Your projects",
+    "intro": "Each project is a website you've verified. Rescan any time and track how its security changes.",
+    "navLabel": "Account navigation",
+    "projectsNav": "Projects",
+    "adminNav": "Admin",
+    "signedInAs": "Signed in as {email}",
+    "logout": "Log out",
+    "projectsHeading": "Projects",
+    "noProjects": "You don't have any projects yet. Add your first website below.",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "lastScan": "Last scan: {date}.",
+    "scoreValue": "Score {score}/100.",
+    "neverScanned": "Not scanned yet.",
+    "addHeading": "Add a project",
+    "addIntro": "Add a website you control. You'll verify ownership on the next screen.",
+    "projectName": "Project name",
+    "projectUrl": "Website address",
+    "addSubmit": "Add project"
+  },
+  "project": {
+    "metaTitle": "Project",
+    "back": "← All projects",
+    "backToProject": "← Back to project",
+    "ownershipHeading": "Ownership",
+    "verifiedOn": "Ownership verified on {date} (UTC).",
+    "verifiedPlain": "Ownership verified.",
+    "verify": "Verify",
+    "verifying": "Checking…",
+    "historyHeading": "Scan history",
+    "historyCaption": "Previous scans of this project, newest first",
+    "rescan": "Rescan",
+    "rescanNeedsVerification": "Verify ownership to start scanning this website.",
+    "scanInProgress": "A scan is running right now. You can start another one when it finishes.",
+    "noScans": "No scans yet.",
+    "colDate": "Date",
+    "colScore": "Score",
+    "colFindings": "Issues",
+    "colStatus": "Status",
+    "colReport": "Report",
+    "noScore": "–",
+    "viewReport": "View report"
+  },
+  "claim": {
+    "title": "Save your scan",
+    "working": "Saving your scan to your account…",
+    "nothingLabel": "Nothing to save",
+    "nothing": "We couldn't find a scan to save in this browser tab. Free scan reports are only kept in the tab where they were started.",
+    "toAccount": "Go to your projects"
+  },
+  "admin": {
+    "title": "Administration",
+    "unavailable": "This information isn't available right now.",
+    "healthHeading": "System health",
+    "overall": "Overall",
+    "aiHeading": "AI provider",
+    "aiActive": "Active ({provider}). AI only adds optional extras; core scanning doesn't depend on it.",
+    "aiNotConfigured": "Not configured. The core product runs fully without AI.",
+    "modulesHeading": "Modules",
+    "modulesIntro": "Turn checks and features on or off for everyone. Changes are recorded in the audit log.",
+    "colModule": "Module",
+    "colCategory": "Category",
+    "colPlan": "Minimum plan",
+    "colHealth": "Health",
+    "colEnabled": "Enabled",
+    "latency": "{ms} ms",
+    "noData": "No data",
+    "toggleLabel": "Enable {name}",
+    "on": "On",
+    "off": "Off",
+    "usersHeading": "Users",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "colTwoFactor": "2FA",
+    "colLocale": "Language",
+    "colCreated": "Created",
+    "roles": {
+      "user": "User",
+      "admin": "Admin"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "scansHeading": "Recent scans",
+    "colTarget": "Website",
+    "colStatus": "Status",
+    "colScore": "Score"
+  }
+}
