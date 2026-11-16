@@ -1,0 +1,5 @@
+# GuardHub only: nightly backup (14-day retention) and a weekly PROVEN restore drill.
+# Installed as /etc/cron.d/guardhub-backup. A failed drill exits non-zero and is logged.
+SHELL=/bin/bash
+17 3 * * * root /opt/guardhub/current/ops/deploy/guardhub-ctl.sh backup >> /var/log/guardhub-backup.log 2>&1
+47 3 * * 0 root /opt/guardhub/current/ops/deploy/guardhub-ctl.sh restore-drill >> /var/log/guardhub-backup.log 2>&1

@@ -20,6 +20,7 @@ ENV_FILE=$ROOT/shared/.env
 BACKUPS=$ROOT/backups
 RETENTION_DAYS=14
 HEALTH_TIMEOUT=240
+DRILL=guardhub-restore-drill # name of the throwaway container AND its internal network
 
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
@@ -94,6 +95,11 @@ cmd_backup() {
   echo "$file"
 }
 
+drill_cleanup() { # globals only: also runs from the EXIT trap, after locals are gone
+  docker rm -f "$DRILL" >/dev/null 2>&1 || true
+  docker network rm "$DRILL" >/dev/null 2>&1 || true
+}
+
 cmd_restore_drill() {
   local dump=${1:-$(ls -1t "$BACKUPS"/guardhub-*.dump 2>/dev/null | head -1)}
   [[ -f $dump && -f $dump.manifest ]] || die "no backup (with manifest) to restore"
@@ -103,11 +109,10 @@ cmd_restore_drill() {
   expected_sha=$(grep '^sha256=' "$dump.manifest" | cut -d= -f2-)
   [[ $(sha256sum "$dump" | cut -d' ' -f1) == "$expected_sha" ]] || die "checksum mismatch: $dump"
 
-  local name=guardhub-restore-drill net=guardhub-restore-drill pw
+  local name=$DRILL net=$DRILL pw
   pw=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')
-  cleanup() { docker rm -f "$name" >/dev/null 2>&1 || true; docker network rm "$net" >/dev/null 2>&1 || true; }
-  trap cleanup EXIT
-  cleanup
+  drill_cleanup
+  trap drill_cleanup EXIT
   # internal network: no internet, not reachable from the host, nothing published
   docker network create --internal "$net" >/dev/null
   docker run -d --name "$name" --network "$net" --memory 512m --cpus 0.5 \
