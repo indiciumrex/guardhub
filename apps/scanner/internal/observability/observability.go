@@ -1,5 +1,6 @@
 // Package observability reports scanner errors to Sentry (or any Sentry-protocol
-// server). It is completely OFF unless SENTRY_DSN is set. It sends errors only
+// server). It is completely OFF unless SENTRY_DSN_SCANNER (fallback: SENTRY_DSN)
+// is set. It sends errors only
 // (no traces or profiles), tags every event service=scanner, and runs each
 // event through Scrub so no request data, query strings, credentials, tokens,
 // e-mail or IP addresses, or stack-frame variables leave the process (§9).
@@ -34,14 +35,18 @@ type Config struct {
 	Release     string
 }
 
-// FromLookup reads SENTRY_DSN, SENTRY_ENVIRONMENT (default "production") and
+// FromLookup reads SENTRY_DSN_SCANNER (SENTRY_DSN as a fallback), SENTRY_ENVIRONMENT (default "production") and
 // GUARDHUB_VERSION (the release) through lookup (os.LookupEnv in production).
 func FromLookup(lookup func(string) (string, bool)) Config {
 	get := func(key string) string {
 		v, _ := lookup(key)
 		return strings.TrimSpace(v)
 	}
-	cfg := Config{DSN: get("SENTRY_DSN"), Environment: get("SENTRY_ENVIRONMENT"), Release: get("GUARDHUB_VERSION")}
+	dsn := get("SENTRY_DSN_SCANNER")
+	if dsn == "" {
+		dsn = get("SENTRY_DSN")
+	}
+	cfg := Config{DSN: dsn, Environment: get("SENTRY_ENVIRONMENT"), Release: get("GUARDHUB_VERSION")}
 	if cfg.Environment == "" {
 		cfg.Environment = "production"
 	}
@@ -125,10 +130,10 @@ func (r *statusRecorder) result() error {
 
 // SendTestEvent implements `scanner sentry-test`: it sends one test event with
 // the production options and waits for the server's answer. Exit codes:
-// 0 accepted, 1 delivery failed, 2 SENTRY_DSN not set.
+// 0 accepted, 1 delivery failed, 2 no DSN set.
 func SendTestEvent(ctx context.Context, cfg Config, out io.Writer, base http.RoundTripper) int {
 	if !cfg.Enabled() {
-		_, _ = fmt.Fprintln(out, "SENTRY_DSN is not set; error tracking is off. Nothing was sent.")
+		_, _ = fmt.Fprintln(out, "SENTRY_DSN_SCANNER (or SENTRY_DSN) is not set; error tracking is off. Nothing was sent.")
 		return 2
 	}
 	if base == nil {
@@ -137,7 +142,7 @@ func SendTestEvent(ctx context.Context, cfg Config, out io.Writer, base http.Rou
 	rec := &statusRecorder{next: base}
 	client, err := sentry.NewClient(cfg.Options(rec))
 	if err != nil {
-		_, _ = fmt.Fprintf(out, "Delivery FAILED: invalid SENTRY_DSN (%s).\n", ScrubText(err.Error()))
+		_, _ = fmt.Fprintf(out, "Delivery FAILED: invalid SENTRY_DSN_SCANNER (%s).\n", ScrubText(err.Error()))
 		return 1
 	}
 	hub := sentry.NewHub(client, sentry.NewScope())

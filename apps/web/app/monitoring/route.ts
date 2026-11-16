@@ -1,6 +1,6 @@
 /**
  * Same-origin tunnel for browser error events (see lib/observability/tunnel.ts). Returns 404
- * unless SENTRY_DSN is set and SENTRY_BROWSER is not "off". POST only.
+ * unless SENTRY_DSN_WEB (or SENTRY_DSN) is set and SENTRY_BROWSER is not "off". POST only.
  */
 import { tunnelPost } from "@/lib/observability/tunnel";
 

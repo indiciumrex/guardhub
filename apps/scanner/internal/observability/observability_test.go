@@ -38,6 +38,13 @@ func TestFromLookupDefaultsAndOff(t *testing.T) {
 	if !cfg.Enabled() || cfg.DSN != "https://k@example.invalid/1" || cfg.Environment != "staging" || cfg.Release != "1.2.3" {
 		t.Fatalf("unexpected config: %+v", cfg)
 	}
+	// The per-service DSN wins over the shared fallback.
+	cfg = FromLookup(lookup(map[string]string{
+		"SENTRY_DSN": "https://k@example.invalid/1", "SENTRY_DSN_SCANNER": "https://s@o1.ingest.de.sentry.io/2",
+	}))
+	if cfg.DSN != "https://s@o1.ingest.de.sentry.io/2" {
+		t.Fatalf("SENTRY_DSN_SCANNER must win, got %q", cfg.DSN)
+	}
 }
 
 func TestOptionsAreErrorsOnlyAndPrivate(t *testing.T) {

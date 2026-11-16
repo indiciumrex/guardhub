@@ -1,6 +1,6 @@
 /**
  * Server-side error reporting for the Next.js node runtime. Loaded lazily from
- * instrumentation.ts ONLY when SENTRY_DSN is set, so the SDK is never even imported otherwise.
+ * instrumentation.ts ONLY when SENTRY_DSN_WEB (or SENTRY_DSN) is set, so the SDK is never even imported otherwise.
  * Errors only: no tracing (tracesSampleRate left unset — in the JS SDK any number, even 0,
  * switches the tracing machinery on), no OpenTelemetry setup, no default integrations (so no
  * http/console breadcrumbs and no local variables), and every event goes through scrubEvent.

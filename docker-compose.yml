@@ -4,9 +4,10 @@
 #   3) open http://localhost:3000
 # Only `web` is published to the host. PostgreSQL, Redis and the API sit on an internal network;
 # only the scanner (which must reach customer targets) gets an egress network.
-# Error tracking (Sentry protocol) is OFF unless SENTRY_DSN is set. api/api-worker have no
-# internet, so they report through the `sentry-relay` service (profile "sentry"); scanner and
-# web report directly. See docs/architecture.md §7.
+# Error tracking (Sentry protocol) is OFF unless a DSN is set. One Sentry project per service:
+# SENTRY_DSN_API (api + api-worker), SENTRY_DSN_SCANNER, SENTRY_DSN_WEB; SENTRY_DSN is only a
+# fallback. api/api-worker have no internet, so they report through the `sentry-relay` service
+# (profile "sentry"); scanner and web report directly. See docs/architecture.md §7.
 
 name: guardhub
 
@@ -23,8 +24,9 @@ x-api-env: &api-env
   AI_PROVIDER: ${AI_PROVIDER:-}
   AI_API_KEY: ${AI_API_KEY:-}
   LOG_LEVEL: ${LOG_LEVEL:-info}
-  # Error tracking: off unless SENTRY_DSN is set. The DSN host is replaced by the relay (key and
-  # project id kept), because api/api-worker sit on the internal-only backend network.
+  # Error tracking: off unless SENTRY_DSN_API (or the SENTRY_DSN fallback) is set. The DSN host
+  # is replaced by the relay (key and project id kept): api/api-worker have no internet.
+  SENTRY_DSN_API: ${SENTRY_DSN_API:-}
   SENTRY_DSN: ${SENTRY_DSN:-}
   SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
   SENTRY_RELAY_URL: ${SENTRY_RELAY_URL:-http://sentry-relay:3000}
@@ -122,6 +124,7 @@ services:
       SCANNER_REQUEST_TIMEOUT: ${SCANNER_REQUEST_TIMEOUT:-10s}
       SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN_SCANNER: ${SENTRY_DSN_SCANNER:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
       GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
@@ -139,6 +142,7 @@ services:
     environment:
       API_INTERNAL_URL: http://api:8000
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      SENTRY_DSN_WEB: ${SENTRY_DSN_WEB:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
       SENTRY_BROWSER: ${SENTRY_BROWSER:-on}
@@ -162,8 +166,9 @@ services:
     image: getsentry/relay:26.4.0
     profiles: [sentry]
     restart: unless-stopped
-    # --upstream-dsn takes only scheme/host/port from the DSN (key and project are ignored).
-    command: ["run", "--config", "/etc/relay", "--upstream-dsn", "${SENTRY_DSN:-}"]
+    # Upstream = scheme/host/port of the API DSN (e.g. https://o<org>.ingest.de.sentry.io for the EU
+    # region); --upstream-dsn ignores its key and project. api and api-worker send via this relay.
+    command: ["run", "--config", "/etc/relay", "--upstream-dsn", "${SENTRY_DSN_API:-${SENTRY_DSN:-}}"]
     volumes:
       - ./ops/docker/relay:/etc/relay:ro
     read_only: true

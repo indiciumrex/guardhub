@@ -166,7 +166,7 @@ def test_test_event_cli_fails_without_dsn(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("SENTRY_DSN", "")
     lines: list[str] = []
     assert obs.send_test_event("api", out=lines.append) == 2
-    assert "SENTRY_DSN is not set" in lines[0]
+    assert "is not set" in lines[0]
 
 
 class _Sink(http.server.BaseHTTPRequestHandler):
@@ -231,3 +231,14 @@ def test_test_event_reports_unreachable(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("SENTRY_RELAY_URL", "http://127.0.0.1:1")
     lines: list[str] = []
     assert obs.send_test_event("api", out=lines.append) == 1
+
+
+def test_per_service_dsn_wins_over_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    eu = "https://" + "e" * 32 + "@o4500000000000001.ingest.de.sentry.io/4500000000000002"
+    monkeypatch.setenv("SENTRY_DSN", DSN)
+    monkeypatch.setenv("SENTRY_DSN_API", eu)
+    assert SentrySettings().dsn == eu
+    monkeypatch.setenv("SENTRY_DSN_API", "")
+    assert SentrySettings().dsn == DSN
+    relayed = effective_dsn(eu, "http://sentry-relay:3000")
+    assert relayed == "http://" + "e" * 32 + "@sentry-relay:3000/4500000000000002"

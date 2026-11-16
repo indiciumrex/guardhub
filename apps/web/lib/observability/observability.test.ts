@@ -94,6 +94,11 @@ describe("config", () => {
       "https://sentry.example/prefix/api/7/envelope/",
     );
     expect(errorTrackingConfig({ SENTRY_DSN: DSN, SENTRY_BROWSER: "off" })?.browser).toBe(false);
+    // The per-service DSN wins over the shared fallback (EU-region host shape).
+    const web = `https://${PUBLIC_ID}@o4500000000000001.ingest.de.sentry.io/4500000000000003`;
+    expect(errorTrackingConfig({ SENTRY_DSN: DSN, SENTRY_DSN_WEB: web })?.dsn.envelopeUrl).toBe(
+      "https://o4500000000000001.ingest.de.sentry.io/api/4500000000000003/envelope/",
+    );
   });
 
   it("does not change the CSP: connect-src stays 'self'", () => {

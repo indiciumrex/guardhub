@@ -3,13 +3,15 @@
  * Runs inside the container only (no HTTP route, so no public attack surface):
  *   docker compose exec web node apps/web/scripts/sentry-test.mjs
  * Uses the same SDK, DSN, environment, release and service tag as the web server.
- * Exit codes: 0 accepted (prints the event id), 1 delivery failed, 2 SENTRY_DSN not set.
+ * Exit codes: 0 accepted (prints the event id), 1 delivery failed, 2 no DSN set.
  */
 import * as Sentry from "@sentry/node";
 
-const dsn = (process.env.SENTRY_DSN ?? "").trim();
+const dsn = (process.env.SENTRY_DSN_WEB?.trim() || process.env.SENTRY_DSN?.trim()) ?? "";
 if (!dsn) {
-  console.log("SENTRY_DSN is not set; error tracking is off. Nothing was sent.");
+  console.log(
+    "SENTRY_DSN_WEB (or SENTRY_DSN) is not set; error tracking is off. Nothing was sent.",
+  );
   process.exit(2);
 }
 

@@ -1,4 +1,4 @@
-"""Error tracking (Sentry protocol) for the api and api-worker; fully OFF unless SENTRY_DSN is set.
+"""Error tracking (Sentry protocol) for api and api-worker; OFF unless SENTRY_DSN_API (or SENTRY_DSN) is set.
 
 Errors only (traces/profiles sample rate 0) and no PII (§9): `scrub_event` drops request bodies,
 cookies, auth/scan-token/CSRF headers, query strings, client IPs, users and local variables. It
@@ -96,11 +96,18 @@ class SentrySettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=None, extra="ignore", case_sensitive=False)
 
+    # Per-service DSN (api AND api-worker share the api project); SENTRY_DSN is only a fallback.
+    sentry_dsn_api: SecretStr = SecretStr("")
     sentry_dsn: SecretStr = SecretStr("")
     sentry_environment: str = "production"
     # Production: http://sentry-relay:3000 (api/worker have no internet). Empty = DSN host.
     sentry_relay_url: str = ""
     guardhub_version: str = ""
+
+    @property
+    def dsn(self) -> str:
+        """SENTRY_DSN_API wins; SENTRY_DSN is the fallback; empty means off."""
+        return self.sentry_dsn_api.get_secret_value().strip() or self.sentry_dsn.get_secret_value().strip()
 
 
 def scrub_text(value: str) -> str:
@@ -217,7 +224,7 @@ def init_observability(
     `transport` is only for the test-event CLI; services use the SDK's background HTTP transport.
     """
     settings = settings or SentrySettings()
-    dsn = settings.sentry_dsn.get_secret_value().strip()
+    dsn = settings.dsn
     if not dsn:
         return False
     sentry_sdk.init(
@@ -288,7 +295,7 @@ def send_test_event(service: Service, out: Callable[[str], object] = print) -> i
     settings = SentrySettings()
     held = _HeldTransport()
     if not init_observability(service, settings, transport=held):
-        out("SENTRY_DSN is not set; error tracking is off. Nothing was sent.")
+        out("SENTRY_DSN_API (or SENTRY_DSN) is not set; error tracking is off. Nothing was sent.")
         return 2
     client = sentry_sdk.get_client()
     try:

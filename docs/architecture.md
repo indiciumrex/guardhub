@@ -190,7 +190,10 @@ info 0. It's deterministic: the same findings always give the same score.
 
 ## 7. Error tracking (Sentry protocol) — launch gate H
 
-Off unless `SENTRY_DSN` is set; with it empty no SDK is initialised and nothing changes.
+Each service is off unless its own DSN is set: `SENTRY_DSN_API` (api **and** api-worker),
+`SENTRY_DSN_SCANNER`, `SENTRY_DSN_WEB` — one Sentry project each (production: EU region,
+`o<org>.ingest.de.sentry.io`). `SENTRY_DSN` is an optional fallback used only when a service's own
+DSN is empty. With no DSN no SDK is initialised and nothing changes.
 
 | Service | How it reports | `service` tag |
 |---|---|---|
@@ -200,13 +203,14 @@ Off unless `SENTRY_DSN` is set; with it empty no SDK is initialised and nothing 
 | web (server) | `@sentry/node`, lazy-loaded in `instrumentation.ts`; Next `onRequestError` (route pattern only), direct | `web` (+ `runtime=node`) |
 | web (browser) | `@sentry/browser`, lazy chunk; posts to same-origin `POST /monitoring`, which re-scrubs and forwards | `web` (+ `runtime=browser`) |
 
-- **Env:** `SENTRY_DSN` (empty = off), `SENTRY_ENVIRONMENT` (default `production`), release =
+- **Env:** the DSNs above, `SENTRY_ENVIRONMENT` (default `production`), release =
   `GUARDHUB_VERSION` (the image tag; compose passes it into every container), `SENTRY_RELAY_URL`
   (api/worker only; default `http://sentry-relay:3000`), `SENTRY_BROWSER=on|off` (web).
 - **Network isolation is unchanged.** api/api-worker stay on the `internal: true` backend network.
   The `sentry-relay` service (`getsentry/relay:26.4.0`, proxy mode, config in
   `ops/docker/relay/config.yml`) is the only thing on backend + egress; it forwards Sentry
-  envelopes to the DSN's host and nothing else. It runs only with `COMPOSE_PROFILES=sentry`.
+  envelopes to the host of `SENTRY_DSN_API` (the EU ingest host, via `--upstream-dsn`) and
+  nothing else. It runs only with `COMPOSE_PROFILES=sentry`.
   api/worker rewrite the DSN host to the relay, keeping the public key and project id.
 - **Errors only:** traces/profiles sample rate 0 in Python/Go; in the JS SDKs `tracesSampleRate`
   is left unset because any number (even 0) switches the tracing machinery on there.

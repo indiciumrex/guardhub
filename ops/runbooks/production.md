@@ -56,19 +56,23 @@ value is wrong, per-IP rate limits apply to the proxy instead of the client.
 
 ## 6. Error tracking (Sentry protocol)
 
-Off until `SENTRY_DSN` is set (details: `docs/architecture.md` §7). To turn it on:
+Each service is off until its own DSN is set (details: `docs/architecture.md` §7). To turn it on:
 
-1. In Sentry create one project and copy its DSN. In the project's *Security & Privacy*
-   settings also enable **Prevent Storing of IP Addresses** and the default data scrubbers
-   (defence in depth; every service already scrubs before sending).
-2. Add to `/opt/guardhub/shared/.env`:
+1. Use the three Sentry projects (EU region): api (shared by api and api-worker), web, scanner.
+   In each project's *Security & Privacy* settings also enable **Prevent Storing of IP
+   Addresses** and the default data scrubbers (defence in depth; every service already scrubs).
+2. Add to `/opt/guardhub/shared/.env` (never to the repo):
    ```
-   SENTRY_DSN=https://<public-key>@<host>/<project-id>
+   SENTRY_DSN_API=https://<key>@o<org>.ingest.de.sentry.io/<api-project-id>
+   SENTRY_DSN_WEB=https://<key>@o<org>.ingest.de.sentry.io/<web-project-id>
+   SENTRY_DSN_SCANNER=https://<key>@o<org>.ingest.de.sentry.io/<scanner-project-id>
    SENTRY_ENVIRONMENT=production
    COMPOSE_PROFILES=sentry
    ```
    `COMPOSE_PROFILES=sentry` starts `sentry-relay`, the only route api/api-worker have to Sentry
-   (they stay on the internal network). Optional: `SENTRY_BROWSER=off` disables browser
+   (they stay on the internal network); its upstream is the host of `SENTRY_DSN_API`
+   (`https://o<org>.ingest.de.sentry.io`). `SENTRY_DSN` is only a fallback for an empty
+   per-service DSN; leave it empty. Optional: `SENTRY_BROWSER=off` disables browser
    reporting and makes `POST /monitoring` a 404.
 3. Pre-pull the relay image and re-activate the running release so every container gets the new
    env (the release tag becomes the Sentry `release`):
@@ -78,8 +82,8 @@ Off until `SENTRY_DSN` is set (details: `docs/architecture.md` §7). To turn it 
    ```
 
 **Prove delivery.** Run all four on the server. Each prints the event id and exits 0 only when
-the Sentry server (via the relay, for api/api-worker) accepted the event; exit 2 = `SENTRY_DSN`
-not set; exit 1 = network error or rejected (the message says which). Then search Sentry for
+the Sentry server (via the relay, for api/api-worker) accepted the event; exit 2 = that service's DSN
+is not set; exit 1 = network error or rejected (the message says which). Then search Sentry for
 each id (tag `service` = api / api-worker / scanner / web).
 
 ```bash

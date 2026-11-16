@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   await headers(); // opt into dynamic rendering (per-request CSP nonce)
   const locale = await getLocale();
   const messages = await getMessages();
-  const tracking = errorTrackingConfig(); // runtime env; null unless SENTRY_DSN is set
+  const tracking = errorTrackingConfig(); // runtime env; null unless SENTRY_DSN_WEB (or SENTRY_DSN) is set
   return (
     <html lang={locale}>
       <body className="flex min-h-screen flex-col">

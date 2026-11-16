@@ -1,7 +1,7 @@
 /**
  * Error-tracking configuration from the RUNTIME environment (no build-time DSN, so one image
- * works with or without Sentry). Everything is off unless SENTRY_DSN is set.
- * - SENTRY_DSN, SENTRY_ENVIRONMENT (default "production"), GUARDHUB_VERSION (release).
+ * works with or without Sentry). Everything is off unless SENTRY_DSN_WEB (or SENTRY_DSN) is set.
+ * - SENTRY_DSN_WEB (fallback SENTRY_DSN), SENTRY_ENVIRONMENT (default "production"), GUARDHUB_VERSION (release).
  * - SENTRY_BROWSER=off disables browser reporting and the /monitoring tunnel (default on).
  */
 
@@ -59,7 +59,8 @@ export function parseDsn(raw: string): ParsedDsn | null {
 export function errorTrackingConfig(
   env: Record<string, string | undefined> = process.env,
 ): ErrorTrackingConfig | null {
-  const raw = env.SENTRY_DSN?.trim();
+  // Per-service DSN wins; SENTRY_DSN is only a fallback.
+  const raw = env.SENTRY_DSN_WEB?.trim() || env.SENTRY_DSN?.trim();
   if (!raw) return null;
   const dsn = parseDsn(raw);
   if (!dsn) return null;

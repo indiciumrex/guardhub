@@ -1,7 +1,7 @@
 /**
  * Browser error reporting. The SDK is lazy-loaded (its own chunk, fetched by Next's nonce'd
  * loader, so the strict CSP is unchanged) only when the server rendered <BrowserErrorReporting>,
- * i.e. only when SENTRY_DSN is set. Envelopes go to our same-origin /monitoring tunnel, so
+ * i.e. only when SENTRY_DSN_WEB (or SENTRY_DSN) is set. Envelopes go to our same-origin /monitoring tunnel, so
  * connect-src stays 'self'. Errors only: no tracing, replay, feedback, sessions or breadcrumbs.
  */
 import { BROWSER_DSN, SERVICE, TUNNEL_PATH } from "./config";

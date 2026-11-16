@@ -3,7 +3,7 @@
 // probe client on a bounded worker pool, and publishes results (gh:events,
 // progress hashes, verify replies). Configuration comes only from the
 // environment (see internal/config). It stops gracefully on SIGTERM/SIGINT.
-// Error-level logs and panics go to Sentry only when SENTRY_DSN is set
+// Error-level logs and panics go to Sentry only when SENTRY_DSN_SCANNER (or SENTRY_DSN) is set
 // (internal/observability); `scanner sentry-test` sends one test event.
 package main
 
