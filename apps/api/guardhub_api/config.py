@@ -10,8 +10,9 @@ import base64
 import binascii
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PLACEHOLDER_MARK = "change-me"
@@ -51,9 +52,41 @@ class Settings(BaseSettings):
     # Mirrors the scanner's allowlist: only for the local e2e demo target. Empty in production.
     scanner_allow_private_hosts: str = ""
 
+    # Scheduled monitoring (docs/architecture.md §8.2). Small numbers: the host is shared (§7.2).
+    scheduler_batch: int = Field(default=10, ge=1, le=100)
+    scheduler_max_inflight: int = Field(default=2, ge=1, le=50)
+
+    # Alert e-mail (§8.4). Empty SMTP_HOST = e-mail alerts are recorded as skipped.
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str = ""
+    smtp_password: SecretStr = SecretStr("")
+    smtp_from: str = ""
+    smtp_security: Literal["starttls", "tls", "none"] = "starttls"
+    # Plaintext SMTP is allowed ONLY for these hosts (a local sink such as mailpit), never by default.
+    smtp_insecure_hosts: str = ""
+    smtp_timeout_seconds: float = Field(default=15.0, ge=1, le=60)
+
     @property
     def private_host_allowlist(self) -> frozenset[str]:
         return frozenset(h.strip().lower() for h in self.scanner_allow_private_hosts.split(",") if h.strip())
+
+    @property
+    def smtp_insecure_allowlist(self) -> frozenset[str]:
+        return frozenset(h.strip().lower() for h in self.smtp_insecure_hosts.split(",") if h.strip())
+
+    @model_validator(mode="after")
+    def _smtp_is_safe(self) -> Settings:
+        if not self.smtp_host:
+            return self
+        host = self.smtp_host.strip().lower()
+        if self.smtp_security == "none" and host not in self.smtp_insecure_allowlist:
+            raise ValueError("SMTP_SECURITY=none is only allowed for a host listed in SMTP_INSECURE_HOSTS")
+        if self.smtp_security == "none" and self.smtp_username:
+            raise ValueError("SMTP credentials are never sent without TLS (SMTP_SECURITY=none)")
+        if not self.smtp_from.strip() or any(c in self.smtp_from for c in "\r\n"):
+            raise ValueError("SMTP_FROM must be set (one line) when SMTP_HOST is set")
+        return self
 
     @field_validator("jwt_secret", "hash_pepper")
     @classmethod
