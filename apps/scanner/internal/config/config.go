@@ -24,7 +24,7 @@ const (
 	DefaultCheckConcurrency   = 3
 	DefaultScanDeadline       = 180 * time.Second
 	MaxScanDeadline           = 300 * time.Second
-	DefaultVerifyDeadline     = 30 * time.Second
+	DefaultVerifyDeadline     = 20 * time.Second // below the API's 25 s wait, so the scanner always answers first
 	DefaultShutdownTimeout    = 25 * time.Second
 )
 

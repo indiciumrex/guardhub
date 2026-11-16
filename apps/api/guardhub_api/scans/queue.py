@@ -7,6 +7,7 @@ hashes. Payloads are versioned JSON (`"v": 1`).
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from dataclasses import dataclass
 
@@ -17,6 +18,9 @@ EVENTS_STREAM = "gh:events"
 SCANNER_GROUP = "gh-scanners"
 API_GROUP = "gh-api"
 STREAM_MAXLEN = 10_000
+# A blocking BLPOP must return well inside the client's socket_timeout (10 s, common/redis.py),
+# or the socket read times out first and a slow-but-fine verification looks like an outage.
+BLPOP_SLICE_SECONDS = 5.0
 
 
 def progress_key(scan_id: uuid.UUID | str) -> str:
@@ -61,7 +65,13 @@ async def request_verification(redis: Redis, *, target: str, token: str, wait_se
         "reply_key": reply_key,
     }
     await redis.xadd(JOBS_STREAM, {"payload": json.dumps(payload)}, maxlen=STREAM_MAXLEN, approximate=True)
-    reply = await redis.blpop([reply_key], timeout=wait_seconds)
+    deadline = time.monotonic() + wait_seconds
+    reply = None
+    while reply is None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        reply = await redis.blpop([reply_key], timeout=min(remaining, BLPOP_SLICE_SECONDS))
     if reply is None:
         return VerifyResult(verified=False, method=None, error="timeout")
     await redis.delete(reply_key)

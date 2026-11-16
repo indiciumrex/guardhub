@@ -80,6 +80,24 @@ async def test_request_verification_times_out(redis: fakeredis.FakeAsyncRedis) -
     assert not result.verified and result.error == "timeout"
 
 
+async def test_request_verification_waits_across_blpop_slices(
+    redis: fakeredis.FakeAsyncRedis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A slow scanner reply (later than one BLPOP slice) is still received, not a timeout."""
+    monkeypatch.setattr(queue, "BLPOP_SLICE_SECONDS", 0.2)
+
+    async def slow_reply() -> None:
+        await asyncio.sleep(0.7)
+        await _fake_scanner_reply(redis, {"verified": True, "method": "dns_txt", "error": None})
+
+    responder = asyncio.create_task(slow_reply())
+    result = await queue.request_verification(
+        redis, target="https://example.com", token="ghv_tok", wait_seconds=3
+    )
+    await responder
+    assert result.verified and result.method == "dns_txt"
+
+
 async def test_rate_limit_blocks_after_limit(redis: fakeredis.FakeAsyncRedis) -> None:
     for _ in range(3):
         await ratelimit.enforce(redis, "t", "k", limit=3, window=60)

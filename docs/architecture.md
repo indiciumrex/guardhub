@@ -101,7 +101,7 @@ never creates the `gh-api` group; the API owns it.
 | Scan deadline | `deadline_seconds` from the job (max 300) |
 | Certificates | scan probes skip certificate validation (so a broken cert is *reported* by `tls_cert`, not fatal); ownership-verify probes always validate |
 | Per-scan GET cache | identical GETs within one scan are served once (fewer requests to the target); checks still share no state |
-| Optional tuning | `SCANNER_HOST_BURST`, `SCANNER_VERIFY_DEADLINE` (30s), `SCANNER_SHUTDOWN_TIMEOUT` (25s), `SCANNER_CONSUMER_NAME` |
+| Optional tuning | `SCANNER_HOST_BURST`, `SCANNER_VERIFY_DEADLINE` (20s; must stay below the API's `VERIFY_TIMEOUT_SECONDS`, 25s), `SCANNER_SHUTDOWN_TIMEOUT` (25s), `SCANNER_CONSUMER_NAME` |
 | Secret masking | values ≥ 9 chars → `****` + last 4; shorter values → `****` (the last 4 would reveal most of it) |
 
 **One-shot self-scan (dogfooding):** `scanner selfscan <origin> <token>` verifies ownership
