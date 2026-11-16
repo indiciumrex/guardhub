@@ -53,3 +53,45 @@ value is wrong, per-IP rate limits apply to the proxy instead of the client.
 - **Suspected abuse of the free scan:** limits are per IP (5 scans/h) and per target
   (5/h) in `apps/api/guardhub_api/scans/public.py`. The audit log records `target.verified`.
 - **Disable a misbehaving check instantly:** `/admin` → Modules → switch it off. New scans skip it.
+
+## 6. Error tracking (Sentry protocol)
+
+Off until `SENTRY_DSN` is set (details: `docs/architecture.md` §7). To turn it on:
+
+1. In Sentry create one project and copy its DSN. In the project's *Security & Privacy*
+   settings also enable **Prevent Storing of IP Addresses** and the default data scrubbers
+   (defence in depth; every service already scrubs before sending).
+2. Add to `/opt/guardhub/shared/.env`:
+   ```
+   SENTRY_DSN=https://<public-key>@<host>/<project-id>
+   SENTRY_ENVIRONMENT=production
+   COMPOSE_PROFILES=sentry
+   ```
+   `COMPOSE_PROFILES=sentry` starts `sentry-relay`, the only route api/api-worker have to Sentry
+   (they stay on the internal network). Optional: `SENTRY_BROWSER=off` disables browser
+   reporting and makes `POST /monitoring` a 404.
+3. Pre-pull the relay image and re-activate the running release so every container gets the new
+   env (the release tag becomes the Sentry `release`):
+   ```bash
+   docker pull getsentry/relay:26.4.0
+   bash /opt/guardhub/current/ops/deploy/guardhub-ctl.sh activate "$(basename "$(readlink -f /opt/guardhub/current)")"
+   ```
+
+**Prove delivery.** Run all four on the server. Each prints the event id and exits 0 only when
+the Sentry server (via the relay, for api/api-worker) accepted the event; exit 2 = `SENTRY_DSN`
+not set; exit 1 = network error or rejected (the message says which). Then search Sentry for
+each id (tag `service` = api / api-worker / scanner / web).
+
+```bash
+docker exec guardhub-api-1        python -m guardhub_api.common.observability test-event
+docker exec guardhub-api-worker-1 python -m guardhub_api.common.observability test-event --service api-worker
+docker exec guardhub-scanner-1    /usr/local/bin/scanner sentry-test
+docker exec guardhub-web-1        node apps/web/scripts/sentry-test.mjs
+```
+
+- api/api-worker report `network error` → the relay isn't running (`COMPOSE_PROFILES` missing)
+  or can't reach the Sentry host: `docker logs guardhub-sentry-relay-1`.
+- `HTTP 400 … invalid project key`, `HTTP 401/403` → wrong DSN (public key or project id).
+- Browser reporting has no CLI (no extra public surface): open the site, and in the DevTools
+  console run `setTimeout(() => { throw new Error("guardhub browser test") })`. The request to
+  `/monitoring` must answer 200 and the event shows up with `runtime=browser`.

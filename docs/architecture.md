@@ -187,3 +187,40 @@ info 0. It's deterministic: the same findings always give the same score.
   TLS, CVE…) are never translated.
 - Locales: `en` (source, must be complete), `tr` (complete for MVP), and `de fr it es zh-CN hi ru`
   (fallback to `en`; `ops/ci/check_i18n.py` warns about missing keys).
+
+## 7. Error tracking (Sentry protocol) — launch gate H
+
+Off unless `SENTRY_DSN` is set; with it empty no SDK is initialised and nothing changes.
+
+| Service | How it reports | `service` tag |
+|---|---|---|
+| api | `sentry-sdk` (FastAPI + logging: `log.error`/`log.exception` become events) via **sentry-relay** | `api` |
+| api-worker | same SDK via **sentry-relay** | `api-worker` |
+| scanner | `sentry-go`: Error-level `slog` records and main-goroutine panics, direct (has egress) | `scanner` |
+| web (server) | `@sentry/node`, lazy-loaded in `instrumentation.ts`; Next `onRequestError` (route pattern only), direct | `web` (+ `runtime=node`) |
+| web (browser) | `@sentry/browser`, lazy chunk; posts to same-origin `POST /monitoring`, which re-scrubs and forwards | `web` (+ `runtime=browser`) |
+
+- **Env:** `SENTRY_DSN` (empty = off), `SENTRY_ENVIRONMENT` (default `production`), release =
+  `GUARDHUB_VERSION` (the image tag; compose passes it into every container), `SENTRY_RELAY_URL`
+  (api/worker only; default `http://sentry-relay:3000`), `SENTRY_BROWSER=on|off` (web).
+- **Network isolation is unchanged.** api/api-worker stay on the `internal: true` backend network.
+  The `sentry-relay` service (`getsentry/relay:26.4.0`, proxy mode, config in
+  `ops/docker/relay/config.yml`) is the only thing on backend + egress; it forwards Sentry
+  envelopes to the DSN's host and nothing else. It runs only with `COMPOSE_PROFILES=sentry`.
+  api/worker rewrite the DSN host to the relay, keeping the public key and project id.
+- **Errors only:** traces/profiles sample rate 0 in Python/Go; in the JS SDKs `tracesSampleRate`
+  is left unset because any number (even 0) switches the tracing machinery on there.
+- **Privacy (§9):** `send_default_pii` off and a `before_send` scrubber in every SDK (unit-tested:
+  `apps/api/tests/test_observability.py`, `apps/scanner/internal/observability`,
+  `apps/web/lib/observability`). Removed: users and client IPs, request bodies, cookies, every
+  request header except `User-Agent`, `Accept`, `Accept-Language`, `Content-Type`/`-Length` (so no `Authorization`,
+  `X-Scan-Token`, `X-GuardHub-CSRF`, `X-Forwarded-For`), query strings, frame local variables,
+  breadcrumbs (web), and in free text: URL credentials, query strings, JWTs, `gh?_` tokens,
+  bearer/basic credentials, e-mail and IPv4 addresses, SQL bound parameters.
+- **CSP is unchanged** (`connect-src 'self'`, nonce + `strict-dynamic`): the browser SDK is a
+  lazy chunk loaded by Next's nonce'd loader and talks only to `/monitoring`. The browser gets a
+  placeholder DSN, never the real one. `/monitoring` returns 404 unless reporting is on, accepts
+  same-origin posts ≤ 64 KiB only, keeps `event` items only, forces environment/release/service
+  server-side, rate-limits (30 burst, 30/min per process) and forwards no client headers or IPs.
+- **Proving delivery:** see `ops/runbooks/production.md` §6 (one command per service; each exits
+  non-zero if the DSN is missing or the server rejects the event).
