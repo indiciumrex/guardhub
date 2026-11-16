@@ -7,6 +7,7 @@
  * - source "account": the session cookie authorises the request.
  */
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiError, apiFetch, SCAN_TOKEN_HEADER } from "@/lib/api";
 import { scanTokenKey, hostOf } from "@/lib/navigation";
@@ -46,6 +47,7 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
   const tCommon = useTranslations("common");
   const errorMessage = useErrorMessage();
   const locale = useLocale();
+  const router = useRouter();
   const [state, setState] = useState<LiveState>(
     initial ? { kind: "ready", scan: initial } : { kind: "loading" },
   );
@@ -55,6 +57,7 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
     let cancelled = false;
     let timer: number | undefined;
     let failures = 0;
+    let sawActive = false;
     const controller = new AbortController();
 
     const headers: Record<string, string> = {};
@@ -81,7 +84,14 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
         if (cancelled) return;
         failures = 0;
         setState({ kind: "ready", scan });
-        if (isScanActive(scan.status)) timer = window.setTimeout(poll, POLL_INTERVAL_MS);
+        if (isScanActive(scan.status)) {
+          sawActive = true;
+          timer = window.setTimeout(poll, POLL_INTERVAL_MS);
+        } else if (sawActive && source === "account") {
+          // The scan just finished: drop cached server pages (project history, account list)
+          // so navigating back never shows a stale score or a still-running scan.
+          router.refresh();
+        }
       } catch (error) {
         if (cancelled) return;
         const transient =
@@ -109,7 +119,7 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
       controller.abort();
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [scanId, source, locale, attempt, initial]);
+  }, [scanId, source, locale, attempt, initial, router]);
 
   if (state.kind === "loading") {
     return (
