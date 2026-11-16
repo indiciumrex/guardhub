@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "GuardHub",
+    "powered_by": "Bir HKSolutions ürünüdür",
+    "tagline": "Sade dilde web sitesi güvenlik kontrolleri."
+  },
+  "severity": {
+    "critical": "Kritik",
+    "high": "Yüksek",
+    "medium": "Orta",
+    "low": "Düşük",
+    "info": "Bilgi"
+  },
+  "common": {
+    "greeting": "Merhaba,",
+    "site": "Web sitesi: {target}",
+    "score": "Güvenlik puanı: {score}/100 (önceki tarama: {base_score}/100).",
+    "more": "…ve {count} tane daha.",
+    "footer": "Bu mesajı, GuardHub hesabınızda bildirimler açık olduğu için alıyorsunuz. Bunu Hesap → Bildirimler bölümünden değiştirebilirsiniz."
+  },
+  "change": {
+    "subject": "GuardHub: {project} için güvenlik değişiklikleri",
+    "intro": "{target} için yaptığımız son taramada, bir önceki taramaya göre değişiklikler bulduk.",
+    "new_heading": "Yeni sorunlar",
+    "regressed_heading": "Yeniden ortaya çıkan sorunlar",
+    "fixed_line": "Önceki taramadan bu yana düzeltilen sorun sayısı: {count}.",
+    "cta": "Nelerin değiştiğini görün"
+  },
+  "fixed": {
+    "subject": "GuardHub: {project} için sorunlar düzeltildi",
+    "intro": "Güzel haber: {target} için yapılan son tarama, bazı sorunların düzeltildiğini gösteriyor.",
+    "heading": "Düzeltilenler",
+    "cta": "Nelerin değiştiğini görün"
+  },
+  "paused": {
+    "subject": "GuardHub: {project} için izleme duraklatıldı",
+    "intro": "{target} için planlanmış taramaları duraklattık.",
+    "reason": "Sahiplik kanıtınızı (doğrulama dosyası, meta etiketi veya DNS kaydı) artık bulamıyoruz. Yalnızca sahibinin kontrolü kanıtladığı web sitelerini tarıyoruz.",
+    "action": "İzlemeyi yeniden açmak için kanıtı tekrar yayınlayın, projeyi doğrulayın ve ardından tarama sıklığını yeniden seçin.",
+    "cta": "Projeyi aç"
+  },
+  "test": {
+    "subject": "GuardHub: test bildirimi",
+    "intro": "Bu bir test mesajıdır. GuardHub uyarılarınız buraya gelecek.",
+    "detail": "Yalnızca bir şey değiştiğinde uyarı göndeririz: yeni sorunlar, yeniden ortaya çıkan sorunlar veya düzeltilen sorunlar."
+  }
+}

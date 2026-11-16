@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "GuardHub",
+    "powered_by": "Powered by HKSolutions",
+    "tagline": "Website security checks in plain language."
+  },
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Info"
+  },
+  "common": {
+    "greeting": "Hello,",
+    "site": "Website: {target}",
+    "score": "Security score: {score}/100 (previous scan: {base_score}/100).",
+    "more": "…and {count} more.",
+    "footer": "You get this message because alerts are on for your GuardHub account. You can change this under Account → Notifications."
+  },
+  "change": {
+    "subject": "GuardHub: security changes on {project}",
+    "intro": "Our latest scan of {target} found changes since the previous scan.",
+    "new_heading": "New issues",
+    "regressed_heading": "Issues that came back",
+    "fixed_line": "Fixed since the previous scan: {count}.",
+    "cta": "See what changed"
+  },
+  "fixed": {
+    "subject": "GuardHub: issues fixed on {project}",
+    "intro": "Good news: the latest scan of {target} shows that issues were fixed.",
+    "heading": "Fixed",
+    "cta": "See what changed"
+  },
+  "paused": {
+    "subject": "GuardHub: monitoring paused for {project}",
+    "intro": "We paused the scheduled scans of {target}.",
+    "reason": "We could no longer find your ownership proof (the verification file, the meta tag or the DNS record). We only scan websites whose owner has proven they control them.",
+    "action": "To turn monitoring back on, publish the proof again, verify the project, and then choose a scan frequency again.",
+    "cta": "Open the project"
+  },
+  "test": {
+    "subject": "GuardHub: test notification",
+    "intro": "This is a test message. Your GuardHub alerts will arrive here.",
+    "detail": "We only send alerts when something changes: new issues, issues that came back, or issues that were fixed."
+  }
+}

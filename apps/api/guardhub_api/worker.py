@@ -24,6 +24,7 @@ from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session, dispose_engine
 from guardhub_api.health import service as health
+from guardhub_api.jobs.client import close_arq
 from guardhub_api.scans import repository as scan_repo
 from guardhub_api.scans.ingest import decode_payload, handle_event
 from guardhub_api.scans.queue import API_GROUP, EVENTS_STREAM
@@ -130,6 +131,7 @@ async def _main() -> None:
     try:
         await run(stop)
     finally:
+        await close_arq()
         await close_redis()
         await dispose_engine()
 
