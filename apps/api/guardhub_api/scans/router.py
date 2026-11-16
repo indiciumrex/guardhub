@@ -11,9 +11,9 @@ from guardhub_api.auth import service as auth_service
 from guardhub_api.auth.deps import FullSession
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip, resolve_locale
-from guardhub_api.scans import public
+from guardhub_api.scans import compare, public
 from guardhub_api.scans import service as scan_service
-from guardhub_api.scans.schemas import ChallengeRequest, ScanView
+from guardhub_api.scans.schemas import ChallengeRequest, ScanDiffView, ScanView
 
 public_router = APIRouter(prefix="/public", tags=["public"])
 router = APIRouter(prefix="/scans", tags=["scans"])
@@ -53,3 +53,16 @@ async def get_scan(
     user = await auth_service.get_user(claims)
     resolved = resolve_locale(locale, user.locale, request.headers.get("accept-language"))
     return await scan_service.owned_view(get_redis(), claims, scan_id, resolved)
+
+
+@router.get("/{scan_id}/diff")
+async def get_scan_diff(
+    scan_id: uuid.UUID,
+    request: Request,
+    claims: FullSession,
+    against: Annotated[uuid.UUID | None, Query()] = None,
+    locale: LocaleQuery = None,
+) -> ScanDiffView:
+    user = await auth_service.get_user(claims)
+    resolved = resolve_locale(locale, user.locale, request.headers.get("accept-language"))
+    return await compare.owned_diff(claims, scan_id, against, resolved)
