@@ -4,6 +4,9 @@
 #   3) open http://localhost:3000
 # Only `web` is published to the host. PostgreSQL, Redis and the API sit on an internal network;
 # only the scanner (which must reach customer targets) gets an egress network.
+# Error tracking (Sentry protocol) is OFF unless SENTRY_DSN is set. api/api-worker have no
+# internet, so they report through the `sentry-relay` service (profile "sentry"); scanner and
+# web report directly. See docs/architecture.md §7.
 
 name: guardhub
 
@@ -20,6 +23,12 @@ x-api-env: &api-env
   AI_PROVIDER: ${AI_PROVIDER:-}
   AI_API_KEY: ${AI_API_KEY:-}
   LOG_LEVEL: ${LOG_LEVEL:-info}
+  # Error tracking: off unless SENTRY_DSN is set. The DSN host is replaced by the relay (key and
+  # project id kept), because api/api-worker sit on the internal-only backend network.
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+  SENTRY_RELAY_URL: ${SENTRY_RELAY_URL:-http://sentry-relay:3000}
+  GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
 
 services:
   postgres:
@@ -113,6 +122,9 @@ services:
       SCANNER_REQUEST_TIMEOUT: ${SCANNER_REQUEST_TIMEOUT:-10s}
       SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
     read_only: true
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
@@ -127,6 +139,10 @@ services:
     environment:
       API_INTERNAL_URL: http://api:8000
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_BROWSER: ${SENTRY_BROWSER:-on}
+      GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
@@ -138,6 +154,23 @@ services:
       # reverse proxy in front for public traffic (see docker-compose.prod.yml / the runbook).
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     networks: [backend, frontend]
+
+  # Sentry Relay in proxy mode: the ONLY way api/api-worker reach the error-tracking server.
+  # api and api-worker stay on the internal network; only the relay gets egress, and it only
+  # forwards Sentry envelopes to the DSN's host. Enable with COMPOSE_PROFILES=sentry (in .env).
+  sentry-relay:
+    image: getsentry/relay:26.4.0
+    profiles: [sentry]
+    restart: unless-stopped
+    # --upstream-dsn takes only scheme/host/port from the DSN (key and project are ignored).
+    command: ["run", "--config", "/etc/relay", "--upstream-dsn", "${SENTRY_DSN:-}"]
+    volumes:
+      - ./ops/docker/relay:/etc/relay:ro
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    networks: [backend, egress]
 
 networks:
   backend:
