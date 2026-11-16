@@ -1,0 +1,19 @@
+# Blue/green app layer (production). Used ON TOP of docker-compose.yml + docker-compose.prod.yml:
+#   docker compose -p guardhub-<colour> -f docker-compose.yml -f docker-compose.prod.yml \
+#     -f ops/deploy/compose.color.yml up -d --no-deps api api-worker api-jobs scanner web
+# The data layer (postgres, redis, sentry-relay) stays in the long-lived project "guardhub";
+# each colour joins its networks by name. Web reaches ONLY its own colour's API through the
+# per-colour `app` network: on the shared `backend` network the name "api" would resolve to the
+# containers of both colours during a switch.
+
+networks:
+  backend: { name: guardhub_backend, external: true }
+  egress: { name: guardhub_egress, external: true }
+  frontend: { name: guardhub_frontend, external: true }
+  app: {} # per colour (project-scoped): web <-> its own api
+
+services:
+  api:
+    networks: [backend, app]
+  web:
+    networks: !override [app, frontend]

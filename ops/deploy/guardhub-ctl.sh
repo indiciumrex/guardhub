@@ -1,21 +1,33 @@
 #!/usr/bin/env bash
 # GuardHub production control, run ON the server (shared host, see ops/runbooks/production.md).
 #
-#   guardhub-ctl.sh activate <version>   pre-deploy backup → start <version> → health gate;
-#                                        on failure, automatically go back to the running version
-#   guardhub-ctl.sh rollback             go back to the previous release (DB downgraded if needed)
+#   guardhub-ctl.sh activate <version>   ZERO-DOWNTIME blue/green: pre-deploy backup -> expand-only
+#                                        migration -> start <version> in the idle colour -> health
+#                                        gate -> switch nginx (graceful reload) -> stop the old colour.
+#                                        If the new colour is unhealthy, nothing is switched.
+#   guardhub-ctl.sh rollback             start the previous colour, health gate, switch back
 #   guardhub-ctl.sh backup               pg_dump (custom format) + manifest, 14-day retention
 #   guardhub-ctl.sh restore-drill [dump] restore into a throwaway, network-isolated Postgres and
 #                                        PROVE it: row counts, schema version, RLS, audit trigger,
 #                                        and that encrypted data decrypts with the production key
 #   guardhub-ctl.sh status
+#   guardhub-ctl.sh exec <service> <cmd...>   run a command in the ACTIVE colour's container
 #
-# Everything is scoped to /opt/guardhub and the compose project "guardhub". Nothing here touches
-# other projects' containers, networks, volumes or the host's databases.
+# Layout: data layer (postgres, redis, sentry-relay) = compose project "guardhub"; app layer =
+# "guardhub-blue" / "guardhub-green" on 127.0.0.1:18701 / 18702, joined to the data networks
+# (ops/deploy/compose.color.yml). nginx proxies to the upstream in shared/nginx-upstream.conf.
+# Migrations must be EXPAND-ONLY (the old colour keeps serving while the new one migrates).
+# Everything is scoped to /opt/guardhub and the "guardhub*" compose projects. Nothing here
+# touches other projects' containers, networks, volumes or the host's databases.
 set -Eeuo pipefail
 umask 077
 
-ROOT=/opt/guardhub
+ROOT=${GUARDHUB_ROOT:-/opt/guardhub}
+export GUARDHUB_ROOT=$ROOT # docker-compose.prod.yml mounts the DB init script from here
+# Rehearsal hooks (ops/deploy/tests/bluegreen_rehearsal.sh). Defaults = production behaviour.
+NGINX_TEST_CMD=${NGINX_TEST_CMD:-nginx -t}
+NGINX_RELOAD_CMD=${NGINX_RELOAD_CMD:-systemctl reload nginx}
+UPSTREAM_HOST=${UPSTREAM_HOST:-127.0.0.1}
 ENV_FILE=$ROOT/shared/.env
 BACKUPS=$ROOT/backups
 RETENTION_DAYS=14
@@ -28,39 +40,81 @@ die() { log "ERROR: $*"; exit 1; }
 [[ -f $ENV_FILE ]] || die "missing $ENV_FILE"
 envval() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2-; }
 
+STATE=$ROOT/state
+UPSTREAM_CONF=$ROOT/shared/nginx-upstream.conf
+declare -A PORT=([blue]=18701 [green]=18702)
+
 release_dir() { echo "$ROOT/releases/$1"; }
 current_version() { [[ -L $ROOT/current ]] && basename "$(readlink -f "$ROOT/current")" || true; }
 previous_version() { [[ -L $ROOT/previous ]] && basename "$(readlink -f "$ROOT/previous")" || true; }
+active_color() { cat "$STATE/active_color" 2>/dev/null || true; }
+color_version() { cat "$STATE/$1.version" 2>/dev/null || true; }
+other_color() { if [[ $1 == blue ]]; then echo green; else echo blue; fi; }
 
-compose() { # compose <version> args...
+compose_data() { # compose_data <version> args...   (long-lived project "guardhub")
   local v=$1; shift
-  local dir; dir=$(release_dir "$v")
-  [[ -d $dir ]] || die "no release $v"
+  local dir; dir=$(release_dir "$v"); [[ -d $dir ]] || die "no release $v"
   GUARDHUB_VERSION=$v docker compose --project-name guardhub --project-directory "$dir" \
     --env-file "$ENV_FILE" -f "$dir/docker-compose.yml" -f "$dir/docker-compose.prod.yml" "$@"
 }
 
-health_ok() {
-  local port; port=$(envval WEB_PORT)
-  curl -fsS --max-time 5 "http://127.0.0.1:${port}/api/v1/health" 2>/dev/null | grep -q '"status":"ok"'
+compose_color() { # compose_color <version> <blue|green> args...
+  local v=$1 c=$2; shift 2
+  local dir; dir=$(release_dir "$v"); [[ -d $dir ]] || die "no release $v"
+  GUARDHUB_VERSION=$v WEB_PORT=${PORT[$c]} docker compose --project-name "guardhub-$c" \
+    --project-directory "$dir" --env-file "$ENV_FILE" -f "$dir/docker-compose.yml" \
+    -f "$dir/docker-compose.prod.yml" -f "$dir/ops/deploy/compose.color.yml" "$@"
 }
 
-wait_healthy() {
+# the services of a release, split into the long-lived data layer and the per-colour app layer
+data_services() { compose_data "$1" config --services | grep -xE 'postgres|redis|sentry-relay' | tr '\n' ' '; }
+app_services() {
+  compose_data "$1" config --services | grep -vxE 'postgres|redis|sentry-relay|migrate|demo-target|mailpit' | tr '\n' ' '
+}
+
+health_on_port() {
+  curl -fsS --max-time 5 "http://127.0.0.1:$1/api/v1/health" 2>/dev/null | grep -q '"status":"ok"'
+}
+public_health() { # through nginx, exactly like a visitor (without leaving the host)
+  if [[ -n ${PUBLIC_HEALTH_URL:-} ]]; then
+    curl -fsS --max-time 5 "$PUBLIC_HEALTH_URL" 2>/dev/null | grep -q '"status":"ok"'
+    return
+  fi
+  local host; host=$(envval PUBLIC_BASE_URL | sed -E 's#^https?://##; s#/.*$##')
+  curl -fsS --max-time 5 --resolve "$host:443:127.0.0.1" "https://$host/api/v1/health" 2>/dev/null |
+    grep -q '"status":"ok"'
+}
+health_ok() { local c; c=$(active_color); [[ -n $c ]] && health_on_port "${PORT[$c]}"; }
+
+wait_port_healthy() {
   local deadline=$((SECONDS + HEALTH_TIMEOUT))
-  until health_ok; do
+  until health_on_port "$1"; do
     ((SECONDS < deadline)) || return 1
     sleep 3
   done
 }
 
-start() { # start <version>
-  local v=$1
-  # stable copy of the DB init script (see docker-compose.prod.yml): no DB restart per release
-  install -D -m 755 "$(release_dir "$v")/ops/docker/postgres/10-app-role.sh" "$ROOT/shared/postgres-init/10-app-role.sh"
-  for img in api scanner web; do
-    docker image inspect "guardhub-$img:$v" >/dev/null 2>&1 || die "image guardhub-$img:$v not loaded"
+# Point nginx at 127.0.0.1:<port>. `nginx -t` first; a graceful reload lets in-flight requests
+# finish on the old upstream, so the switch drops nothing.
+switch_upstream() {
+  local port=$1 tmp=$UPSTREAM_CONF.new
+  printf 'upstream guardhub_web {\n    server %s:%s;\n    keepalive 16;\n}\n' "$UPSTREAM_HOST" "$port" >"$tmp"
+  chmod 644 "$tmp"
+  if [[ -f $UPSTREAM_CONF ]]; then cp -p "$UPSTREAM_CONF" "$UPSTREAM_CONF.bak"; fi
+  mv -f "$tmp" "$UPSTREAM_CONF"
+  if ! $NGINX_TEST_CMD >/dev/null 2>&1; then
+    if [[ -f $UPSTREAM_CONF.bak ]]; then mv -f "$UPSTREAM_CONF.bak" "$UPSTREAM_CONF"; fi
+    die "nginx -t failed after the upstream change; restored the previous upstream"
+  fi
+  $NGINX_RELOAD_CMD
+  local i; for i in $(seq 1 10); do public_health && return 0; sleep 1; done
+  die "public health check failed after switching nginx to port $port"
+}
+
+check_images() {
+  local img; for img in api scanner web; do
+    docker image inspect "guardhub-$img:$1" >/dev/null 2>&1 || die "image guardhub-$img:$1 not loaded"
   done
-  compose "$v" up -d --no-build --remove-orphans
 }
 
 db_is_up() { docker ps --format '{{.Names}}' | grep -qx guardhub-postgres-1; }
@@ -176,59 +230,85 @@ PY
   fi
 }
 
-# Make the DB schema match <target>'s migrations before starting it (rollback across a migration).
-align_schema_for() {
-  local target=$1 running=$2
-  db_is_up || return 0
-  local target_head current
-  target_head=$(compose "$target" run --rm --no-deps -T migrate alembic -c /app/ops/migrations/alembic.ini heads 2>/dev/null | awk '{print $1}' | head -1)
-  current=$(docker exec guardhub-postgres-1 psql -U "$(envval POSTGRES_USER)" -d "$(envval POSTGRES_DB)" -Atc 'SELECT version_num FROM alembic_version')
-  if [[ -n $target_head && $target_head != "$current" ]]; then
-    log "downgrading schema $current → $target_head using release $running"
-    compose "$running" run --rm -T migrate alembic -c /app/ops/migrations/alembic.ini downgrade "$target_head"
-  fi
-}
+legacy_running() { docker ps --format '{{.Names}}' | grep -qx guardhub-web-1; }
 
 cmd_activate() {
   local v=${1:?version}
-  local cur; cur=$(current_version)
-  [[ $v != "$cur" ]] || log "re-activating current version $v"
-  cmd_backup >/dev/null
-  log "starting $v (running: ${cur:-none})"
-  if start "$v" && wait_healthy; then
-    if [[ -n $cur && $cur != "$v" ]]; then ln -sfn "$(release_dir "$cur")" "$ROOT/previous"; fi
-    ln -sfn "$(release_dir "$v")" "$ROOT/current"
-    log "ACTIVE: $v (healthy)"
+  check_images "$v"
+  local cur_v cur_c new_c legacy=0 serving
+  cur_v=$(current_version); cur_c=$(active_color)
+  if [[ -z $cur_c ]]; then
+    if legacy_running; then legacy=1; fi
+    new_c=blue
   else
-    log "$v did not become healthy"
-    compose "$v" ps >&2 || true
-    if [[ -n $cur && $cur != "$v" ]]; then
-      log "automatic rollback to $cur"
-      align_schema_for "$cur" "$v"
-      start "$cur" && wait_healthy && log "back on $cur (healthy)"
-    fi
-    die "activation of $v failed"
+    new_c=$(other_color "$cur_c")
   fi
+  serving=${cur_c:-none}; if ((legacy)); then serving=legacy; fi
+  log "activating $v in $new_c (serving now: ${cur_v:-none} in $serving)"
+  cmd_backup >/dev/null
+  mkdir -p "$STATE"
+  # stable copy of the DB init script (see docker-compose.prod.yml): no DB restart per release
+  install -D -m 755 "$(release_dir "$v")/ops/docker/postgres/10-app-role.sh" "$ROOT/shared/postgres-init/10-app-role.sh"
+  local data apps
+  data=$(data_services "$v"); apps=$(app_services "$v")
+  # shellcheck disable=SC2086 # word splitting of the service lists is intended
+  compose_data "$v" up -d --no-build $data
+  log "migrating schema (expand-only: the serving colour is unaffected)"
+  compose_color "$v" "$new_c" run --rm --no-deps -T migrate || die "migration failed; nothing was switched"
+  # shellcheck disable=SC2086
+  if ! compose_color "$v" "$new_c" up -d --no-build --no-deps --remove-orphans $apps ||
+    ! wait_port_healthy "${PORT[$new_c]}"; then
+    compose_color "$v" "$new_c" ps >&2 || true
+    compose_color "$v" "$new_c" down >&2 || true
+    die "$v did not become healthy in $new_c; nothing was switched, ${cur_v:-nothing} keeps serving"
+  fi
+  switch_upstream "${PORT[$new_c]}"
+  if ((legacy)); then
+    log "retiring the pre-blue/green app containers (data layer untouched)"
+    compose_data "$cur_v" rm -sf api api-worker scanner web >&2
+  elif [[ -n $cur_c ]]; then
+    compose_color "$(color_version "$cur_c")" "$cur_c" stop >&2
+  fi
+  echo "$new_c" >"$STATE/active_color"
+  echo "$v" >"$STATE/$new_c.version"
+  if [[ -n $cur_v && $cur_v != "$v" ]]; then ln -sfn "$(release_dir "$cur_v")" "$ROOT/previous"; fi
+  ln -sfn "$(release_dir "$v")" "$ROOT/current"
+  log "ACTIVE: $v in $new_c (healthy, serving)"
 }
 
 cmd_rollback() {
-  local cur prev; cur=$(current_version); prev=$(previous_version)
-  [[ -n $prev ]] || die "no previous release recorded"
+  local cur_c prev_c cur_v prev_v
+  cur_c=$(active_color); [[ -n $cur_c ]] || die "no active colour recorded"
+  prev_c=$(other_color "$cur_c"); cur_v=$(color_version "$cur_c"); prev_v=$(color_version "$prev_c")
+  [[ -n $prev_v ]] || die "no previous release recorded in $prev_c"
   cmd_backup >/dev/null
-  log "rolling back $cur → $prev"
-  align_schema_for "$prev" "$cur"
-  start "$prev"
-  wait_healthy || die "previous release $prev is not healthy either; investigate now"
-  ln -sfn "$(release_dir "$cur")" "$ROOT/previous"
-  ln -sfn "$(release_dir "$prev")" "$ROOT/current"
-  log "ROLLED BACK: now on $prev (healthy); $cur kept as previous"
+  log "rolling back $cur_v ($cur_c) -> $prev_v ($prev_c); schema is left as is (expand-only)"
+  local apps; apps=$(app_services "$prev_v")
+  # shellcheck disable=SC2086
+  compose_color "$prev_v" "$prev_c" up -d --no-build --no-deps $apps
+  wait_port_healthy "${PORT[$prev_c]}" || die "previous release $prev_v is not healthy; $cur_v keeps serving"
+  switch_upstream "${PORT[$prev_c]}"
+  compose_color "$cur_v" "$cur_c" stop >&2
+  echo "$prev_c" >"$STATE/active_color"
+  ln -sfn "$(release_dir "$cur_v")" "$ROOT/previous"
+  ln -sfn "$(release_dir "$prev_v")" "$ROOT/current"
+  log "ROLLED BACK: $prev_v serving from $prev_c; $cur_v kept (stopped) in $cur_c"
 }
 
 cmd_status() {
-  echo "current=$(current_version) previous=$(previous_version)"
-  local v; v=$(current_version)
-  [[ -n $v ]] && compose "$v" ps
-  health_ok && echo "health: ok" || echo "health: NOT ok"
+  local c; c=$(active_color)
+  echo "active=${c:-none} current=$(current_version) previous=$(previous_version)"
+  echo "blue=$(color_version blue) green=$(color_version green)"
+  echo "upstream: $(grep -oE 'server [^;]+' "$UPSTREAM_CONF" 2>/dev/null || echo none)"
+  docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -E '^guardhub-' | sort
+  if health_ok; then echo "active colour health: ok"; else echo "active colour health: NOT ok"; fi
+  if public_health; then echo "public health: ok"; else echo "public health: NOT ok"; fi
+}
+
+cmd_exec() { # exec <service> <cmd...> in the active colour
+  local svc=${1:?service}; shift
+  local c; c=$(active_color); [[ -n $c ]] || die "no active colour"
+  docker exec -i "guardhub-$c-$svc-1" "$@"
 }
 
 case ${1:-} in
@@ -237,5 +317,6 @@ case ${1:-} in
   backup) cmd_backup ;;
   restore-drill) cmd_restore_drill "${2:-}" ;;
   status) cmd_status ;;
-  *) sed -n '2,13p' "$0"; exit 2 ;;
+  exec) shift; cmd_exec "$@" ;;
+  *) sed -n '2,24p' "$0"; exit 2 ;;
 esac

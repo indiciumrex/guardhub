@@ -17,7 +17,7 @@ services:
     volumes:
       # Same target as the base file, so this REPLACES its release-relative source: a stable
       # path keeps the database container untouched when the app version changes.
-      - /opt/guardhub/shared/postgres-init/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+      - ${GUARDHUB_ROOT:-/opt/guardhub}/shared/postgres-init/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
 
   redis:
     <<: *logging
