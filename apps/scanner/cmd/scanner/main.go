@@ -3,6 +3,8 @@
 // probe client on a bounded worker pool, and publishes results (gh:events,
 // progress hashes, verify replies). Configuration comes only from the
 // environment (see internal/config). It stops gracefully on SIGTERM/SIGINT.
+// Error-level logs and panics go to Sentry only when SENTRY_DSN is set
+// (internal/observability); `scanner sentry-test` sends one test event.
 package main
 
 import (
@@ -15,11 +17,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/config"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/observability"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/probe"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/queue"
 )
@@ -34,8 +38,29 @@ func run() int {
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("invalid configuration", "err", err)
 		return 2
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})).
-		With("service", "scanner")
+	obs := observability.Load()
+	if len(os.Args) > 1 && os.Args[1] == "sentry-test" {
+		return observability.SendTestEvent(context.Background(), obs, os.Stdout, nil)
+	}
+
+	var handler slog.Handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})
+	enabled, err := observability.Init(obs)
+	if err != nil {
+		// A bad DSN must not stop scanning; it only disables error reporting.
+		slog.New(handler).Error("error tracking disabled", "err", observability.ScrubText(err.Error()))
+	}
+	if enabled {
+		handler = observability.NewHandler(handler, nil)
+		defer observability.Flush()
+		defer func() {
+			if r := recover(); r != nil {
+				sentry.CurrentHub().Recover(r)
+				observability.Flush()
+				panic(r)
+			}
+		}()
+	}
+	logger := slog.New(handler).With("service", "scanner")
 	slog.SetDefault(logger)
 
 	if len(os.Args) > 1 && os.Args[1] == "selfscan" {
