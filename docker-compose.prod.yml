@@ -39,6 +39,11 @@ services:
     environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "" }
     deploy: { resources: { limits: { cpus: "0.5", memory: 256M, pids: 64 } } }
 
+  api-jobs:
+    <<: *logging
+    environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "" }
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256M, pids: 64 } } }
+
   scanner:
     <<: *logging
     environment:

@@ -1,5 +1,9 @@
 # Local end-to-end demo: adds a DELIBERATELY VULNERABLE target on the private network and allows
 # ONLY that hostname past the scanner's private-IP guard. Never use this override in production.
+# Alert e-mails go to `mailpit`, a local SMTP sink on the internal backend network (plaintext SMTP
+# is allowed only because that host is listed in SMTP_INSECURE_HOSTS). It is not published; read
+# the captured mails from inside the network, e.g.
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml exec api-jobs #     python -c "import urllib.request;print(urllib.request.urlopen('http://mailpit:8025/api/v1/messages').read().decode())"
 #   python ops/scripts/gen_secrets.py --force --demo
 #   docker compose -f docker-compose.yml -f docker-compose.demo.yml up --build
 services:
@@ -10,12 +14,35 @@ services:
       - ./ops/demo-target/site:/usr/share/nginx/html:ro
     networks: [egress]
 
-  api:
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    user: "65534:65534"
     environment:
+      MP_MAX_MESSAGES: "500"
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    networks: [backend]
+
+  api:
+    environment: &demo-smtp
       SCANNER_ALLOW_PRIVATE_HOSTS: demo-target
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_FROM: GuardHub Demo <alerts@guardhub.localhost>
+      SMTP_SECURITY: none
+      SMTP_INSECURE_HOSTS: mailpit
   api-worker:
     environment:
       SCANNER_ALLOW_PRIVATE_HOSTS: demo-target
+  api-jobs:
+    environment:
+      <<: *demo-smtp
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+    depends_on:
+      mailpit: { condition: service_started }
   scanner:
     environment:
       SCANNER_ALLOW_PRIVATE_HOSTS: demo-target

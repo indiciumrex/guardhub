@@ -250,6 +250,12 @@ that pass the strict URL check in §8.4). Registered functions (`guardhub_api/jo
 Arq cron jobs are `unique` (one run per tick across workers), so two colours running briefly
 during a blue/green switch never double-schedule.
 
+Two small helper jobs are registered too: `notify_paused(project_id)` (queued by the scheduler,
+§8.2) and `send_test_notification(user_id, channel)` (queued by the test endpoint, §8.4; the API
+itself has no egress). Arq jobs are serialised as **JSON, not pickle** (`jobs/client.py`), job ids
+are deterministic where a job must run once (`notify-scan:<scan_id>`), and the registrations are
+two lists in `jobs/worker.py` (`FUNCTIONS`, `CRON_JOBS`): one line per job.
+
 ### 8.2 Scheduled monitoring
 
 `Project` gains `"scan_frequency": "off|daily|weekly"`, `"next_scan_at": ISO|null`,
@@ -269,10 +275,18 @@ during a blue/green switch never double-schedule.
   alert (§8.4, kind `paused`). Otherwise create a scan with `trigger = 'scheduled'`, enqueue it
   through the existing `scans.queue.enqueue_scan`, and advance `next_scan_at` by one interval.
   The scanner's do-no-harm envelope (§3) applies unchanged.
+- "Proof gone" means a definitive answer only: the re-verification found no token (`not_found`),
+  the project has no proof at all, or its trusted domain isn't `active`. When the proof can't be
+  checked right now (site unreachable/blocked, verify timeout, queue down) nothing is scanned
+  and the project is retried within the hour, without pausing. Due projects beyond the in-flight
+  cap stay due for the next tick (oldest first). Manual rescans and the scheduler share one code
+  path (`projects/scanning.py`); a manual rescan of a `trusted_domain` project whose domain is
+  not active gets 422 `trusted_domain_inactive`.
 
 ### 8.3 Scan history, diff and trend
 
-`api-worker` stores `scans.failed_checks` (check ids whose `check_results[].status == "failed"`).
+`api-worker` stores `scans.failed_checks` (check ids whose `check_results[].status == "failed"`;
+a requested check with no result at all counts as failed too, so it can never look "fixed").
 `ScanSummary` gains `"trigger": "manual|scheduled|ci"` and `"failed_checks": [check_id]`.
 
 **ScanDiff** (derived, never stored) between a `done` scan *S* and an earlier `done` scan *B* of
@@ -293,6 +307,11 @@ DiffItem = {"fingerprint","check_id","finding_key","severity","title","summary"}
 `base_scan_id = null` when *S* is the first done scan (baseline: all lists empty,
 `unchanged_count` = number of findings). `against` must be an earlier done scan of the same
 project (422 `invalid_comparison` otherwise). Lists are sorted by severity, then title.
+With an explicit older `against`, a finding seen only in scans between *B* and *S* counts as
+**new** (it was not there at *B* nor before it). A diff of a scan that isn't `done` yet is 422
+`scan_not_done`. Owner checks are explicit on top of RLS (the admin role can read other users'
+rows under RLS, so every `/projects/*`, `/scans/*/diff` and `/account/notifications*` route also
+checks `user_id`).
 
 `GET /projects/{id}/trend?limit=30` (1-90) -> `[{"scan_id","finished_at","score","trigger"}]`,
 done scans, oldest first.
@@ -317,14 +336,19 @@ links to `{PUBLIC_BASE_URL}/account/projects/{project_id}/compare/{scan_id}`.
 - **Slack:** incoming webhook only. Accepted URL:
   `^https://hooks\.slack\.com/services/[A-Za-z0-9_/-]{10,200}$`. Stored encrypted (AAD = user
   id); never returned by the API. POST with 5 s timeout, no redirects, no other hosts.
+- **paused** alerts (§8.2) have no scan, so they are not `notifications` rows; each channel is sent
+  once per pause (a Redis marker under the job's unique id). Test notifications aren't logged either.
+- Delivery errors are stored as short codes only (`smtp_error`, `slack_http_404`, …). 4xx from
+  Slack (bad/revoked webhook) isn't retried; timeouts, 429 and 5xx are, up to 3 attempts.
 
 ```
 GET  /account/notifications -> {"email_enabled","notify_new","notify_regression","notify_fixed",
                                 "slack_configured":bool,"email":"<user email>"}
 PUT  /account/notifications   {"email_enabled","notify_new","notify_regression","notify_fixed",
                                "slack_webhook_url"?: string|null}  (omitted = keep, null = remove)
-     422 invalid_slack_webhook. Audited (account.notifications_updated; never the URL).
-POST /account/notifications/test {"channel":"email|slack"} -> 202; 429 after 3/hour.
+     -> the GET view. 422 invalid_slack_webhook. Audited (account.notifications_updated; never the URL).
+POST /account/notifications/test {"channel":"email|slack"} -> 202 {"status":"queued"};
+     429 after 3 attempts/hour; 422 slack_not_configured | email_not_configured.
 GET  /account/notifications/history?limit=20 -> [{"id","scan_id","project_id","channel","status",
       "new_count","regression_count","fixed_count","created_at","sent_at"}]
 ```
