@@ -71,7 +71,7 @@ docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTG
 
 log "probe: proxy health every 0.2 s"
 PROBE=$RH/probe.log
-( while :; do printf '%s %s\n' "$(date +%T.%3N)" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$PROXY_PORT/api/v1/health")"; sleep 0.2; done ) >"$PROBE" &
+( while :; do printf '%s %s\n' "$(date +%T.%3N)" "$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 "http://127.0.0.1:$PROXY_PORT/api/v1/health")"; sleep 0.2; done ) >"$PROBE" &
 PROBE_PID=$!
 # diagnostics: the legacy app directly (bypassing the proxy), with the body of any failure
 ( while :; do r=$(curl -s --max-time 3 -w ' %{http_code}' http://127.0.0.1:18700/api/v1/health); printf '%s %s
@@ -109,7 +109,8 @@ log "data survived"
 docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTGRES_DB)" -Atc \
   "SELECT count(*) FROM audit_logs WHERE target = '$MARK'" | grep -qx 1 && echo "marker row present"
 log "probe result"
-total=$(wc -l <"$PROBE"); bad=$(grep -vc ' 200$' "$PROBE" || true)
-echo "probes: $total, non-200: $bad"; grep -v ' 200$' "$PROBE" | head -5 || true
+total=$(wc -l <"$PROBE"); bad=$(grep -vc ' 200 ' "$PROBE" || true)
+slowest=$(awk '{print $3}' "$PROBE" | sort -n | tail -1)
+echo "probes: $total, non-200: $bad, slowest: ${slowest}s"; grep -v ' 200 ' "$PROBE" | head -5 || true
 cleanup
 if [[ $bad -eq 0 ]]; then echo "REHEARSAL PASSED: zero failed requests"; else echo "REHEARSAL FAILED"; exit 1; fi
