@@ -58,7 +58,7 @@ services:
 
   migrate:
     build: { context: ., dockerfile: apps/api/Dockerfile }
-    image: guardhub-api:local
+    image: guardhub-api:${GUARDHUB_VERSION:-local}
     command: ["alembic", "-c", "/app/ops/migrations/alembic.ini", "upgrade", "head"]
     environment:
       MIGRATIONS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
@@ -68,7 +68,7 @@ services:
     networks: [backend]
 
   api:
-    image: guardhub-api:local
+    image: guardhub-api:${GUARDHUB_VERSION:-local}
     restart: unless-stopped
     environment: *api-env
     read_only: true
@@ -87,7 +87,7 @@ services:
     networks: [backend]
 
   api-worker:
-    image: guardhub-api:local
+    image: guardhub-api:${GUARDHUB_VERSION:-local}
     restart: unless-stopped
     command: ["python", "-m", "guardhub_api.worker"]
     environment: *api-env
@@ -102,7 +102,7 @@ services:
 
   scanner:
     build: { context: ./apps/scanner }
-    image: guardhub-scanner:local
+    image: guardhub-scanner:${GUARDHUB_VERSION:-local}
     restart: unless-stopped
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379/0
@@ -122,7 +122,7 @@ services:
 
   web:
     build: { context: ., dockerfile: apps/web/Dockerfile }
-    image: guardhub-web:local
+    image: guardhub-web:${GUARDHUB_VERSION:-local}
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:8000
@@ -134,7 +134,9 @@ services:
     depends_on:
       api: { condition: service_healthy }
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      # Loopback only by default: Docker-published ports bypass host firewalls (UFW). Put a
+      # reverse proxy in front for public traffic (see docker-compose.prod.yml / the runbook).
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     networks: [backend, frontend]
 
 networks:

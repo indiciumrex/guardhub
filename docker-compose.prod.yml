@@ -1,0 +1,49 @@
+# Production override for a SHARED host (other backends run on the same machine, §7.2).
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+# Images are built elsewhere and loaded (ops/scripts/deploy.sh), so heavy builds never compete
+# with the neighbours for CPU. Everything stays on GuardHub's own networks and volumes; only
+# `web` is published, on 127.0.0.1, behind the host's existing reverse proxy.
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  postgres:
+    <<: *logging
+    deploy: { resources: { limits: { cpus: "1.0", memory: 768M, pids: 200 } } }
+    shm_size: 128m
+
+  redis:
+    <<: *logging
+    # Bounded memory; queues and rate limits are small. noeviction keeps queued jobs safe.
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes --maxmemory 128mb --maxmemory-policy noeviction"]
+    deploy: { resources: { limits: { cpus: "0.5", memory: 192M, pids: 64 } } }
+
+  migrate:
+    <<: *logging
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256M } } }
+
+  api:
+    <<: *logging
+    environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "" }
+    deploy: { resources: { limits: { cpus: "1.0", memory: 512M, pids: 128 } } }
+
+  api-worker:
+    <<: *logging
+    environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "" }
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256M, pids: 64 } } }
+
+  scanner:
+    <<: *logging
+    environment:
+      # Cautious on a shared host: at most 2 scans at once, 2 checks per scan.
+      SCANNER_WORKERS: "2"
+      SCANNER_CHECK_CONCURRENCY: "2"
+      SCANNER_ALLOW_PRIVATE_HOSTS: "" # never in production
+    deploy: { resources: { limits: { cpus: "0.75", memory: 256M, pids: 128 } } }
+
+  web:
+    <<: *logging
+    deploy: { resources: { limits: { cpus: "1.0", memory: 512M, pids: 128 } } }
