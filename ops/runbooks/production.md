@@ -119,7 +119,10 @@ below: the restic container never sees GuardHub's own secrets.
 3. A restic password, generated offline: `head -c 32 /dev/urandom | base64`. Store it **offline
    next to `DATA_ENCRYPTION_KEY`** (password manager + a sealed paper copy). Without it the
    off-site backups are unreadable, by us too; restic cannot recover it.
-4. Add to `/opt/guardhub/shared/.env` with an editor (not `echo`: shell history):
+4. Put them in their own file, `/opt/guardhub/shared/offsite.env` (owner root, mode 600), with
+   an editor (not `echo`: shell history). Not in `.env`: docker compose reads `.env` and expands
+   `$...` inside values, and a strong password may contain `$`. Values are read literally (no
+   quotes, no escaping). If `offsite.env` doesn't exist, `offsite.sh` falls back to `.env`.
    ```
    RESTIC_REPOSITORY=s3:https://<s3-endpoint>/<bucket>/guardhub
    RESTIC_PASSWORD=<from step 3>

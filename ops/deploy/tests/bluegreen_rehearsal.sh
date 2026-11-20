@@ -46,8 +46,10 @@ log "proxy stand-in (nginx container, reloads gracefully like the host nginx)"
 printf 'upstream guardhub_web {\n    server gh-upstream:18700 max_fails=0;\n}\n' >"$RH/shared/nginx-upstream.conf"
 cat >"$RH/shared/rh-site.conf" <<'NGINX'
 include /etc/nginx/gh/nginx-upstream.conf;
+log_format rh '$time_iso8601 $status rt=$request_time up=$upstream_addr ust=$upstream_status urt=$upstream_response_time';
 server {
     listen 8080;
+    access_log /dev/stdout rh;
     location / {
         proxy_pass http://guardhub_web;
         proxy_http_version 1.1;
@@ -60,7 +62,8 @@ docker run -d --name rh-nginx --add-host gh-upstream:host-gateway -p "127.0.0.1:
   -v "$RH/shared:/etc/nginx/gh:ro" -v "$RH/shared/rh-site.conf:/etc/nginx/conf.d/default.conf:ro" nginx:1.27-alpine >/dev/null
 
 log "legacy layout: $LEGACY as the single project 'guardhub' on :18700"
-GUARDHUB_VERSION=$LEGACY docker compose -p guardhub --project-directory "$RH/releases/$LEGACY" --env-file "$RH/shared/.env" \
+# GUARDHUB_ROOT: newer releases mount the DB init script from ${GUARDHUB_ROOT:-/opt/guardhub}
+GUARDHUB_ROOT=$RH GUARDHUB_VERSION=$LEGACY docker compose -p guardhub --project-directory "$RH/releases/$LEGACY" --env-file "$RH/shared/.env" \
   -f "$RH/releases/$LEGACY/docker-compose.yml" -f "$RH/releases/$LEGACY/docker-compose.prod.yml" up -d --no-build >/dev/null
 ln -sfn "$RH/releases/$LEGACY" "$RH/current"
 for _ in $(seq 1 90); do curl -fsS "http://127.0.0.1:$PROXY_PORT/api/v1/health" 2>/dev/null | grep -q '"ok"' && break; sleep 2; done
@@ -71,13 +74,23 @@ docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTG
 
 log "probe: proxy health every 0.2 s"
 PROBE=$RH/probe.log
+COLOR_PIDS=()
 ( while :; do printf '%s %s\n' "$(date +%T.%3N)" "$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 "http://127.0.0.1:$PROXY_PORT/api/v1/health")"; sleep 0.2; done ) >"$PROBE" &
 PROBE_PID=$!
 # diagnostics: the legacy app directly (bypassing the proxy), with the body of any failure
 ( while :; do r=$(curl -s --max-time 3 -w ' %{http_code}' http://127.0.0.1:18700/api/v1/health); printf '%s %s
 ' "$(date +%T.%3N)" "${r: -60}"; sleep 0.2; done ) >"$RH/probe-direct.log" &
 DIRECT_PID=$!
-trap 'kill $PROBE_PID $DIRECT_PID 2>/dev/null || true' EXIT
+# diagnostics: each colour directly (bypassing the proxy), latency + status, UTC like the ctl log
+for port in 18701 18702; do
+  ( while :; do
+      printf '%s %s\n' "$(date -u +%T.%3N)" \
+        "$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 "http://127.0.0.1:$port/api/v1/health")"
+      sleep 0.5
+    done ) >"$RH/probe-$port.log" &
+  COLOR_PIDS+=($!)
+done
+trap 'kill $PROBE_PID $DIRECT_PID "${COLOR_PIDS[@]}" 2>/dev/null || true' EXIT
 
 CTL=(env GUARDHUB_ROOT="$RH" UPSTREAM_HOST=gh-upstream
   NGINX_TEST_CMD="docker exec rh-nginx nginx -t" NGINX_RELOAD_CMD="docker exec rh-nginx nginx -s reload"
@@ -102,8 +115,11 @@ if HEALTH_TIMEOUT=60 "${CTL[@]}" activate "$BROKEN"; then echo "FAIL: broken rel
 [[ $(cat "$RH/shared/nginx-upstream.conf") == "$before" ]] || { echo "FAIL: upstream changed" >&2; exit 1; }
 echo "broken release refused; upstream unchanged"
 
-sleep 3; kill $PROBE_PID $DIRECT_PID; wait $PROBE_PID 2>/dev/null || true
-docker logs rh-nginx 2>&1 | grep -E "\[(error|warn)\]" | head -20 >"$RH/nginx-errors.log" || true
+sleep 3; kill $PROBE_PID $DIRECT_PID "${COLOR_PIDS[@]}"; wait $PROBE_PID 2>/dev/null || true
+# full log (kept in $RH), minus host-gateway's IPv6 fallback noise (nginx then uses IPv4)
+docker logs rh-nginx >"$RH/nginx-access.log" 2>/dev/null || true
+docker logs rh-nginx 2>&1 | grep -E "\[(error|warn)\]" | grep -v "Network unreachable" >"$RH/nginx-errors.log" || true
+echo "nginx errors/warnings: $(wc -l <"$RH/nginx-errors.log")"; head -20 "$RH/nginx-errors.log"
 log "status";  "${CTL[@]}" status
 log "data survived"
 docker exec guardhub-postgres-1 psql -U "$(envv POSTGRES_USER)" -d "$(envv POSTGRES_DB)" -Atc \

@@ -13,7 +13,8 @@
 #   offsite.sh status                    one line for `guardhub-ctl.sh status`
 #   offsite.sh unlock                    remove stale locks left by an interrupted run
 #
-# Configuration comes ONLY from $GUARDHUB_ROOT/shared/.env (default /opt/guardhub):
+# Configuration comes ONLY from $GUARDHUB_ROOT/shared/offsite.env (mode 600; default root
+# /opt/guardhub), or, if that file does not exist, from shared/.env:
 #   RESTIC_REPOSITORY  e.g. s3:https://<endpoint>/<bucket>/guardhub
 #   RESTIC_PASSWORD    encrypts the repository; keep an OFFLINE copy (without it: unreadable)
 #   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY  a key limited to that bucket
@@ -37,7 +38,15 @@ log() { printf '%s offsite: %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
 
 [[ -f $ENV_FILE ]] || die "missing $ENV_FILE"
-envval() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2- || true; }
+# Preferred: the off-site settings in their own file, which docker compose never reads (compose
+# expands `$...` inside .env values; a strong restic password may well contain `$`). Values are
+# taken literally: everything after the first `=`, no quotes, no expansion.
+OFFSITE_ENV=$ROOT/shared/offsite.env
+envval() {
+  local f=$ENV_FILE
+  if [[ -f $OFFSITE_ENV ]]; then f=$OFFSITE_ENV; fi
+  grep -E "^$1=" "$f" | tail -1 | cut -d= -f2- || true
+}
 
 # Windows (Git Bash) test runs only: docker.exe needs C:/... paths for bind mounts.
 hostpath() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }

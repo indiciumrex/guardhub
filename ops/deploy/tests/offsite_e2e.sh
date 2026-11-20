@@ -62,7 +62,9 @@ step "throwaway GUARDHUB_ROOT, MinIO and Postgres"
 mkdir -p "$ROOT/shared" "$ROOT/releases/$REL"
 ln -s "$ROOT/releases/$REL" "$ROOT/current"
 [[ -L $ROOT/current ]] || fail "could not create the current symlink"
-MINIO_USER=e2e$(rand 12) MINIO_PASS=$(rand 32) PG_PASS=$(rand 24) RESTIC_PW=$(rand 40)
+MINIO_USER=e2e$(rand 12) MINIO_PASS=$(rand 32) PG_PASS=$(rand 24)
+# shell/compose-hostile characters on purpose: the off-site file is read literally
+RESTIC_PW="$(rand 20)\$HOME#x!&*()~?^%+@\$(id)$(rand 20)"
 OLD_KEY=$(key32) NEW_KEY=$(key32)
 cat >"$ROOT/shared/.env" <<EOF
 POSTGRES_USER=owner
@@ -71,6 +73,9 @@ GUARDHUB_APP_DB_USER=guardhub_app
 WEB_PORT=1
 DATA_ENCRYPTION_KEY=$NEW_KEY
 DATA_ENCRYPTION_KEYS_PREVIOUS=$OLD_KEY
+EOF
+# off-site settings in their own file (never read by docker compose)
+cat >"$ROOT/shared/offsite.env" <<EOF
 RESTIC_REPOSITORY=s3:http://$MINIO:9000/guardhub-e2e/repo
 RESTIC_PASSWORD=$RESTIC_PW
 AWS_ACCESS_KEY_ID=$MINIO_USER
@@ -78,6 +83,9 @@ AWS_SECRET_ACCESS_KEY=$MINIO_PASS
 AWS_DEFAULT_REGION=us-east-1
 EOF
 cp "$ROOT/shared/.env" "$WORK/env.good"
+cp "$ROOT/shared/offsite.env" "$WORK/offsite.good"
+grep -qF 'RESTIC_PASSWORD=' "$ROOT/shared/offsite.env" && grep -qF '$HOME#x!&*()~?^%+@$(id)' "$ROOT/shared/offsite.env" ||
+  fail "test setup: the special-character password was not written literally"
 
 docker network create "$NET" >/dev/null
 MINIO_ROOT_USER=$MINIO_USER MINIO_ROOT_PASSWORD=$MINIO_PASS \
@@ -131,11 +139,11 @@ export GUARDHUB_ROOT=$ROOT GUARDHUB_DB_CONTAINER=$PG GUARDHUB_DRILL_NAME=$DRILL 
 export RESTIC_COMPRESSION=off
 
 step "offsite: not configured → backup still works, says so, exit 0"
-grep -v '^RESTIC_REPOSITORY=' "$WORK/env.good" >"$ROOT/shared/.env"
+rm -f "$ROOT/shared/offsite.env" # no offsite.env and nothing in .env = not configured
 out=$(bash "$CTL" backup 2>&1) || fail "backup without off-site config failed: $out"
 grep -q "offsite: not configured" <<<"$out" || fail "missing 'offsite: not configured' log line"
 [[ $(bash "$OFFSITE" status) == "offsite: not configured" ]] || fail "status should say not configured"
-cp "$WORK/env.good" "$ROOT/shared/.env"
+cp "$WORK/offsite.good" "$ROOT/shared/offsite.env"
 rm -f "$ROOT"/backups/guardhub-*
 
 step "offsite init + backup (local dump → restic push → retention), twice"
@@ -211,14 +219,14 @@ grep -q "could NOT be decrypted" "$WORK/nokey.log" || { cat "$WORK/nokey.log"; f
 cp "$WORK/env.good" "$ROOT/shared/.env"
 
 step "wrong RESTIC_PASSWORD must fail"
-sed -i "s/^RESTIC_PASSWORD=.*/RESTIC_PASSWORD=wrong-$(rand 12)/" "$ROOT/shared/.env"
+sed -i "s/^RESTIC_PASSWORD=.*/RESTIC_PASSWORD=wrong-$(rand 12)/" "$ROOT/shared/offsite.env"
 mkdir -p "$WORK/wrong"
 if bash "$OFFSITE" restore-latest "$WORK/wrong" >"$WORK/wrong.log" 2>&1; then fail "restore with a wrong password succeeded"; fi
 cat "$WORK/wrong.log"
 if bash "$CTL" restore-drill --offsite >"$WORK/wrong-drill.log" 2>&1; then fail "drill with a wrong password passed"; fi
 if grep -q "RESTORE DRILL PASSED" "$WORK/wrong-drill.log"; then fail "drill log claims success"; fi
 [[ -z $(ls -A "$WORK/wrong") ]] || fail "a wrong password must not produce any file"
-cp "$WORK/env.good" "$ROOT/shared/.env"
+cp "$WORK/offsite.good" "$ROOT/shared/offsite.env"
 
 step "the bucket holds no plaintext"
 docker cp "$MINIO:/data" - >"$WORK/bucket.tar"
