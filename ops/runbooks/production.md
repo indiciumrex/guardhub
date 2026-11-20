@@ -41,7 +41,8 @@ ops/deploy/deploy.sh root@<host>     # build images here, ship release + images,
 ```
 
 `activate <sha>`:
-1. pre-deploy backup;
+1. pre-deploy backup: the LOCAL dump is mandatory (activate stops if it fails); the off-site
+   copy then runs in the background (§3);
 2. runs the release's migrations while the current colour keeps serving, so **migrations must be
    expand-only** (add tables/columns/constraints that old code ignores; to drop or rename, ship
    the code that stops using it first, then the destructive migration in a later release);
@@ -85,8 +86,15 @@ change to this flow with `ops/deploy/tests/bluegreen_rehearsal.sh` on a disposab
   the audit trigger, and that every encrypted column (TOTP secrets, evidence, Slack webhooks)
   decrypts with the keyring (`DATA_ENCRYPTION_KEY`, then `DATA_ENCRYPTION_KEYS_PREVIOUS`); it
   prints how many values are still `under_previous_key`. Log: `/var/log/guardhub-backup.log`.
-- Pre-deploy/rollback backups (`activate`, `rollback`) stay local only: they exist for an
-  immediate rollback and must not block a deploy when the storage provider is down.
+- Pre-deploy/rollback backups (`activate`, `rollback`, or by hand: `guardhub-ctl.sh
+  predeploy-backup`): the local dump is mandatory and taken first; the off-site copy is
+  **best-effort and asynchronous** (detached, at most `OFFSITE_PUSH_TIMEOUT`=1800 s), so a storage
+  outage never blocks or slows a deploy. Its outcome is the `offsite pre-deploy copy:` line of
+  `guardhub-ctl.sh status` (`queued | running | ok | FAILED`), with details in
+  `/opt/guardhub/state/offsite-predeploy.log`. A FAILED copy is not urgent: the local dump
+  exists and the nightly backup pushes the newest dump again; if it keeps failing, run
+  `offsite.sh check`. All pushes (nightly, manual, pre-deploy) share one lock
+  (`state/offsite.lock`), because retention (`forget --prune`) needs the repository exclusively.
 - Redis holds only queues, rate limits, progress and session revocations. Losing it is safe:
   in-flight scans are reaped as `timeout` and users simply rescan.
 - Evidence is masked by the scanner and encrypted with `DATA_ENCRYPTION_KEY`.

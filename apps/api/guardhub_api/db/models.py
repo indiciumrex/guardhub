@@ -144,6 +144,26 @@ class Notification(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class NotificationEvent(Base):
+    """An alert that is not about a scan ('monitoring_paused' | 'test'), one per (event, channel).
+
+    A separate table (migration 0004) so the previous release, which requires a scan id on every
+    `notifications` row, keeps working after a rollback."""
+
+    __tablename__ = "notification_events"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
+    kind: Mapped[str] = mapped_column(String)  # monitoring_paused | test
+    dedupe_key: Mapped[str] = mapped_column(Text)  # the alert job's unique id
+    channel: Mapped[str] = mapped_column(String)  # email | slack
+    status: Mapped[str] = mapped_column(String)  # pending | sent | failed | skipped
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now()
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AdminTrustedDomain(Base):
     """A host an admin proved once (ADR-0003). Exact host only; re-checked in the background."""
 

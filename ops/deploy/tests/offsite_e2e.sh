@@ -11,6 +11,12 @@
 # Every container/network it creates is named gh-ops-e2e-*; all are removed on exit. Every
 # credential is generated at random per run (nothing secret is stored in the repository).
 set -Eeuo pipefail
+# On Linux run it as root, like guardhub-ctl.sh in production: dumps are mode 600 and the restic
+# container (root, all capabilities dropped) can only read them when root owns them.
+if [[ $(uname -s) == Linux && $(id -u) != 0 ]]; then
+  echo "run as root on Linux (e.g. wsl -u root), like production" >&2
+  exit 2
+fi
 export MSYS_NO_PATHCONV=1 MSYS=winsymlinks:nativestrict # Windows/Git Bash only; no-ops elsewhere
 
 REPO=$(cd "$(dirname "$0")/../../.." && pwd)
@@ -152,11 +158,47 @@ echo "$status"
   fail "retention policy did not run after each push"
 grep -q "keep 2 snapshots:" "$WORK/backup.log" || fail "snapshots are not grouped together for retention"
 
+wait_predeploy() { # wait_predeploy <ok|FAILED> <timeout-s>: the async pre-deploy copy's outcome
+  local want=$1 deadline=$((SECONDS + $2)) st
+  while ((SECONDS < deadline)); do
+    st=$(cat "$ROOT/state/offsite-predeploy.status" 2>/dev/null || true)
+    [[ $st == "$want "* ]] && { echo "pre-deploy status: $st"; return 0; }
+    sleep 2
+  done
+  fail "pre-deploy status never became '$want' (last: ${st:-none}); log: $(tail -5 "$ROOT/state/offsite-predeploy.log" 2>/dev/null)"
+}
+
+step "pre-deploy backup: local dump at once, off-site copy in the background (storage healthy)"
+t0=$SECONDS
+out=$(bash "$CTL" predeploy-backup 2>&1) || fail "predeploy-backup failed: $out"
+echo "$out"; ((SECONDS - t0 < 30)) || fail "predeploy-backup blocked for $((SECONDS - t0))s"
+grep -q "off-site copy started in the background" <<<"$out" || fail "missing async log line"
+wait_predeploy ok 180
+bash "$CTL" status 2>/dev/null | grep -q "offsite pre-deploy copy: ok" || fail "status does not show the pre-deploy copy"
+newest=$(ls -t "$ROOT"/backups/guardhub-*.dump | head -1)
+grep -q "pushed $(basename "$newest") " "$ROOT/state/offsite-predeploy.log" ||
+  fail "the background push did not upload the pre-deploy dump"
+
+step "pre-deploy backup during a storage OUTAGE: deploy is not blocked, failure is recorded"
+docker stop "$MINIO" >/dev/null
+t0=$SECONDS
+out=$(OFFSITE_PUSH_TIMEOUT=40 bash "$CTL" predeploy-backup 2>&1) || fail "predeploy-backup failed during the outage: $out"
+echo "$out"; ((SECONDS - t0 < 30)) || fail "a storage outage blocked predeploy-backup for $((SECONDS - t0))s"
+ls "$ROOT"/backups/guardhub-*.dump >/dev/null || fail "no local dump"
+[[ $(ls -t "$ROOT"/backups/guardhub-*.dump | head -1) != "$newest" ]] || fail "no NEW local dump was written"
+wait_predeploy FAILED 150
+docker start "$MINIO" >/dev/null
+for _ in $(seq 1 60); do docker exec "$MINIO" curl -fsS http://127.0.0.1:9000/minio/health/ready >/dev/null 2>&1 && break; sleep 1; done
+bash "$OFFSITE" unlock >/dev/null 2>&1 || true # a push killed mid-way may leave a stale lock
+step "the next (nightly) backup pushes again: storage recovered"
+bash "$CTL" backup >"$WORK/third" 2>>"$WORK/backup.log" || { tail -20 "$WORK/backup.log"; fail "backup after outage"; }
+bash "$OFFSITE" check
+
 step "server lost: wipe ALL local dumps, then restore-drill --offsite"
 rm -rf "$ROOT/backups"
 bash "$CTL" restore-drill --offsite 2>&1 | tee "$WORK/drill.log"
 grep -q "RESTORE DRILL PASSED" "$WORK/drill.log" || fail "off-site drill did not pass"
-grep -q "offsite: fetched $(basename "$(cat "$WORK/second")")" "$WORK/drill.log" ||
+grep -q "offsite: fetched $(basename "$(cat "$WORK/third")")" "$WORK/drill.log" ||
   fail "the drill should use the NEWEST off-site snapshot"
 grep -q "under_previous_key=6" "$WORK/drill.log" || fail "keyring proof should report 6 values under the previous key"
 grep -q "totp=3 evidence=2 slack=3" "$WORK/drill.log" || fail "decrypt counts"

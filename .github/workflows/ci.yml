@@ -142,6 +142,16 @@ jobs:
           npx prettier --check .
           npx playwright install --with-deps chromium
           npx playwright test
+      - name: web runtime hygiene (read-only root, Next cache writable, no unhandled errors)
+        run: |
+          $COMPOSE exec -T web sh -c 'touch /app/apps/web/.next/cache/.w && rm /app/apps/web/.next/cache/.w'
+          ! $COMPOSE exec -T web sh -c 'touch /app/apps/web/.next/.w' 2>/dev/null
+          code=$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:3000/_next/image?url=%2Ffavicon.ico&w=64&q=75')
+          echo "/_next/image -> $code"; test "$code" != 200
+          sleep 2
+          if $COMPOSE logs --no-color web | grep -E 'ENOENT|EROFS|unhandledRejection|uncaughtException'; then
+            echo "web logged unhandled filesystem/runtime errors"; exit 1
+          fi
       - name: stack logs on failure
         if: failure()
         run: $COMPOSE logs --no-color --tail 300

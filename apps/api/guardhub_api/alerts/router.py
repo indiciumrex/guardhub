@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from guardhub_api.alerts import service
+from guardhub_api.alerts.repository import HistoryFilter
 from guardhub_api.alerts.schemas import (
     NotificationHistoryItem,
     NotificationSettingsView,
@@ -38,6 +39,9 @@ async def send_test(body: TestNotificationRequest, claims: FullSession) -> TestN
 
 @router.get("/history")
 async def get_history(
-    claims: FullSession, limit: Annotated[int, Query(ge=1, le=100)] = 20
+    claims: FullSession,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    show: Annotated[HistoryFilter, Query()] = "alerts",
 ) -> list[NotificationHistoryItem]:
-    return await service.history(claims, limit)
+    """`show`: "alerts" (default: real alerts only), "test" (test messages only) or "all"."""
+    return await service.history(claims, limit, show)

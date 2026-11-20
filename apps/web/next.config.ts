@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
   reactStrictMode: true,
+  // The app never uses next/image. The optimizer would only be an unauthenticated endpoint
+  // (/_next/image) that does CPU work and writes to .next/cache on behalf of anyone; keep it off.
+  images: { unoptimized: true },
   // Error tracking SDK (loaded only when SENTRY_DSN is set): required from node_modules at
   // runtime instead of being bundled, which keeps OpenTelemetry/require-hook code out of webpack.
   serverExternalPackages: ["@sentry/node"],

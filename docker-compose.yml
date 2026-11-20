@@ -180,7 +180,11 @@ services:
       SENTRY_BROWSER: ${SENTRY_BROWSER:-on}
       GUARDHUB_VERSION: ${GUARDHUB_VERSION:-local}
     read_only: true
-    tmpfs: [/tmp]
+    # Next.js writes its runtime caches under .next/cache; the root filesystem is read-only, so
+    # that one directory is a small, capped, app-user-only tmpfs (uid/gid 1001 = guardhub).
+    tmpfs:
+      - /tmp
+      - /app/apps/web/.next/cache:uid=1001,gid=1001,mode=0700,size=64m
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     depends_on:

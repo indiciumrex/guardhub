@@ -42,9 +42,16 @@ class TestNotificationQueued(BaseModel):
     status: Literal["queued"] = "queued"
 
 
+AlertKind = Literal["scan_change", "monitoring_paused", "test"]
+
+
 class NotificationHistoryItem(BaseModel):
+    """`kind` says what the alert was about. Only 'scan_change' has a scan (and change counts);
+    'monitoring_paused' has a project; 'test' has neither."""
+
     id: uuid.UUID
-    scan_id: uuid.UUID
+    kind: AlertKind
+    scan_id: uuid.UUID | None
     project_id: uuid.UUID | None
     channel: Channel
     status: Literal["pending", "sent", "failed", "skipped"]

@@ -206,9 +206,16 @@ export interface NotificationSettingsUpdate {
   slack_webhook_url?: string | null;
 }
 
+/** What an alert was about. Only "scan_change" has a scan and change counts. */
+export type NotificationKind = "scan_change" | "monitoring_paused" | "test";
+
+/** GET /account/notifications/history?show=… (the API's default is "alerts"). */
+export type NotificationHistoryFilter = "alerts" | "test" | "all";
+
 export interface NotificationHistoryItem {
   id: string;
-  scan_id: string;
+  kind: NotificationKind;
+  scan_id: string | null;
   project_id: string | null;
   channel: NotificationChannel;
   status: NotificationStatus;

@@ -272,7 +272,7 @@ two lists in `jobs/worker.py` (`FUNCTIONS`, `CRON_JOBS`): one line per job.
   Ownership is checked exactly like a manual rescan (re-verify when the proof is older than 30
   days; `trusted_domain` projects need their domain `active`). If the proof is gone: set
   `schedule_paused_reason = 'ownership_lost'`, audit `project.schedule_paused`, and send an
-  alert (§8.4, kind `paused`). Otherwise create a scan with `trigger = 'scheduled'`, enqueue it
+  alert (§8.4, kind `monitoring_paused`). Otherwise create a scan with `trigger = 'scheduled'`, enqueue it
   through the existing `scans.queue.enqueue_scan`, and advance `next_scan_at` by one interval.
   The scanner's do-no-harm envelope (§3) applies unchanged.
 - "Proof gone" means a definitive answer only: the re-verification found no token (`not_found`),
@@ -336,8 +336,12 @@ links to `{PUBLIC_BASE_URL}/account/projects/{project_id}/compare/{scan_id}`.
 - **Slack:** incoming webhook only. Accepted URL:
   `^https://hooks\.slack\.com/services/[A-Za-z0-9_/-]{10,200}$`. Stored encrypted (AAD = user
   id); never returned by the API. POST with 5 s timeout, no redirects, no other hosts.
-- **paused** alerts (§8.2) have no scan, so they are not `notifications` rows; each channel is sent
-  once per pause (a Redis marker under the job's unique id). Test notifications aren't logged either.
+- **paused** alerts (§8.2) and **test** messages have no scan: they are `notification_events`
+  rows (migration 0004; kind `monitoring_paused | test`), unique per (job id, channel), with the
+  same send-once locking and bounded retries. A separate table keeps the migration expand-only:
+  the previous release requires a scan id on every `notifications` row and never reads this one.
+- The history merges both tables. It shows real alerts (scan changes + monitoring paused) by
+  default; test messages only when asked (`show=test|all`), marked "Test" in the UI.
 - Delivery errors are stored as short codes only (`smtp_error`, `slack_http_404`, …). 4xx from
   Slack (bad/revoked webhook) isn't retried; timeouts, 429 and 5xx are, up to 3 attempts.
 
@@ -349,8 +353,10 @@ PUT  /account/notifications   {"email_enabled","notify_new","notify_regression",
      -> the GET view. 422 invalid_slack_webhook. Audited (account.notifications_updated; never the URL).
 POST /account/notifications/test {"channel":"email|slack"} -> 202 {"status":"queued"};
      429 after 3 attempts/hour; 422 slack_not_configured | email_not_configured.
-GET  /account/notifications/history?limit=20 -> [{"id","scan_id","project_id","channel","status",
-      "new_count","regression_count","fixed_count","created_at","sent_at"}]
+GET  /account/notifications/history?limit=20&show=alerts|test|all  (default alerts)
+     -> [{"id","kind":"scan_change|monitoring_paused|test","scan_id"|null,"project_id"|null,
+          "channel","status","new_count","regression_count","fixed_count","created_at","sent_at"}]
+     (counts are 0 for kinds other than scan_change). 422 for any other `show`.
 ```
 
 ### 8.5 Admin trusted domains (ADR-0003)

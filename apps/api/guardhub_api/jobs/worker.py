@@ -69,7 +69,7 @@ async def notify_paused(ctx: JobContext, project_id: str) -> str:
 async def send_test_notification(ctx: JobContext, user_id: str, channel: str) -> str:
     if channel not in ("email", "slack"):
         return "not_applicable"
-    return await notifier.send_test(uuid.UUID(user_id), channel)
+    return await notifier.send_test(uuid.UUID(user_id), channel, job_id=str(ctx.get("job_id", "")))
 
 
 async def startup(ctx: JobContext) -> None:

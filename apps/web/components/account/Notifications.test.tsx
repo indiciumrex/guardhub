@@ -4,7 +4,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { isSlackWebhookUrl, type NotificationSettings } from "@/lib/types";
 import { NotificationSettingsForm } from "./NotificationSettingsForm";
 import { NotificationTestButtons } from "./NotificationTestButtons";
-import { NotificationHistory } from "./NotificationHistory";
+import { NotificationHistory, NotificationHistoryFilters } from "./NotificationHistory";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -203,6 +203,7 @@ describe("NotificationHistory", () => {
         items={[
           {
             id: "n1",
+            kind: "scan_change",
             scan_id: "s9",
             project_id: "p1",
             channel: "email",
@@ -215,6 +216,7 @@ describe("NotificationHistory", () => {
           },
           {
             id: "n2",
+            kind: "scan_change",
             scan_id: "s8",
             project_id: null,
             channel: "slack",
@@ -240,5 +242,73 @@ describe("NotificationHistory", () => {
     expect(rows[2]).toHaveTextContent("Deleted project");
     expect(rows[2]).toHaveTextContent("Failed");
     expect(within(rows[2]!).queryByRole("link")).toBeNull();
+  });
+
+  it("shows monitoring-paused alerts with a project link, and tests marked as tests", () => {
+    renderWithIntl(
+      <NotificationHistory
+        projectNames={{ p1: "Main site" }}
+        filter="all"
+        items={[
+          {
+            id: "e1",
+            kind: "monitoring_paused",
+            scan_id: null,
+            project_id: "p1",
+            channel: "email",
+            status: "skipped",
+            new_count: 0,
+            regression_count: 0,
+            fixed_count: 0,
+            created_at: "2026-11-17T08:00:00Z",
+            sent_at: null,
+          },
+          {
+            id: "e2",
+            kind: "test",
+            scan_id: null,
+            project_id: null,
+            channel: "slack",
+            status: "sent",
+            new_count: 0,
+            regression_count: 0,
+            fixed_count: 0,
+            created_at: "2026-11-16T08:00:00Z",
+            sent_at: "2026-11-16T08:00:01Z",
+          },
+        ]}
+      />,
+      "tr",
+    );
+    const rows = within(screen.getByRole("table")).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("İzleme duraklatıldı: sahiplik kanıtı bulunamadı");
+    expect(rows[1]).toHaveTextContent("Gönderilmedi");
+    expect(rows[1]).not.toHaveTextContent("yeni,");
+    expect(within(rows[1]!).getByRole("link", { name: /Projeyi aç/ })).toHaveAttribute(
+      "href",
+      "/account/projects/p1",
+    );
+    expect(rows[2]).toHaveTextContent("Deneme");
+    expect(rows[2]).toHaveTextContent("Deneme mesajı");
+    expect(rows[2]).not.toHaveTextContent("Silinmiş proje");
+    expect(within(rows[2]!).queryByRole("link")).toBeNull();
+  });
+
+  it("has a test-specific empty state", () => {
+    renderWithIntl(<NotificationHistory items={[]} projectNames={{}} filter="test" />);
+    expect(screen.getByText("No test messages yet.")).toBeInTheDocument();
+  });
+
+  it("filters are links; the active one is marked as current", () => {
+    renderWithIntl(<NotificationHistoryFilters active="test" />);
+    const nav = screen.getByRole("navigation", { name: "Show" });
+    expect(within(nav).getByRole("link", { name: "Alerts" })).toHaveAttribute(
+      "href",
+      "/account/notifications#alert-history-heading",
+    );
+    const tests = within(nav).getByRole("link", { name: "Tests" });
+    expect(tests).toHaveAttribute("aria-current", "page");
+    expect(tests).toHaveAttribute("href", "/account/notifications?show=test#alert-history-heading");
+    expect(within(nav).getByRole("link", { name: "All" })).not.toHaveAttribute("aria-current");
   });
 });

@@ -20,11 +20,19 @@ from aiosmtpd.controller import Controller
 from arq.worker import Worker
 from redis.asyncio import Redis
 from sqlalchemy import select, text
+from sqlalchemy.exc import DBAPIError
 
 from guardhub_api.admin.bootstrap import _set_role
 from guardhub_api.alerts import notifier
 from guardhub_api.config import get_settings
-from guardhub_api.db.models import AdminTrustedDomain, AuditLog, Notification, NotificationSettings, Project
+from guardhub_api.db.models import (
+    AdminTrustedDomain,
+    AuditLog,
+    Notification,
+    NotificationEvent,
+    NotificationSettings,
+    Project,
+)
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import render_finding
 from guardhub_api.jobs import client as jobs_client
@@ -103,6 +111,19 @@ async def run_jobs() -> None:
         await w.main()
     finally:  # not w.close(): it signals SIGUSR1, which Windows dev shells don't have
         await w.pool.aclose()
+
+
+async def events_of(address: str) -> list[NotificationEvent]:
+    async with db_session(DbContext.system()) as session:
+        uid = (
+            await session.execute(text("SELECT id FROM users WHERE email = :e"), {"e": address})
+        ).scalar_one()
+        rows = await session.execute(select(NotificationEvent).where(NotificationEvent.user_id == uid))
+        return list(rows.scalars().all())
+
+
+def paused_job_ids(rows: list[NotificationEvent]) -> list[str]:
+    return [r.dedupe_key for r in rows if r.kind == "monitoring_paused"]
 
 
 async def set_project(project_id: str, **values: object) -> None:
@@ -216,7 +237,9 @@ async def test_schedule_scan_diff_and_change_alerts(
         assert diff["score_delta"] == -7 and diff["compared_checks"] and diff["skipped_checks"] == []
         assert "evidence" not in diff["new"][0]
         history = (await client.get("/api/v1/account/notifications/history")).json()
-        assert [(h["channel"], h["status"], h["new_count"]) for h in history] == [("email", "sent", 1)]
+        assert [(h["kind"], h["channel"], h["status"], h["new_count"]) for h in history] == [
+            ("scan_change", "email", "sent", 1)
+        ]
         assert history[0]["scan_id"] == scheduled["id"] and history[0]["sent_at"]
 
         # idempotency: the job id is taken, and re-running the alert sends nothing new
@@ -327,6 +350,12 @@ async def test_ownership_lost_pauses_schedule_and_alerts(
         mails = mailbox.to(address)
         assert len(mails) == 1 and "izleme duraklatıldı" in mails[0]["Subject"]
         assert f"/account/projects/{pid}" in body_text(mails[0])
+        # ... and it is in the alert history (a real alert: shown by default)
+        history = (await client.get("/api/v1/account/notifications/history")).json()
+        paused = [h for h in history if h["kind"] == "monitoring_paused"]
+        assert [(h["project_id"], h["channel"], h["status"], h["scan_id"]) for h in paused] == [
+            (pid, "email", "sent", None)
+        ]
 
         # paused projects are not picked again, and the alert is not repeated
         await set_project(pid, next_scan_at=now - timedelta(minutes=1))
@@ -334,6 +363,10 @@ async def test_ownership_lost_pauses_schedule_and_alerts(
         assert uuid.UUID(pid) not in report.paused + report.started
         await run_jobs()
         assert len(mailbox.to(address)) == 1
+        # a duplicated/retried paused job (same job id) neither sends nor records a second time
+        job_id = paused_job_ids(await events_of(address))[0]
+        assert await notifier.notify_paused(uuid.UUID(pid), job_id=job_id, final_try=True) == "done"
+        assert len(mailbox.to(address)) == 1 and len(await events_of(address)) == 1
 
         # choosing a frequency again resumes it (the proof is re-checked before the next scan)
         view = (await client.patch(f"/api/v1/projects/{pid}", json={"scan_frequency": "weekly"})).json()
@@ -461,6 +494,17 @@ async def test_notification_settings_slack_and_test_endpoint(redis: Redis, mailb
         assert len(mails) == 2 and all("test bildirimi" in m["Subject"] for m in mails)
         assert "Bir HKSolutions ürünüdür" in body_text(mails[0])
 
+        # tests are recorded, but kept out of the real alert history unless asked for
+        history = "/api/v1/account/notifications/history"
+        assert (await client.get(history)).json() == []
+        assert (await client.get(history, params={"show": "alerts"})).json() == []
+        tests = (await client.get(history, params={"show": "test"})).json()
+        assert [(h["kind"], h["channel"], h["status"], h["project_id"], h["scan_id"]) for h in tests] == [
+            ("test", "email", "sent", None, None)
+        ] * 2
+        assert len((await client.get(history, params={"show": "all"})).json()) == 2
+        assert (await client.get(history, params={"show": "everything"})).status_code == 422
+
 
 async def test_other_users_get_404_and_see_no_settings_or_history(redis: Redis, scanner: FakeScanner) -> None:
     async with new_client("198.51.100.206") as alice, new_client("198.51.100.207") as bob:
@@ -483,7 +527,27 @@ async def test_other_users_get_404_and_see_no_settings_or_history(redis: Redis, 
                     new_count=1,
                 )
             )
-        assert len((await alice.get("/api/v1/account/notifications/history")).json()) == 1
+            session.add(
+                NotificationEvent(
+                    user_id=uuid.UUID(alice_me["id"]),
+                    project_id=uuid.UUID(pid),
+                    kind="monitoring_paused",
+                    dedupe_key=f"notify-paused:{pid}:1",
+                    channel="email",
+                    status="sent",
+                )
+            )
+            session.add(
+                NotificationEvent(
+                    user_id=uuid.UUID(alice_me["id"]),
+                    kind="test",
+                    dedupe_key=f"test:{uuid.uuid4()}",
+                    channel="email",
+                    status="sent",
+                )
+            )
+        assert len((await alice.get("/api/v1/account/notifications/history")).json()) == 2
+        assert len((await alice.get("/api/v1/account/notifications/history?show=all")).json()) == 3
         assert (await alice.get(f"/api/v1/scans/{scan_id}/diff")).status_code == 200
 
         async def bob_sees_nothing() -> None:
@@ -494,7 +558,9 @@ async def test_other_users_get_404_and_see_no_settings_or_history(redis: Redis, 
             assert r.status_code == 404
             assert (await bob.post(f"/api/v1/projects/{pid}/scans")).status_code == 404
             assert (await bob.delete(f"/api/v1/projects/{pid}")).status_code == 404
-            assert (await bob.get("/api/v1/account/notifications/history")).json() == []
+            for show in ("alerts", "test", "all"):
+                r = await bob.get("/api/v1/account/notifications/history", params={"show": show})
+                assert r.json() == [], show
             settings = (await bob.get("/api/v1/account/notifications")).json()
             assert settings["email"] == bob_email and settings["slack_configured"] is False
 
@@ -517,4 +583,13 @@ async def test_other_users_get_404_and_see_no_settings_or_history(redis: Redis, 
     async with db_session(DbContext.for_user(bob_id, "user")) as session:
         rows = (await session.execute(select(Notification))).scalars().all()
         assert rows == []
+        assert (await session.execute(select(NotificationEvent))).scalars().all() == []
+        # and only 'system' may write alert rows, even for oneself
+        with pytest.raises(DBAPIError):
+            async with db_session(DbContext.for_user(bob_id, "user")) as s2:
+                s2.add(
+                    NotificationEvent(
+                        user_id=bob_id, kind="test", dedupe_key="test:forged", channel="email", status="sent"
+                    )
+                )
         assert (await session.execute(select(NotificationSettings))).scalars().all() == []

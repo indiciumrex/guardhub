@@ -26,6 +26,7 @@ from guardhub_api.common import audit, ratelimit
 from guardhub_api.common.crypto import Keyring
 from guardhub_api.common.errors import NotFoundError, ServiceUnavailableError, UnprocessableError
 from guardhub_api.config import get_settings
+from guardhub_api.db.models import Notification, NotificationEvent
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.jobs import client as jobs
 
@@ -111,21 +112,39 @@ async def request_test(redis: Redis, claims: SessionClaims, channel: str) -> Non
         raise ServiceUnavailableError("queue_unavailable", "Please try again in a moment.") from exc
 
 
-async def history(claims: SessionClaims, limit: int) -> list[NotificationHistoryItem]:
+def _history_item(r: Notification | NotificationEvent) -> NotificationHistoryItem:
+    if isinstance(r, Notification):
+        return NotificationHistoryItem(
+            id=r.id,
+            kind="scan_change",
+            scan_id=r.scan_id,
+            project_id=r.project_id,
+            channel=r.channel,
+            status=r.status,
+            new_count=r.new_count,
+            regression_count=r.regression_count,
+            fixed_count=r.fixed_count,
+            created_at=r.created_at,
+            sent_at=r.sent_at,
+        )
+    return NotificationHistoryItem(
+        id=r.id,
+        kind=r.kind,
+        scan_id=None,
+        project_id=r.project_id,
+        channel=r.channel,
+        status=r.status,
+        new_count=0,
+        regression_count=0,
+        fixed_count=0,
+        created_at=r.created_at,
+        sent_at=r.sent_at,
+    )
+
+
+async def history(
+    claims: SessionClaims, limit: int, show: repository.HistoryFilter = "alerts"
+) -> list[NotificationHistoryItem]:
     async with db_session(_ctx(claims)) as session:
-        rows = await repository.history(session, claims.user_id, limit)
-        return [
-            NotificationHistoryItem(
-                id=r.id,
-                scan_id=r.scan_id,
-                project_id=r.project_id,
-                channel=r.channel,
-                status=r.status,
-                new_count=r.new_count,
-                regression_count=r.regression_count,
-                fixed_count=r.fixed_count,
-                created_at=r.created_at,
-                sent_at=r.sent_at,
-            )
-            for r in rows
-        ]
+        rows = await repository.history(session, claims.user_id, limit, show)
+        return [_history_item(r) for r in rows]

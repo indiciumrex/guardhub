@@ -7,6 +7,8 @@
 #                                        If the new colour is unhealthy, nothing is switched.
 #   guardhub-ctl.sh rollback             start the previous colour, health gate, switch back
 #   guardhub-ctl.sh backup               pg_dump + manifest (14-day retention), then off-site copy
+#   guardhub-ctl.sh predeploy-backup     what activate/rollback run first: local dump (mandatory),
+#                                        off-site copy in the background (best-effort, never blocks)
 #   guardhub-ctl.sh restore-drill [--offsite | dump]  restore newest local (or off-site) backup into
 #                                        a throwaway, network-isolated Postgres and PROVE it: counts,
 #                                        schema, RLS, audit trigger, decryption with the keyring
@@ -36,6 +38,8 @@ DRILL=${GUARDHUB_DRILL_NAME:-guardhub-restore-drill} # throwaway container AND i
 DB_CONTAINER=${GUARDHUB_DB_CONTAINER:-guardhub-postgres-1}
 OFFSITE=$(dirname "$(readlink -f "$0")")/offsite.sh
 OFFSITE_TMP= # set while an off-site snapshot is unpacked for a drill; removed by drill_cleanup
+OFFSITE_LOCK_WAIT=${OFFSITE_LOCK_WAIT:-3600}       # seconds to wait for another push to finish
+OFFSITE_PUSH_TIMEOUT=${OFFSITE_PUSH_TIMEOUT:-1800} # a hung storage endpoint can't pin a push forever
 
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
@@ -157,15 +161,63 @@ cmd_backup() {
   echo "$file"
 }
 
+# Every off-site push (nightly cron, manual `backup`, the async pre-deploy copy) goes through one
+# lock: `push` ends with `forget --prune`, which needs the restic repository exclusively.
+offsite_push_locked() { # offsite_push_locked <dump>
+  mkdir -p "$STATE"
+  if command -v flock >/dev/null 2>&1; then
+    flock -w "$OFFSITE_LOCK_WAIT" "$STATE/offsite.lock" \
+      timeout -k 30 "$OFFSITE_PUSH_TIMEOUT" bash "$OFFSITE" push "$1" "$1.manifest"
+  else
+    timeout -k 30 "$OFFSITE_PUSH_TIMEOUT" bash "$OFFSITE" push "$1" "$1.manifest"
+  fi
+}
+
 cmd_backup_with_offsite() { # the `backup` command: local dump first, then the encrypted off-site copy
   local file; file=$(cmd_backup)
   [[ -n $file ]] || return 0
   if bash "$OFFSITE" configured; then
-    bash "$OFFSITE" push "$file" "$file.manifest" || die "offsite: push FAILED (local backup kept: $file)"
+    offsite_push_locked "$file" || die "offsite: push FAILED (local backup kept: $file)"
   else
     log "offsite: not configured (no RESTIC_REPOSITORY in $ENV_FILE): local backup only"
   fi
   echo "$file"
+}
+
+# Pre-deploy backup = the LOCAL dump (mandatory: activate/rollback die without it) + an off-site
+# copy that is best-effort and asynchronous: a storage outage never blocks or slows a deploy.
+# The outcome lands in $STATE/offsite-predeploy.status (shown by `status`); a missed copy is also
+# covered by the nightly backup, which pushes the newest dump again.
+predeploy_backup() {
+  local file; file=$(cmd_backup) || die "pre-deploy backup FAILED; nothing was changed"
+  [[ -n $file ]] || return 0
+  if ! bash "$OFFSITE" configured; then
+    log "pre-deploy backup: $file (off-site not configured: local only)"
+    return 0
+  fi
+  mkdir -p "$STATE"
+  printf 'queued %s %s\n' "$(date -u +%FT%TZ)" "$(basename "$file")" >"$STATE/offsite-predeploy.status"
+  local self; self=$(readlink -f "$0")
+  if command -v setsid >/dev/null 2>&1; then
+    setsid -f bash "$self" _offsite-push-bg "$file" </dev/null >>"$STATE/offsite-predeploy.log" 2>&1
+  else
+    nohup bash "$self" _offsite-push-bg "$file" </dev/null >>"$STATE/offsite-predeploy.log" 2>&1 &
+    disown || true
+  fi
+  log "pre-deploy backup: $file (off-site copy started in the background, see \`status\`)"
+}
+
+cmd_offsite_push_bg() { # internal: the detached half of predeploy_backup
+  local file=${1:?dump} name; name=$(basename "$1")
+  printf 'running %s %s\n' "$(date -u +%FT%TZ)" "$name" >"$STATE/offsite-predeploy.status"
+  if offsite_push_locked "$file"; then
+    printf 'ok %s %s\n' "$(date -u +%FT%TZ)" "$name" >"$STATE/offsite-predeploy.status"
+  else
+    printf 'FAILED %s %s (local copy kept; nightly backup retries)\n' "$(date -u +%FT%TZ)" "$name" \
+      >"$STATE/offsite-predeploy.status"
+    log "pre-deploy off-site copy of $name FAILED (local copy kept)"
+    return 1
+  fi
 }
 
 drill_cleanup() { # globals only: also runs from the EXIT trap, after locals are gone
@@ -282,7 +334,7 @@ cmd_activate() {
   fi
   serving=${cur_c:-none}; if ((legacy)); then serving=legacy; fi
   log "activating $v in $new_c (serving now: ${cur_v:-none} in $serving)"
-  cmd_backup >/dev/null
+  predeploy_backup
   mkdir -p "$STATE"
   # stable copy of the DB init script (see docker-compose.prod.yml): no DB restart per release
   install -D -m 755 "$(release_dir "$v")/ops/docker/postgres/10-app-role.sh" "$ROOT/shared/postgres-init/10-app-role.sh"
@@ -318,7 +370,7 @@ cmd_rollback() {
   cur_c=$(active_color); [[ -n $cur_c ]] || die "no active colour recorded"
   prev_c=$(other_color "$cur_c"); cur_v=$(color_version "$cur_c"); prev_v=$(color_version "$prev_c")
   [[ -n $prev_v ]] || die "no previous release recorded in $prev_c"
-  cmd_backup >/dev/null
+  predeploy_backup
   log "rolling back $cur_v ($cur_c) -> $prev_v ($prev_c); schema is left as is (expand-only)"
   local apps; apps=$(app_services "$prev_v")
   # shellcheck disable=SC2086
@@ -337,10 +389,11 @@ cmd_status() {
   echo "active=${c:-none} current=$(current_version) previous=$(previous_version)"
   echo "blue=$(color_version blue) green=$(color_version green)"
   echo "upstream: $(grep -oE 'server [^;]+' "$UPSTREAM_CONF" 2>/dev/null || echo none)"
-  docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -E '^guardhub-' | sort
+  docker ps -a --format '{{.Names}}\t{{.Status}}' | { grep -E '^guardhub-' || true; } | sort
   if health_ok; then echo "active colour health: ok"; else echo "active colour health: NOT ok"; fi
   if public_health; then echo "public health: ok"; else echo "public health: NOT ok"; fi
   bash "$OFFSITE" status || echo "offsite: status unavailable"
+  echo "offsite pre-deploy copy: $(cat "$STATE/offsite-predeploy.status" 2>/dev/null || echo none)"
 }
 
 cmd_exec() { # exec <service> <cmd...> in the active colour
@@ -353,8 +406,10 @@ case ${1:-} in
   activate) cmd_activate "${2:-}" ;;
   rollback) cmd_rollback ;;
   backup) cmd_backup_with_offsite ;;
+  predeploy-backup) predeploy_backup ;;
   restore-drill) cmd_restore_drill "${2:-}" ;; # "--offsite" or a dump path
   status) cmd_status ;;
   exec) shift; cmd_exec "$@" ;;
-  *) sed -n '2,24p' "$0"; exit 2 ;;
+  _offsite-push-bg) cmd_offsite_push_bg "${2:-}" ;; # internal (predeploy_backup)
+  *) sed -n '2,26p' "$0"; exit 2 ;;
 esac

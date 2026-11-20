@@ -544,7 +544,7 @@
     "colDate": "Date (UTC)",
     "colProject": "Project",
     "colChannel": "Channel",
-    "colChanges": "Changes",
+    "colChanges": "What happened",
     "colStatus": "Status",
     "colDetails": "Details",
     "changes": "{new} new, {regressed} came back, {fixed} fixed",
@@ -559,7 +559,20 @@
       "sent": "Sent",
       "failed": "Failed",
       "skipped": "Not sent"
-    }
+    },
+    "historyEmptyTest": "No test messages yet.",
+    "historyFilterLabel": "Show",
+    "historyFilter": {
+      "alerts": "Alerts",
+      "test": "Tests",
+      "all": "All"
+    },
+    "kind": {
+      "monitoring_paused": "Monitoring paused: the ownership proof is missing",
+      "test": "Test message"
+    },
+    "testBadge": "Test",
+    "openProject": "Open project"
   },
   "trustedDomains": {
     "title": "Trusted domains",

@@ -544,7 +544,7 @@
     "colDate": "Tarih (UTC)",
     "colProject": "Proje",
     "colChannel": "Kanal",
-    "colChanges": "Değişiklikler",
+    "colChanges": "Ne oldu",
     "colStatus": "Durum",
     "colDetails": "Ayrıntılar",
     "changes": "{new} yeni, {regressed} geri gelen, {fixed} düzeltilen",
@@ -559,7 +559,20 @@
       "sent": "Gönderildi",
       "failed": "Gönderilemedi",
       "skipped": "Gönderilmedi"
-    }
+    },
+    "historyEmptyTest": "Henüz deneme mesajı yok.",
+    "historyFilterLabel": "Göster",
+    "historyFilter": {
+      "alerts": "Uyarılar",
+      "test": "Denemeler",
+      "all": "Tümü"
+    },
+    "kind": {
+      "monitoring_paused": "İzleme duraklatıldı: sahiplik kanıtı bulunamadı",
+      "test": "Deneme mesajı"
+    },
+    "testBadge": "Deneme",
+    "openProject": "Projeyi aç"
   },
   "trustedDomains": {
     "title": "Güvenilir alan adları",

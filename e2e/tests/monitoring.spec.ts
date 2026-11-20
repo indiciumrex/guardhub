@@ -183,4 +183,36 @@ test("monitoring: scheduled scan, diff, alerts in the user's language, no spam",
     expect(put.status(), url).toBe(422);
     expect((await put.json()).error.code, url).toBe("invalid_slack_webhook");
   }
+
+  // a test e-mail is delivered and recorded, but listed only under "Tests": the real alert
+  // history (the default view) keeps exactly the two change alerts
+  await page.goto("/account/notifications");
+  const mailsBefore = mailsTo(user.email).length;
+  await page.getByRole("button", { name: "Send test e-mail" }).click();
+  await expect(page.getByText("Test sent.", { exact: false })).toBeVisible();
+  await expect(() => expect(mailsTo(user.email).length).toBe(mailsBefore + 1)).toPass({
+    timeout: 90_000,
+    intervals: [2_000],
+  });
+  await expect(async () => {
+    await page.goto("/account/notifications?show=test");
+    const row = page
+      .getByRole("table", { name: /Alerts we sent/ })
+      .getByRole("row")
+      .filter({ hasText: "Test message" });
+    await expect(row).toHaveCount(1, { timeout: 2_000 });
+    await expect(row).toContainText("Sent");
+  }).toPass({ timeout: 60_000, intervals: [2_000] });
+  await expect(
+    page.getByRole("navigation", { name: "Show" }).getByRole("link", { name: "Tests" }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await page
+    .getByRole("navigation", { name: "Show" })
+    .getByRole("link", { name: "Alerts" })
+    .click();
+  await page.waitForURL(/\/account\/notifications(#.*)?$/);
+  const real = page.getByRole("table", { name: /Alerts we sent/ });
+  await expect(real.getByRole("row")).toHaveCount(3); // header + "fixed" + "came back" alerts
+  await expect(real.getByText("Test message")).toHaveCount(0);
 });

@@ -5,8 +5,8 @@ Only CHANGES alert. The first done scan is a baseline (no alert); nothing change
 Each change alert is one `notifications` row per (scan, channel), created once and locked while
 sending, so retries and duplicate jobs never send twice; attempts are bounded (`MAX_ATTEMPTS`).
 Messages carry title + severity + one-line summary only, never evidence.
-Paused alerts have no scan (the table needs one), so their per-channel "sent" marker lives in
-Redis under the job's unique id instead.
+"Monitoring paused" and test alerts have no scan: they are `notification_events` rows, one per
+(job id, channel), with the same send-once locking. All of them form the user's alert history.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from guardhub_api.alerts.delivery import DeliveryError, EmailNotConfiguredError,
 from guardhub_api.alerts.repository import Prefs
 from guardhub_api.alerts.service import decrypt_webhook
 from guardhub_api.auth import repository as user_repo
-from guardhub_api.common.redis import get_redis
 from guardhub_api.config import get_settings
+from guardhub_api.db.models import Notification, NotificationEvent
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.projects import repository as project_repo
 from guardhub_api.scans import compare
@@ -36,9 +36,9 @@ from guardhub_api.scans.schemas import DiffItem
 log = logging.getLogger("guardhub.alerts")
 
 MAX_ATTEMPTS = 3
-PAUSED_MARKER_TTL = 7 * 24 * 3600
 
 Outcome = Literal["not_applicable", "baseline", "no_change", "done", "retry"]
+EventKind = Literal["monitoring_paused", "test"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +184,37 @@ async def notify_scan(scan_id: uuid.UUID, *, final_try: bool) -> Outcome:
     return "retry" if retry else "done"
 
 
+async def _attempt(
+    row: Notification | NotificationEvent,
+    channel: str,
+    recipient: _Recipient,
+    message: render.AlertMessage,
+    *,
+    final_try: bool,
+    ref: dict[str, str],
+) -> bool:
+    """One delivery attempt for a LOCKED pending row; records the outcome on it.
+
+    Returns True when a later retry should run (the row then stays 'pending')."""
+    row.attempts += 1
+    try:
+        await _send(channel, recipient, message)
+    except EmailNotConfiguredError:
+        row.status, row.error = "skipped", "email_not_configured"
+        return False
+    except DeliveryError as exc:
+        row.error = exc.code
+        if exc.retryable and row.attempts < MAX_ATTEMPTS and not final_try:
+            log.warning("alert_retry", extra={**ref, "channel": channel, "error": exc.code})
+            return True
+        row.status = "failed"
+        log.error("alert_failed", extra={**ref, "channel": channel, "error": exc.code})
+        return False
+    row.status, row.error, row.sent_at = "sent", None, datetime.now(UTC)
+    log.info("alert_sent", extra={**ref, "channel": channel})
+    return False
+
+
 async def _deliver_scan_alert(
     scan_id: uuid.UUID, channel: str, recipient: _Recipient, message: render.AlertMessage, *, final_try: bool
 ) -> bool:
@@ -192,31 +223,50 @@ async def _deliver_scan_alert(
         row = await alerts_repo.lock_notification(session, scan_id, channel)
         if row is None or row.status != "pending":
             return False  # being sent by another worker right now, or already final
-        row.attempts += 1
-        try:
-            await _send(channel, recipient, message)
-        except EmailNotConfiguredError:
-            row.status, row.error = "skipped", "email_not_configured"
-            return False
-        except DeliveryError as exc:
-            row.error = exc.code
-            if exc.retryable and row.attempts < MAX_ATTEMPTS and not final_try:
-                log.warning(
-                    "alert_retry", extra={"scan_id": str(scan_id), "channel": channel, "error": exc.code}
-                )
-                return True
-            row.status = "failed"
-            log.error("alert_failed", extra={"scan_id": str(scan_id), "channel": channel, "error": exc.code})
-            return False
-        row.status, row.error, row.sent_at = "sent", None, datetime.now(UTC)
-        log.info("alert_sent", extra={"scan_id": str(scan_id), "channel": channel})
-        return False
+        return await _attempt(
+            row, channel, recipient, message, final_try=final_try, ref={"scan_id": str(scan_id)}
+        )
+
+
+async def _deliver_event(
+    *,
+    kind: EventKind,
+    dedupe_key: str,
+    project_id: uuid.UUID | None,
+    channels: Sequence[str],
+    recipient: _Recipient,
+    message: render.AlertMessage,
+    final_try: bool,
+) -> Outcome:
+    """Record + send a non-scan alert once per (event, channel): it shows up in the history."""
+    async with db_session(DbContext.system()) as session:
+        for channel in channels:
+            await alerts_repo.ensure_event(
+                session,
+                user_id=recipient.user_id,
+                project_id=project_id,
+                kind=kind,
+                dedupe_key=dedupe_key,
+                channel=channel,
+            )
+    retry = False
+    for channel in channels:
+        async with db_session(DbContext.system()) as session:
+            row = await alerts_repo.lock_event(session, dedupe_key, channel)
+            if row is None or row.status != "pending":
+                continue
+            retry |= await _attempt(
+                row, channel, recipient, message, final_try=final_try, ref={"kind": kind, "event": dedupe_key}
+            )
+    return "retry" if retry else "done"
 
 
 # ---- monitoring paused ----
 
 
 async def notify_paused(project_id: uuid.UUID, *, job_id: str, final_try: bool) -> Outcome:
+    if not job_id:
+        raise ValueError("notify_paused needs the job's unique id (it de-duplicates the alert)")
     async with db_session(DbContext.system()) as session:
         project = await project_repo.get(session, project_id)
         if project is None or project.schedule_paused_reason is None:
@@ -229,38 +279,39 @@ async def notify_paused(project_id: uuid.UUID, *, job_id: str, final_try: bool) 
         message = render.paused_alert(
             user.locale, project=project.name, target=project.target_url, link=project_link(project.id)
         )
-    redis = get_redis()
-    retry = False
-    for channel in enabled_channels(prefs):
-        marker = f"gh:notify-paused:{job_id}:{channel}"
-        if await redis.exists(marker):
-            continue
-        try:
-            await _send(channel, recipient, message)
-        except EmailNotConfiguredError:
-            continue
-        except DeliveryError as exc:
-            log.warning("paused_alert_failed", extra={"project_id": str(project_id), "error": exc.code})
-            retry |= exc.retryable and not final_try
-            continue
-        await redis.set(marker, "1", ex=PAUSED_MARKER_TTL)
-    return "retry" if retry else "done"
+    channels = enabled_channels(prefs)
+    if not channels:
+        return "not_applicable"
+    return await _deliver_event(
+        kind="monitoring_paused",
+        dedupe_key=job_id,
+        project_id=project_id,
+        channels=channels,
+        recipient=recipient,
+        message=message,
+        final_try=final_try,
+    )
 
 
 # ---- test notification ----
 
 
-async def send_test(user_id: uuid.UUID, channel: str) -> Outcome:
+async def send_test(user_id: uuid.UUID, channel: str, *, job_id: str) -> Outcome:
+    """A test message, recorded in the history as kind 'test' (filtered out by default)."""
+    if not job_id:
+        raise ValueError("send_test needs the job's unique id")
     async with db_session(DbContext.system()) as session:
         user = await user_repo.by_id(session, user_id)
         if user is None:
             return "not_applicable"
         prefs = alerts_repo.prefs_of(await alerts_repo.get_settings(session, user_id))
     recipient = _Recipient(user.id, user.email, user.locale, prefs.slack_webhook_enc)
-    try:
-        await _send(channel, recipient, render.channel_check_alert(user.locale))
-    except EmailNotConfiguredError:
-        log.warning("test_notification_skipped", extra={"channel": channel, "error": "email_not_configured"})
-    except DeliveryError as exc:
-        log.warning("test_notification_failed", extra={"channel": channel, "error": exc.code})
-    return "done"
+    return await _deliver_event(
+        kind="test",
+        dedupe_key=f"test:{job_id}",
+        project_id=None,
+        channels=[channel],
+        recipient=recipient,
+        message=render.channel_check_alert(user.locale),
+        final_try=True,  # a test is tried once; the user can simply send another
+    )
