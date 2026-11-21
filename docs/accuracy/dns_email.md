@@ -1,10 +1,10 @@
 # `dns_email` accuracy
 
-Lab source revision `69ee5204062c+wip`. Verdict: **meets the gate**.
+Lab source revision `wip`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 9 | 0 | 0 | 0 | 0 | 44 | 35 | 0 |
+| 100.0% | 100.0% | 100.0% | 9 | 0 | 0 | 0 | 0 | 54 | 45 | 0 |
 
 ## By finding
 

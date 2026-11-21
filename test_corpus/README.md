@@ -21,6 +21,9 @@ bash test_corpus/run.sh     # fresh lab, measure, write docs/accuracy + packages
 - Certificates (`cmd/labpki`) and the leaky site's secrets (`leaky-init.sh`) are generated at
   every start. Nothing secret-shaped is committed.
 - Third-party images are pinned by digest.
+- Provider zones such as `s3.amazonaws.com` and `azurewebsites.net` exist only inside the lab's
+  resolver (`dns-res`), on a network with no internet. They let the curated provider list be
+  measured as shipped, with no lab-only suffixes.
 
 ## Ground truth (the oracle)
 
@@ -47,6 +50,7 @@ the gate uses. Every use names the declared scope.
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |
 | `webgoat` | OWASP WebGoat (empty 404 at `/`) | non-document trap |
 | `phpmyadmin`, `grafana`, `wordpress`, `drupal` | real products in default setups | `open_admin`, `default_creds` |
+| `st-*` | names in `dns/st.lab.test.db` whose subdomains point into stand-in provider zones (`dns/provider-*.db`), with the providers' web answers (`nginx/providers.conf`) and a crt.sh-format CT stand-in (`ct.lab.test`, `ct/`) | `subdomain_takeover`: 6 positives (S3 REST and website, Azure NXDOMAIN, Bitbucket, Surge, unlisted dangling) and 4 negatives (claimed resources, edge-case/unlisted providers with fingerprints, plain records, out-of-scope CT names) |
 
 ## Gate
 

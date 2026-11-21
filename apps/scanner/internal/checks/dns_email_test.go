@@ -113,9 +113,13 @@ func (f *fakeDNS) serve(w dns.ResponseWriter, r *dns.Msg) {
 		}
 	default:
 		rrs, known := f.records[k]
+		cname, isAlias := f.records[name+"|CNAME"]
 		switch {
 		case known:
 			m.Answer = rrs
+		case isAlias && q.Qtype != dns.TypeCNAME:
+			// like an authoritative server: the CNAME, its target not followed
+			m.Answer = cname
 		case f.hasName(name): // NODATA
 		case name == "recursion-probe.example." && f.recursive:
 			a, _ := dns.NewRR("recursion-probe.example. 60 IN A 192.0.2.1")

@@ -1,0 +1,5 @@
+; Stand-in for zones where the names the targets point at do not exist (NXDOMAIN): a deleted
+; Azure App Service name (azurewebsites.net) and an unlisted CDN (gone-cdn.test).
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.

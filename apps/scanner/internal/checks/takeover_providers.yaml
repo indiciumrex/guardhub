@@ -1,0 +1,117 @@
+# Curated subdomain-takeover providers (check `subdomain_takeover`, docs/checks/subdomain_takeover.md).
+#
+# A provider is listed ONLY when ALL of these hold:
+#   1. can-i-take-over-xyz (github.com/EdOverflow/can-i-take-over-xyz, fingerprints.json) marks it
+#      status "Vulnerable": anyone can claim an unclaimed name there. "Edge case" providers
+#      (GitHub Pages, Heroku, Netlify, Shopify, Tumblr, Webflow, Wix) and "Not vulnerable" ones
+#      (Fastly, Unbounce, CloudFront, ...) are NOT listed: claiming needs a verification step or is
+#      impossible, so reporting them as High would be a false alarm.
+#   2. it has a CNAME pattern (the record must point INTO the provider) ...
+#   3. ... and a fingerprint specific to that provider's "this name is not claimed" answer.
+#      Generic texts that any site's 404 page could contain ("404 Not Found", "page not found",
+#      Next.js "This page could not be found.", Rails "The page you were looking for does not
+#      exist.") and bare status codes are not used (Gemfury, Anima, Uptimerobot, Cargo, Helprace,
+#      LaunchRock left out on purpose).
+#
+# kind http:     the subdomain resolves into the provider and GET http(s)://<subdomain>/ returns
+#                one of `fingerprints` (substring, or `regex` when regex: true).
+# kind nxdomain: the CNAME target inside the provider does not exist (NXDOMAIN, asked twice).
+#
+# To update: re-read fingerprints.json, apply the three rules above, add a lab target
+# (test_corpus/) for any new fingerprint you are not sure about, and re-run the lab.
+# Reviewed: 2026-11-21 against fingerprints.json on the master branch.
+version: 1
+reviewed: "2026-11-21"
+providers:
+  - name: AWS S3
+    kind: http
+    cnames: [s3.amazonaws.com, s3-website.amazonaws.com]
+    # s3.<region>.amazonaws.com, s3-website-<region>.amazonaws.com, s3-website.<region>.amazonaws.com
+    cname_regex: '(^|\.)s3([.-][a-z0-9-]+)*\.amazonaws\.com$'
+    fingerprints: ["The specified bucket does not exist"]
+  - name: Microsoft Azure
+    kind: nxdomain
+    cnames:
+      - cloudapp.net
+      - cloudapp.azure.com
+      - azurewebsites.net
+      - blob.core.windows.net
+      - azure-api.net
+      - azurehdinsight.net
+      - azureedge.net
+      - azurecontainer.io
+      - database.windows.net
+      - azuredatalakestore.net
+      - search.windows.net
+      - azurecr.io
+      - redis.cache.windows.net
+      - servicebus.windows.net
+      - visualstudio.com
+  - name: AWS Elastic Beanstalk
+    kind: nxdomain
+    cnames: [elasticbeanstalk.com]
+  - name: Discourse
+    kind: nxdomain
+    cnames: [trydiscourse.com]
+  - name: Agile CRM
+    kind: http
+    cnames: [agilecrm.com]
+    fingerprints: ["Sorry, this page is no longer available."]
+  - name: Bitbucket
+    kind: http
+    cnames: [bitbucket.io]
+    fingerprints: ["Repository not found"]
+  - name: Ghost
+    kind: http
+    cnames: [ghost.io]
+    fingerprints: ["Failed to resolve DNS path for this host"]
+  - name: HatenaBlog
+    kind: http
+    cnames: [hatenablog.com]
+    fingerprints: ["404 Blog is not found"]
+  - name: Help Juice
+    kind: http
+    cnames: [helpjuice.com]
+    fingerprints: ["We could not find what you're looking for."]
+  - name: Help Scout
+    kind: http
+    cnames: [helpscoutdocs.com]
+    fingerprints: ["No settings were found for this company:"]
+  - name: JetBrains YouTrack
+    kind: http
+    cnames: [youtrack.cloud]
+    fingerprints: ["is not a registered InCloud YouTrack"]
+  - name: Ngrok
+    kind: http
+    cnames: [ngrok.io]
+    regex: true
+    fingerprints: ['Tunnel [a-z0-9.-]+\.ngrok\.io not found']
+  - name: Readme.io
+    kind: http
+    cnames: [readme.io]
+    fingerprints: ["The creators of this project are still working on making everything perfect!"]
+  - name: Strikingly
+    kind: http
+    cnames: [s.strikinglydns.com]
+    fingerprints: ["PAGE NOT FOUND."]
+  - name: Surge.sh
+    kind: http
+    cnames: [surge.sh]
+    fingerprints: ["project not found"]
+  - name: SurveySparrow
+    kind: http
+    cnames: [surveysparrow.com]
+    fingerprints: ["Account not found."]
+  - name: Uberflip
+    kind: http
+    cnames: [read.uberflip.com]
+    fingerprints: ["The URL you've accessed does not provide a hub."]
+  - name: WordPress.com
+    kind: http
+    cnames: [wordpress.com]
+    regex: true
+    fingerprints: ['Do you want to register [a-z0-9.-]+\.wordpress\.com\?']
+  - name: Worksites
+    kind: http
+    cnames: [worksites.net]
+    fingerprints: ["Sorry, but the website you&rsquo;re looking for doesn&rsquo;t exist."]

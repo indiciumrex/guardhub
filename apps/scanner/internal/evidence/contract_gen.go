@@ -42,15 +42,16 @@ type Finding struct {
 
 // Check ids from check-ids.json.
 const (
-	CheckExposedEnv      = "exposed_env"
-	CheckSecurityHeaders = "security_headers"
-	CheckTlsCert         = "tls_cert"
-	CheckOpenAdmin       = "open_admin"
-	CheckDefaultCreds    = "default_creds"
-	CheckInfoLeak        = "info_leak"
-	CheckTlsConfig       = "tls_config"
-	CheckHttpHardening   = "http_hardening"
-	CheckDnsEmail        = "dns_email"
+	CheckExposedEnv        = "exposed_env"
+	CheckSecurityHeaders   = "security_headers"
+	CheckTlsCert           = "tls_cert"
+	CheckOpenAdmin         = "open_admin"
+	CheckDefaultCreds      = "default_creds"
+	CheckInfoLeak          = "info_leak"
+	CheckTlsConfig         = "tls_config"
+	CheckHttpHardening     = "http_hardening"
+	CheckDnsEmail          = "dns_email"
+	CheckSubdomainTakeover = "subdomain_takeover"
 )
 
 // FindingKeys maps check id -> finding key -> default severity (check-ids.json).
@@ -119,5 +120,9 @@ var FindingKeys = map[string]map[string]Severity{
 		"dmarc_not_enforced": SeverityLow,
 		"open_resolver":      SeverityMedium,
 		"zone_transfer_open": SeverityMedium,
+	},
+	"subdomain_takeover": {
+		"unclaimed_resource": SeverityHigh,
+		"dangling_cname":     SeverityLow,
 	},
 }

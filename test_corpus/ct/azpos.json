@@ -1,0 +1,26 @@
+[
+ {
+  "issuer_ca_id": 295815,
+  "issuer_name": "C=US, O=Let's Encrypt, CN=R11",
+  "common_name": "azpos.st.lab.test",
+  "name_value": "azpos.st.lab.test",
+  "id": 1000003,
+  "entry_timestamp": "2025-03-01T00:00:00.000",
+  "not_before": "2025-03-01T00:00:00",
+  "not_after": "2025-05-30T23:59:59",
+  "serial_number": "0000000000000000000000000000000000abc003",
+  "result_count": 1
+ },
+ {
+  "issuer_ca_id": 295815,
+  "issuer_name": "C=US, O=Let's Encrypt, CN=R11",
+  "common_name": "app.azpos.st.lab.test",
+  "name_value": "app.azpos.st.lab.test",
+  "id": 1000004,
+  "entry_timestamp": "2025-03-01T00:00:00.000",
+  "not_before": "2025-03-01T00:00:00",
+  "not_after": "2025-05-30T23:59:59",
+  "serial_number": "0000000000000000000000000000000000abc004",
+  "result_count": 1
+ }
+]

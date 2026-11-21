@@ -1,0 +1,14 @@
+[
+ {
+  "issuer_ca_id": 295815,
+  "issuer_name": "C=US, O=Let's Encrypt, CN=R11",
+  "common_name": "cdn.chainpos.st.lab.test",
+  "name_value": "cdn.chainpos.st.lab.test",
+  "id": 1000008,
+  "entry_timestamp": "2025-03-01T00:00:00.000",
+  "not_before": "2025-03-01T00:00:00",
+  "not_after": "2025-05-30T23:59:59",
+  "serial_number": "0000000000000000000000000000000000abc008",
+  "result_count": 1
+ }
+]

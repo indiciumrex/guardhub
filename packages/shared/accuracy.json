@@ -17,7 +17,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 44
+      "targets": 54
     },
     "dns_email": {
       "meets_gate": true,
@@ -28,7 +28,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     },
     "exposed_env": {
       "meets_gate": true,
@@ -39,7 +39,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     },
     "http_hardening": {
       "meets_gate": true,
@@ -50,7 +50,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     },
     "info_leak": {
       "meets_gate": true,
@@ -61,7 +61,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 44
+      "targets": 54
     },
     "open_admin": {
       "meets_gate": true,
@@ -72,7 +72,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     },
     "security_headers": {
       "meets_gate": true,
@@ -83,18 +83,29 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
+    },
+    "subdomain_takeover": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 54
     },
     "tls_cert": {
       "meets_gate": true,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "tp": 38,
+      "tp": 48,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     },
     "tls_config": {
       "meets_gate": true,
@@ -105,7 +116,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 44
+      "targets": 54
     }
   }
 }

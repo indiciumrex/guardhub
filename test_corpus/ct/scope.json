@@ -1,0 +1,14 @@
+[
+ {
+  "issuer_ca_id": 295815,
+  "issuer_name": "C=US, O=Let's Encrypt, CN=R11",
+  "common_name": "scope.st.lab.test",
+  "name_value": "scope.st.lab.test\nwww.scope.st.lab.test\napp.azpos.st.lab.test\nevilscope.st.lab.test\nst.lab.test\nx.scope.st.lab.test.evil.test",
+  "id": 1000013,
+  "entry_timestamp": "2025-03-01T00:00:00.000",
+  "not_before": "2025-03-01T00:00:00",
+  "not_after": "2025-05-30T23:59:59",
+  "serial_number": "0000000000000000000000000000000000abc00d",
+  "result_count": 6
+ }
+]

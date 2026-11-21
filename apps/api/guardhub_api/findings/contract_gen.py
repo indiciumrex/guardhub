@@ -101,6 +101,10 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'open_resolver': 'medium',
         'zone_transfer_open': 'medium',
     },
+    'subdomain_takeover': {
+        'unclaimed_resource': 'high',
+        'dangling_cname': 'low',
+    },
 }
 
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)

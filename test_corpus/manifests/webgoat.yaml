@@ -5,7 +5,7 @@ description: >
   root answers an EMPTY 404 (no document), and /WebGoat/actuator redirects to the login,
   so nothing is exposed at the paths the checks look at. A false-positive trap for
   checks that judge non-documents.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
 expect:
   - check: tls_cert
     key: https_unavailable

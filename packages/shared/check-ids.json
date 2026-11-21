@@ -102,6 +102,14 @@
         { "key": "open_resolver", "severity": "medium", "params": ["nameserver"] },
         { "key": "zone_transfer_open", "severity": "medium", "params": ["nameserver"] }
       ]
+    },
+    {
+      "id": "subdomain_takeover",
+      "category": "dns",
+      "finding_keys": [
+        { "key": "unclaimed_resource", "severity": "high", "params": ["subdomain", "provider"] },
+        { "key": "dangling_cname", "severity": "low", "params": ["subdomain", "target"] }
+      ]
     }
   ]
 }

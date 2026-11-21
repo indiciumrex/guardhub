@@ -334,5 +334,23 @@
         "fix": "1. Allow zone transfers only to your own secondary nameservers: in BIND `allow-transfer { secondary-ip; };`, in PowerDNS `allow-axfr-ips`, in Windows DNS \"Zone Transfers\" set to listed servers only.\n2. Managed DNS providers usually block this by default; check the zone transfer setting in their dashboard.\n3. Run the scan again."
       }
     }
+  },
+  "subdomain_takeover": {
+    "name": "Subdomain takeover",
+    "description": "Looks for subdomains of your site whose DNS still points at a third-party service (a storage bucket, a hosted site, an app) that no longer exists there, so that someone else could claim it and publish content under your name.",
+    "findings": {
+      "unclaimed_resource": {
+        "title": "{subdomain} can be taken over: its {provider} resource no longer exists",
+        "summary": "{subdomain} points at {provider}, but the resource it points at has been deleted there. Anyone can create a resource with that name at {provider} and serve their own content on {subdomain}.",
+        "why": "Visitors, browsers and search engines trust {subdomain} because it is part of your domain. Whoever claims the deleted resource at {provider} can put a phishing page, malware or fake announcements there, read cookies scoped to your domain, and pass checks that trust your subdomains (CORS, CSP, OAuth redirect lists). GuardHub only read the public DNS records and the provider's answer, and claimed nothing.",
+        "fix": "1. If you no longer use {subdomain}: delete its CNAME record at your DNS provider. This is the safe fix and it takes effect within minutes.\n2. If you still need it: create the resource again at {provider} under your own account with the exact same name (bucket, site or app name), before someone else does.\n3. Make it a habit: when you delete a bucket, site or app at a provider, delete the DNS record that points at it at the same time.\n4. Run the scan again."
+      },
+      "dangling_cname": {
+        "title": "{subdomain} points at a name that does not exist",
+        "summary": "The CNAME record of {subdomain} points at {target}, which does not exist (the DNS answer is NXDOMAIN).",
+        "why": "A record that points at nothing is left over from a service you stopped using. {target} is not at a provider where GuardHub knows how a takeover works, so no takeover was proven. But if someone can ever create {target} (for example by registering its domain or claiming the name at that service), they will control what {subdomain} shows.",
+        "fix": "1. If you no longer use {subdomain}: delete its CNAME record at your DNS provider.\n2. If you still need it: point it at the service's current address.\n3. Run the scan again."
+      }
+    }
   }
 }

@@ -19,7 +19,7 @@ func TestDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.RequestTimeout != 10*time.Second || cfg.HostRPS != 4 || cfg.HostBurst != 2 ||
-		cfg.MaxRequestsPerScan != 160 || cfg.Workers != 4 || cfg.CheckConcurrency != 3 {
+		cfg.MaxRequestsPerScan != 220 || cfg.Workers != 4 || cfg.CheckConcurrency != 3 {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 	if cfg.LogLevel != slog.LevelInfo || cfg.RedisURL == "" || cfg.ConsumerName == "" {
@@ -63,9 +63,21 @@ func TestInvalidValues(t *testing.T) {
 		"SCANNER_WORKERS":         "0",
 		"SCANNER_REQUEST_TIMEOUT": "abc",
 		"LOG_LEVEL":               "loud",
+		"SCANNER_CT_URL":          "ftp://ct.example",
 	} {
 		if _, err := FromLookup(lookupFrom(map[string]string{k: v})); err == nil {
 			t.Errorf("%s=%q: expected error", k, v)
+		}
+	}
+}
+
+func TestCTURL(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"", ""}, {"off", "off"}, {"  https://ct.example/	", "https://ct.example/"},
+	} {
+		cfg, err := FromLookup(lookupFrom(map[string]string{"SCANNER_CT_URL": c.in}))
+		if err != nil || cfg.CTURL != c.want {
+			t.Errorf("SCANNER_CT_URL=%q: got %q %v", c.in, cfg.CTURL, err)
 		}
 	}
 }

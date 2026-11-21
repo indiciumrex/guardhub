@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "69ee5204062c+wip",
+  "source": "wip",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -38,6 +38,16 @@
     "juice-shop",
     "leaky",
     "phpmyadmin",
+    "st-azure",
+    "st-bitbucket",
+    "st-chain",
+    "st-claimed",
+    "st-dangling",
+    "st-edgecase",
+    "st-plain",
+    "st-s3",
+    "st-scope",
+    "st-surge",
     "tls-3des",
     "tls-expired",
     "tls-httponly",
@@ -56,8 +66,8 @@
   "checks": [
     {
       "check_id": "default_creds",
-      "targets": 44,
-      "clean_runs": 40,
+      "targets": 54,
+      "clean_runs": 50,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -119,8 +129,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 44,
-      "clean_runs": 35,
+      "targets": 54,
+      "clean_runs": 45,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -230,8 +240,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 44,
-      "clean_runs": 43,
+      "targets": 54,
+      "clean_runs": 53,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -285,8 +295,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 44,
-      "clean_runs": 38,
+      "targets": 54,
+      "clean_runs": 48,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -368,8 +378,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 44,
-      "clean_runs": 38,
+      "targets": 54,
+      "clean_runs": 48,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -483,8 +493,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 44,
-      "clean_runs": 41,
+      "targets": 54,
+      "clean_runs": 51,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -533,8 +543,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 44,
-      "clean_runs": 38,
+      "targets": 54,
+      "clean_runs": 48,
       "tp": 15,
       "fp": 0,
       "fn": 0,
@@ -664,10 +674,78 @@
       "false_negatives": null
     },
     {
+      "check_id": "subdomain_takeover",
+      "targets": 54,
+      "clean_runs": 48,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 16,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "dangling_cname": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "unclaimed_resource": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "st-azure",
+          "key": "unclaimed_resource",
+          "location": "CNAME app.azpos.st.lab.test",
+          "why": "dig CNAME app.azpos.st.lab.test -\u003e azpos-app.azurewebsites.net; dig A azpos-app.azurewebsites.net -\u003e NXDOMAIN."
+        },
+        {
+          "target": "st-bitbucket",
+          "key": "unclaimed_resource",
+          "location": "http://docs.bbpos.st.lab.test/",
+          "why": "CT answer is []; dig CNAME docs.bbpos.st.lab.test -\u003e bbpos.bitbucket.io; curl -\u003e 404 \"Repository not found\"."
+        },
+        {
+          "target": "st-chain",
+          "key": "unclaimed_resource",
+          "location": "http://cdn.chainpos.st.lab.test/",
+          "why": "dig: cdn.chainpos -\u003e edge.chainpos.st.lab.test -\u003e chainpos-media.s3-website-eu-west-1.amazonaws.com; curl http://cdn.chainpos.st.lab.test/ -\u003e 404 NoSuchBucket."
+        },
+        {
+          "target": "st-dangling",
+          "key": "dangling_cname",
+          "location": "CNAME old.dangpos.st.lab.test",
+          "why": "dig CNAME old.dangpos.st.lab.test -\u003e site.gone-cdn.test; dig A site.gone-cdn.test -\u003e NXDOMAIN; gone-cdn.test is not a listed provider, so low, not high."
+        },
+        {
+          "target": "st-s3",
+          "key": "unclaimed_resource",
+          "location": "http://assets.s3pos.st.lab.test/",
+          "why": "dig CNAME assets.s3pos.st.lab.test -\u003e assets.s3pos.st.lab.test.s3.amazonaws.com; curl http://assets.s3pos.st.lab.test/ -\u003e 404 NoSuchBucket \"The specified bucket does not exist\"."
+        },
+        {
+          "target": "st-surge",
+          "key": "unclaimed_resource",
+          "location": "http://www.surgepos.st.lab.test/",
+          "why": "dig CNAME www.surgepos.st.lab.test -\u003e surgepos.surge.sh; curl -\u003e 404 \"project not found\"."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "tls_cert",
-      "targets": 44,
+      "targets": 54,
       "clean_runs": 6,
-      "tp": 38,
+      "tp": 48,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -700,7 +778,7 @@
           "fn": 0
         },
         "https_unavailable": {
-          "tp": 32,
+          "tp": 42,
           "fp": 0,
           "fn": 0
         },
@@ -886,6 +964,66 @@
           "why": "Nothing listens on 443."
         },
         {
+          "target": "st-azure",
+          "key": "https_unavailable",
+          "location": "azpos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-bitbucket",
+          "key": "https_unavailable",
+          "location": "bbpos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-chain",
+          "key": "https_unavailable",
+          "location": "chainpos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-claimed",
+          "key": "https_unavailable",
+          "location": "claimed.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-dangling",
+          "key": "https_unavailable",
+          "location": "dangpos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-edgecase",
+          "key": "https_unavailable",
+          "location": "edgecase.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-plain",
+          "key": "https_unavailable",
+          "location": "plain.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-s3",
+          "key": "https_unavailable",
+          "location": "s3pos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-scope",
+          "key": "https_unavailable",
+          "location": "scope.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "st-surge",
+          "key": "https_unavailable",
+          "location": "surgepos.st.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
           "target": "tls-expired",
           "key": "cert_expired",
           "location": "tls-expired.lab.test:443",
@@ -945,8 +1083,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 44,
-      "clean_runs": 38,
+      "targets": 54,
+      "clean_runs": 48,
       "tp": 9,
       "fp": 0,
       "fn": 0,

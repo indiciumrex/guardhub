@@ -19,7 +19,7 @@ const (
 	DefaultRequestTimeout     = 10 * time.Second
 	DefaultHostRPS            = 4.0
 	DefaultHostBurst          = 2
-	DefaultMaxRequestsPerScan = 160
+	DefaultMaxRequestsPerScan = 220
 	DefaultWorkers            = 4
 	DefaultCheckConcurrency   = 3
 	DefaultScanDeadline       = 180 * time.Second
@@ -44,6 +44,9 @@ type Config struct {
 	// DNSServer is the recursive resolver for DNS record checks ("host:port");
 	// empty = the system resolver (/etc/resolv.conf).
 	DNSServer string
+	// CTURL is the Certificate Transparency search endpoint of
+	// subdomain_takeover (SCANNER_CT_URL): empty = crt.sh, "off" = none.
+	CTURL string
 	// AllowPrivateHosts are exact hostnames that bypass the dial-time IP
 	// guard. It exists ONLY for the local e2e demo target.
 	AllowPrivateHosts []string
@@ -118,6 +121,12 @@ func FromLookup(lookup func(string) (string, bool)) (Config, error) {
 	}
 
 	cfg.DNSServer = get("SCANNER_DNS_SERVER")
+
+	cfg.CTURL = strings.TrimSpace(get("SCANNER_CT_URL"))
+	if cfg.CTURL != "" && cfg.CTURL != "off" &&
+		!strings.HasPrefix(cfg.CTURL, "https://") && !strings.HasPrefix(cfg.CTURL, "http://") {
+		return Config{}, fmt.Errorf("SCANNER_CT_URL: must be an http(s) URL or \"off\", got %q", cfg.CTURL)
+	}
 
 	for _, h := range strings.Split(get("SCANNER_ALLOW_PRIVATE_HOSTS"), ",") {
 		h = strings.ToLower(strings.TrimSpace(h))

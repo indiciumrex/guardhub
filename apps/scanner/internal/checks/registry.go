@@ -15,6 +15,10 @@ type Options struct {
 	// DNSRecursionProbe is the out-of-zone name dns_email asks nameservers
 	// (default "example.com."; the internet-less lab uses a lab name).
 	DNSRecursionProbe string
+	// CTURL is the Certificate Transparency search endpoint of
+	// subdomain_takeover ("" = crt.sh, "off" = DNS-only discovery; the lab
+	// uses its own stand-in).
+	CTURL string
 }
 
 // Registry maps check ids to checks. Adding a check = new file + one line in
@@ -59,6 +63,7 @@ func DefaultWith(o Options) *Registry {
 		TLSConfig{Roots: o.Roots},
 		HTTPHardening{},
 		DNSEmail{RecursionProbe: o.DNSRecursionProbe},
+		SubdomainTakeover{CTURL: o.CTURL},
 	)
 }
 

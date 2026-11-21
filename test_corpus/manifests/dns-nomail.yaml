@@ -2,6 +2,6 @@ target: dns-nomail
 origin: http://nomail.dns.lab.test
 description: >
   no MX and no SPF (not a mail domain): NOTHING to report (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}

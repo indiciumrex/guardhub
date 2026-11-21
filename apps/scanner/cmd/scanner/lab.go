@@ -44,7 +44,7 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 		logger.Error("invalid manifests", "err", err)
 		return 1
 	}
-	opts := checks.Options{DNSRecursionProbe: *recursionProbe}
+	opts := checks.Options{DNSRecursionProbe: *recursionProbe, CTURL: cfg.CTURL}
 	if *rootsFile != "" {
 		pem, err := os.ReadFile(*rootsFile)
 		if err != nil {

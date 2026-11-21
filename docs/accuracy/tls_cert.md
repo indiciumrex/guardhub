@@ -1,10 +1,10 @@
 # `tls_cert` accuracy
 
-Lab source revision `69ee5204062c+wip`. Verdict: **meets the gate**.
+Lab source revision `wip`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 38 | 0 | 0 | 0 | 0 | 44 | 6 | 0 |
+| 100.0% | 100.0% | 100.0% | 48 | 0 | 0 | 0 | 0 | 54 | 6 | 0 |
 
 ## By finding
 
@@ -14,7 +14,7 @@ Lab source revision `69ee5204062c+wip`. Verdict: **meets the gate**.
 | `cert_hostname_mismatch` | 1 | 0 | 0 |
 | `cert_untrusted` | 2 | 0 | 0 |
 | `http_not_redirected` | 1 | 0 | 0 |
-| `https_unavailable` | 32 | 0 | 0 |
+| `https_unavailable` | 42 | 0 | 0 |
 | `legacy_tls_supported` | 1 | 0 | 0 |
 
 ## False positives (0)
@@ -25,7 +25,7 @@ None.
 
 None.
 
-## True positives (38)
+## True positives (48)
 
 - `dns-axfr` / `https_unavailable` at `axfr.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-chunked` / `https_unavailable` at `chunked.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
@@ -56,6 +56,16 @@ None.
 - `juice-shop` / `https_unavailable` at `juice-shop.lab.test:443`: Nothing listens on 443: the app is served over plain HTTP only.
 - `leaky` / `https_unavailable` at `leaky.lab.test:443`: Nothing listens on 443.
 - `phpmyadmin` / `https_unavailable` at `phpmyadmin.lab.test:443`: Nothing listens on 443.
+- `st-azure` / `https_unavailable` at `azpos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-bitbucket` / `https_unavailable` at `bbpos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-chain` / `https_unavailable` at `chainpos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-claimed` / `https_unavailable` at `claimed.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-dangling` / `https_unavailable` at `dangpos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-edgecase` / `https_unavailable` at `edgecase.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-plain` / `https_unavailable` at `plain.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-s3` / `https_unavailable` at `s3pos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-scope` / `https_unavailable` at `scope.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `st-surge` / `https_unavailable` at `surgepos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `tls-expired` / `cert_expired` at `tls-expired.lab.test:443`: labpki 'expired': notAfter is 30 days in the past (chain otherwise valid).
 - `tls-httponly` / `https_unavailable` at `tls-httponly.lab.test:443`: Nothing listens on 443.
 - `tls-legacy` / `legacy_tls_supported` at `tls-legacy.lab.test:443`: nginx ssl_protocols includes TLSv1 (SECLEVEL=0).

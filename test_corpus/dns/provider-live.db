@@ -1,0 +1,8 @@
+; Stand-in for provider zones where every resource name exists (wildcard), loaded for
+; s3.amazonaws.com, s3-website-eu-west-1.amazonaws.com, bitbucket.io, surge.sh, github.io,
+; elasticbeanstalk.com and pages-host.test (Corefile.res). Whether a resource is CLAIMED is
+; decided by its web answer (nginx/providers.conf), as at the real providers.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+*        IN A   192.0.2.90

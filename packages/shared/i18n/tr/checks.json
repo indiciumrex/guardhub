@@ -334,5 +334,23 @@
         "fix": "1. Zone transfer'e yalnızca kendi ikincil ad sunucularınız için izin verin: BIND'de `allow-transfer { ikincil-ip; };`, PowerDNS'te `allow-axfr-ips`, Windows DNS'te \"Zone Transfers\" ayarını yalnızca listelenen sunucular olarak belirleyin.\n2. Yönetilen DNS sağlayıcıları bunu genellikle varsayılan olarak engeller; panellerindeki zone transfer ayarını kontrol edin.\n3. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "subdomain_takeover": {
+    "name": "Alt alan adı ele geçirme",
+    "description": "Sitenizin, DNS kaydı hâlâ artık var olmayan bir üçüncü taraf hizmetini (depolama alanı, barındırılan site, uygulama) gösteren alt alan adlarını arar. Böyle bir adı başkası sahiplenip sizin adınızla içerik yayınlayabilir.",
+    "findings": {
+      "unclaimed_resource": {
+        "title": "{subdomain} ele geçirilebilir: {provider} üzerindeki kaynağı artık yok",
+        "summary": "{subdomain}, {provider} üzerindeki bir kaynağı gösteriyor, ancak o kaynak orada silinmiş. {provider} üzerinde aynı adla kaynak oluşturan herkes {subdomain} adresinde kendi içeriğini yayınlayabilir.",
+        "why": "Ziyaretçiler, tarayıcılar ve arama motorları {subdomain} adresine alan adınızın bir parçası olduğu için güvenir. {provider} üzerindeki silinmiş kaynağı sahiplenen kişi oraya oltalama sayfası, zararlı yazılım ya da sahte duyurular koyabilir; alan adınıza ait çerezleri okuyabilir ve alt alan adlarınıza güvenen kontrolleri (CORS, CSP, OAuth yönlendirme listeleri) aşabilir. GuardHub yalnızca herkese açık DNS kayıtlarını ve sağlayıcının yanıtını okudu; hiçbir şeyi sahiplenmedi.",
+        "fix": "1. {subdomain} adresini artık kullanmıyorsanız: DNS sağlayıcınızda CNAME kaydını silin. Güvenli çözüm budur ve birkaç dakika içinde etkili olur.\n2. Hâlâ gerekiyorsa: kaynağı {provider} üzerinde kendi hesabınızla, tam olarak aynı adla (bucket, site veya uygulama adı) başkası davranmadan yeniden oluşturun.\n3. Alışkanlık edinin: bir sağlayıcıda bucket, site veya uygulama sildiğinizde onu gösteren DNS kaydını da aynı anda silin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "dangling_cname": {
+        "title": "{subdomain} var olmayan bir adı gösteriyor",
+        "summary": "{subdomain} alan adının CNAME kaydı {target} adını gösteriyor, ancak bu ad mevcut değil (DNS yanıtı NXDOMAIN).",
+        "why": "Hiçbir şeyi göstermeyen bir kayıt, kullanmayı bıraktığınız bir hizmetten kalmıştır. {target}, GuardHub'ın ele geçirmenin nasıl yapıldığını bildiği bir sağlayıcıda değil; bu yüzden ele geçirme kanıtlanmadı. Ancak biri bir gün {target} adını oluşturabilirse (örneğin alan adını kaydederek ya da o hizmette adı sahiplenerek) {subdomain} adresinde ne gösterileceğini o belirler.",
+        "fix": "1. {subdomain} adresini artık kullanmıyorsanız: DNS sağlayıcınızda CNAME kaydını silin.\n2. Hâlâ gerekiyorsa: kaydı hizmetin güncel adresine yönlendirin.\n3. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

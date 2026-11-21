@@ -1,0 +1,48 @@
+; st.lab.test: the subdomain_takeover targets (test_corpus/README.md). Each target is a name in
+; this zone (served by dns-res, the scanner's resolver). Its subdomains point into stand-in
+; provider zones (provider-live.db / provider-gone.db) whose web answers come from the
+; `providers` container (nginx/providers.conf). Nothing here is reachable from the internet.
+$ORIGIN st.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.st.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+; every target itself: an ordinary A record (no CNAME)
+s3pos      IN A 192.0.2.80
+azpos      IN A 192.0.2.80
+bbpos      IN A 192.0.2.80
+surgepos   IN A 192.0.2.80
+dangpos    IN A 192.0.2.80
+chainpos   IN A 192.0.2.80
+claimed    IN A 192.0.2.80
+edgecase   IN A 192.0.2.80
+plain      IN A 192.0.2.80
+scope      IN A 192.0.2.80
+; --- s3pos: CT-listed name -> S3 bucket that no longer exists (NoSuchBucket) -> HIGH
+assets.s3pos     IN CNAME assets.s3pos.st.lab.test.s3.amazonaws.com.
+; --- azpos: CT-listed name -> Azure App Service name that was deleted (NXDOMAIN) -> HIGH
+app.azpos        IN CNAME azpos-app.azurewebsites.net.
+; --- bbpos: NOT in CT; "docs" is one of the ten common names -> Bitbucket "Repository not found" -> HIGH
+docs.bbpos       IN CNAME bbpos.bitbucket.io.
+; --- surgepos: CT-listed www -> Surge.sh "project not found" -> HIGH
+www.surgepos     IN CNAME surgepos.surge.sh.
+; --- dangpos: CT-listed name -> a name that does not exist at an UNLISTED provider -> LOW (dangling_cname)
+old.dangpos      IN CNAME site.gone-cdn.test.
+; --- chainpos: two hops: cdn -> edge (own zone) -> S3 website endpoint, bucket gone -> HIGH
+cdn.chainpos     IN CNAME edge.chainpos.st.lab.test.
+edge.chainpos    IN CNAME chainpos-media.s3-website-eu-west-1.amazonaws.com.
+; --- claimed: CNAMEs into listed providers whose resources EXIST -> NOTHING
+docs.claimed     IN CNAME claimed.bitbucket.io.
+files.claimed    IN CNAME files.claimed.st.lab.test.s3.amazonaws.com.
+env.claimed      IN CNAME claimed.eu-west-1.elasticbeanstalk.com.
+; --- edgecase: GitHub Pages fingerprint ("Edge case" provider, not listed) and a listed
+;     fingerprint served by an UNLISTED provider -> NOTHING
+blog.edgecase    IN CNAME edgecase.github.io.
+help.edgecase    IN CNAME edgecase.pages-host.test.
+; --- plain: A records, a CT name deleted from DNS (NXDOMAIN, no CNAME), and a CNAME to a
+;     missing name inside the owner's own domain (nobody else can create it) -> NOTHING
+www.plain        IN A 192.0.2.81
+api.plain        IN A 192.0.2.81
+legacy.plain     IN CNAME gone.plain.st.lab.test.
+; --- scope: its CT answer also lists names OUTSIDE scope.st.lab.test, two of them dangling
+;     (a sibling target's app.azpos, and the look-alike evilscope). Never asked -> NOTHING
+evilscope        IN CNAME evil-app.azurewebsites.net.
