@@ -75,9 +75,21 @@ func (c DNSEmail) Run(ctx context.Context, t Target) ([]evidence.Finding, error)
 		}
 	}
 
-	// DMARC applies to domains that handle mail (MX, or an SPF that allows senders).
+	// DMARC applies to domains that handle mail: MX, an SPF that allows senders,
+	// or a DMARC record published on the host itself. The last one matters for
+	// today's e-mail providers (Resend, SendGrid, Postmark, SES custom MAIL
+	// FROM): the From domain carries only DKIM + DMARC, while MX/SPF live on a
+	// subdomain (send.example.com). Found on our own domain before release.
 	sendsOnlyNothing := spf.Found && strings.EqualFold(strings.Join(strings.Fields(spf.Record), " "), "v=spf1 -all")
 	mailDomain := !nullMX && (hasMX || (spf.Found && !sendsOnlyNothing))
+	if !mailDomain && !nullMX {
+		own, st, err := d.txt(ctx, "_dmarc."+host)
+		if err != nil {
+			return out, err
+		}
+		_, published := dmarcPolicy(own, false)
+		mailDomain = st == lookupOK && published
+	}
 	if mailDomain {
 		policy, where, known, err := c.dmarc(ctx, d, host)
 		if err != nil {

@@ -1,10 +1,10 @@
 # `tls_cert` accuracy
 
-Lab source revision `70b6e4601402+wip`. Verdict: **meets the gate**.
+Lab source revision `69ee5204062c+wip`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 36 | 0 | 0 | 0 | 0 | 42 | 6 | 0 |
+| 100.0% | 100.0% | 100.0% | 38 | 0 | 0 | 0 | 0 | 44 | 6 | 0 |
 
 ## By finding
 
@@ -14,7 +14,7 @@ Lab source revision `70b6e4601402+wip`. Verdict: **meets the gate**.
 | `cert_hostname_mismatch` | 1 | 0 | 0 |
 | `cert_untrusted` | 2 | 0 | 0 |
 | `http_not_redirected` | 1 | 0 | 0 |
-| `https_unavailable` | 30 | 0 | 0 |
+| `https_unavailable` | 32 | 0 | 0 |
 | `legacy_tls_supported` | 1 | 0 | 0 |
 
 ## False positives (0)
@@ -25,10 +25,12 @@ None.
 
 None.
 
-## True positives (36)
+## True positives (38)
 
 - `dns-axfr` / `https_unavailable` at `axfr.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-chunked` / `https_unavailable` at `chunked.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-dkimonly` / `https_unavailable` at `dkimonly.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-dkimreject` / `https_unavailable` at `dkimreject.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-good` / `https_unavailable` at `good.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-nodmarc` / `https_unavailable` at `nodmarc.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-nomail` / `https_unavailable` at `nomail.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.

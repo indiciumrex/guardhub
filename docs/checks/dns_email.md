@@ -34,6 +34,13 @@
 
 - **A lookup error is never "missing".** SERVFAIL, a timeout or REFUSED skips that rule. If no
   lookup is answered at all, the check reports an error, not findings.
+- **A domain counts as a mail domain** when it has MX records, an SPF record that allows
+  senders, **or a DMARC record on the host itself**. The last case is today's e-mail-provider
+  pattern (Resend, SendGrid, Postmark, SES with a custom MAIL FROM): the From domain carries only
+  DKIM and DMARC, while MX and SPF sit on `send.<domain>`. A pre-release run against our own
+  domain found exactly this. guardhub.dev sends through Resend with DMARC `p=none`, and the first
+  version of the rule missed it. The lab now has this pattern twice (`p=none` positive,
+  `p=reject` negative).
 - **No mail findings for domains that handle no mail:**
   - a null MX (RFC 7505);
   - no MX and no SPF;

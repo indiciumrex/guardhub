@@ -31,16 +31,26 @@ type fakeDNS struct {
 func newFakeDNS(t *testing.T) *fakeDNS {
 	t.Helper()
 	f := &fakeDNS{records: map[string][]dns.RR{}, soaOwner: map[string]string{}, servfail: map[string]bool{}, axfr: map[string]bool{}}
-	// TCP first: on Windows some ephemeral UDP ports fall in TCP ranges reserved by Hyper-V.
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
+	// The same port for UDP and TCP. On Windows, Hyper-V reserves port ranges, so a free
+	// TCP port may be unusable for UDP (or the reverse): try a few.
+	var ln net.Listener
+	var pc net.PacketConn
+	for attempt := 0; ; attempt++ {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := net.ListenPacket("udp", l.Addr().String())
+		if err == nil {
+			ln, pc = l, p
+			break
+		}
+		_ = l.Close()
+		if attempt == 20 {
+			t.Fatalf("no port free for both UDP and TCP: %v", err)
+		}
 	}
 	f.addr = ln.Addr().String()
-	pc, err := net.ListenPacket("udp", f.addr)
-	if err != nil {
-		t.Fatal(err)
-	}
 	h := dns.HandlerFunc(f.serve)
 	udp, tcp := &dns.Server{PacketConn: pc, Handler: h}, &dns.Server{Listener: ln, Handler: h}
 	go func() { _ = udp.ActivateAndServe() }()
@@ -210,6 +220,16 @@ func TestDNSEmailCases(t *testing.T) {
 			f.soaOwner["app.org.test."] = "org.test."
 			f.add(`app.org.test. 300 IN MX 10 mx.org.test.`, `app.org.test. 300 IN TXT "v=spf1 mx -all"`, `_dmarc.org.test. 300 IN TXT "v=DMARC1; p=reject; sp=none"`)
 		}, "dmarc_not_enforced"},
+		// today's e-mail providers: the From domain has only DKIM + DMARC; MX/SPF live on send.<domain>
+		{"DKIM-only sending domain with DMARC p=none (Resend-style)", "dkimonly.test", func(f *fakeDNS) {
+			apex(f, "dkimonly.test")
+			f.add(`_dmarc.dkimonly.test. 300 IN TXT "v=DMARC1; p=none;"`, `resend._domainkey.dkimonly.test. 300 IN TXT "p=MIGfMA0GCSqGSIb3DQEB"`,
+				`send.dkimonly.test. 300 IN MX 10 feedback.mailer.test.`, `send.dkimonly.test. 300 IN TXT "v=spf1 include:mailer.test ~all"`)
+		}, "dmarc_not_enforced"},
+		{"DKIM-only sending domain with DMARC p=reject", "dkimreject.test", func(f *fakeDNS) {
+			apex(f, "dkimreject.test")
+			f.add(`_dmarc.dkimreject.test. 300 IN TXT "v=DMARC1; p=reject"`)
+		}, ""},
 		{"open resolver and open zone transfer at the apex", "leaky.test", func(f *fakeDNS) {
 			apex(f, "leaky.test")
 			f.recursive = true
@@ -258,7 +278,7 @@ func TestDNSEmailNeverTouchesParentZoneNameservers(t *testing.T) {
 func TestDNSEmailAllLookupsFailing(t *testing.T) {
 	f := newFakeDNS(t)
 	f.configure(func(f *fakeDNS) {
-		for _, k := range []string{"down.test.|MX", "down.test.|TXT", "down.test.|SOA"} {
+		for _, k := range []string{"down.test.|MX", "down.test.|TXT", "down.test.|SOA", "_dmarc.down.test.|TXT"} {
 			f.servfail[k] = true
 		}
 	})

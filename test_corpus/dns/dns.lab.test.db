@@ -2,7 +2,7 @@
 ; is a NAME in this one zone (not a zone apex), so only the mail rules apply to it.
 $ORIGIN dns.lab.test.
 $TTL 300
-@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 2 7200 3600 1209600 300
 @        IN NS  ns.dns.lab.test.
 ; --- good: MX + SPF (with an include) + DMARC reject: NOTHING to report
 good             IN MX  10 mx.good.dns.lab.test.
@@ -58,3 +58,14 @@ n11.mailer       IN TXT "v=spf1 ip4:198.51.100.1 -all"
 ; delegations of the two apex targets
 axfr             IN NS  ns.dns.lab.test.
 openres          IN NS  ns-open.dns.lab.test.
+; --- dkimonly: today's e-mail providers (Resend, SendGrid, Postmark, SES custom MAIL FROM):
+;     the From domain has only DKIM + DMARC; MX/SPF live on send.<domain>. DMARC p=none
+;     -> dmarc_not_enforced (this is exactly guardhub.dev's own setup, found before release)
+_dmarc.dkimonly          IN TXT "v=DMARC1; p=none;"
+resend._domainkey.dkimonly IN TXT "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLabKeyNotASecret"
+send.dkimonly            IN MX  10 feedback.mailer.dns.lab.test.
+send.dkimonly            IN TXT "v=spf1 include:_spf.mailer.dns.lab.test ~all"
+; --- dkimreject: the same provider pattern, DMARC p=reject: NOTHING to report
+_dmarc.dkimreject        IN TXT "v=DMARC1; p=reject"
+send.dkimreject          IN MX  10 feedback.mailer.dns.lab.test.
+send.dkimreject          IN TXT "v=spf1 include:_spf.mailer.dns.lab.test ~all"

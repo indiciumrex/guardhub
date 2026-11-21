@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "70b6e4601402+wip",
+  "source": "69ee5204062c+wip",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -11,6 +11,8 @@
     "clean",
     "dns-axfr",
     "dns-chunked",
+    "dns-dkimonly",
+    "dns-dkimreject",
     "dns-good",
     "dns-nodmarc",
     "dns-nomail",
@@ -54,8 +56,8 @@
   "checks": [
     {
       "check_id": "default_creds",
-      "targets": 42,
-      "clean_runs": 38,
+      "targets": 44,
+      "clean_runs": 40,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -117,9 +119,9 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 42,
-      "clean_runs": 34,
-      "tp": 8,
+      "targets": 44,
+      "clean_runs": 35,
+      "tp": 9,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -137,7 +139,7 @@
           "fn": 0
         },
         "dmarc_not_enforced": {
-          "tp": 1,
+          "tp": 2,
           "fp": 0,
           "fn": 0
         },
@@ -173,6 +175,12 @@
           "key": "zone_transfer_open",
           "location": "AXFR axfr.dns.lab.test @ns.dns.lab.test",
           "why": "dig AXFR axfr.dns.lab.test @ns.dns.lab.test: 7 records; other zones: Transfer failed."
+        },
+        {
+          "target": "dns-dkimonly",
+          "key": "dmarc_not_enforced",
+          "location": "TXT _dmarc.dkimonly.dns.lab.test",
+          "why": "dig: _dmarc.dkimonly.dns.lab.test is 'v=DMARC1; p=none;'; the domain sends mail via DKIM (resend._domainkey)."
         },
         {
           "target": "dns-nodmarc",
@@ -222,8 +230,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 42,
-      "clean_runs": 41,
+      "targets": 44,
+      "clean_runs": 43,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -277,8 +285,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 42,
-      "clean_runs": 36,
+      "targets": 44,
+      "clean_runs": 38,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -360,8 +368,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 42,
-      "clean_runs": 36,
+      "targets": 44,
+      "clean_runs": 38,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -475,8 +483,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 42,
-      "clean_runs": 39,
+      "targets": 44,
+      "clean_runs": 41,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -525,8 +533,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 42,
-      "clean_runs": 36,
+      "targets": 44,
+      "clean_runs": 38,
       "tp": 15,
       "fp": 0,
       "fn": 0,
@@ -657,9 +665,9 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 42,
+      "targets": 44,
       "clean_runs": 6,
-      "tp": 36,
+      "tp": 38,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -692,7 +700,7 @@
           "fn": 0
         },
         "https_unavailable": {
-          "tp": 30,
+          "tp": 32,
           "fp": 0,
           "fn": 0
         },
@@ -713,6 +721,18 @@
           "target": "dns-chunked",
           "key": "https_unavailable",
           "location": "chunked.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-dkimonly",
+          "key": "https_unavailable",
+          "location": "dkimonly.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-dkimreject",
+          "key": "https_unavailable",
+          "location": "dkimreject.dns.lab.test:443",
           "why": "Plain HTTP only (dns-web): nothing listens on 443."
         },
         {
@@ -925,8 +945,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 42,
-      "clean_runs": 36,
+      "targets": 44,
+      "clean_runs": 38,
       "tp": 9,
       "fp": 0,
       "fn": 0,
