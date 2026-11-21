@@ -49,6 +49,7 @@ const (
 	CheckDefaultCreds    = "default_creds"
 	CheckInfoLeak        = "info_leak"
 	CheckTlsConfig       = "tls_config"
+	CheckHttpHardening   = "http_hardening"
 )
 
 // FindingKeys maps check id -> finding key -> default severity (check-ids.json).
@@ -101,5 +102,12 @@ var FindingKeys = map[string]map[string]Severity{
 		"chain_incomplete":     SeverityMedium,
 		"cert_weak_key":        SeverityMedium,
 		"tls13_unsupported":    SeverityInfo,
+	},
+	"http_hardening": {
+		"cors_any_origin_with_credentials":  SeverityHigh,
+		"cors_null_origin_with_credentials": SeverityMedium,
+		"csp_ineffective":                   SeverityLow,
+		"xfo_ineffective":                   SeverityLow,
+		"referrer_policy_unsafe_url":        SeverityLow,
 	},
 }

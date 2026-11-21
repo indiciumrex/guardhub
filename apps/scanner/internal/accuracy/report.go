@@ -86,14 +86,14 @@ func summary(sc Scorecard) string {
 	fmt.Fprintf(&b, "Gate for switching a check on: precision >= %.0f%%, recall >= %.0f%%, at least %d ground-truth findings, at least %d clean target, no check errors.\n\n",
 		sc.Gate.MinPrecision*100, sc.Gate.MinRecall*100, sc.Gate.MinPositives, sc.Gate.MinCleanRuns)
 	fmt.Fprintf(&b, "Targets: %s\n\n", strings.Join(sc.Targets, ", "))
-	b.WriteString("| Check | Targets | TP | FP | FN | FN outside | Precision | Recall | Recall (all) | Gate |\n|---|---|---|---|---|---|---|---|---|---|\n")
+	b.WriteString("| Check | Targets | TP | FP | FN | FN outside | Precision | Recall | Recall (all) | Max requests | Gate |\n|---|---|---|---|---|---|---|---|---|---|---|\n")
 	for _, c := range sc.Checks {
 		gate := "yes"
 		if !c.MeetsGate {
 			gate = "no: " + strings.Join(c.GateNotes, "; ")
 		}
-		fmt.Fprintf(&b, "| [`%s`](%s.md) | %d | %d | %d | %d | %d | %s | %s | %s | %s |\n",
-			c.CheckID, c.CheckID, c.Targets, c.TP, c.FP, c.FN, c.FNOutside, pct(c.Precision), pct(c.Recall), pct(c.RecallAll), gate)
+		fmt.Fprintf(&b, "| [`%s`](%s.md) | %d | %d | %d | %d | %d | %s | %s | %s | %d | %s |\n",
+			c.CheckID, c.CheckID, c.Targets, c.TP, c.FP, c.FN, c.FNOutside, pct(c.Precision), pct(c.Recall), pct(c.RecallAll), c.MaxRequests, gate)
 	}
 	b.WriteString("\nTP = expected finding reported; FP = reported but not in the ground truth; FN = expected but not reported. ")
 	b.WriteString("FN outside = a real issue beyond what the check declares it covers (e.g. a product not in its catalogue); it lowers Recall (all), not the Recall the gate uses. ")

@@ -21,6 +21,7 @@ depends_on = None
 
 MODULES = [
     ("tls_config", "TLS configuration", "transport"),
+    ("http_hardening", "Browser policies (CORS, CSP quality, framing, referrer)", "hardening"),
 ]
 
 

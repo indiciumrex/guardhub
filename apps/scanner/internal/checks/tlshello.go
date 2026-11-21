@@ -51,7 +51,7 @@ func buildClientHello(serverName string, suites []uint16) []byte {
 	_, _ = rand.Read(random)
 	body.Write(random)
 	body.WriteByte(0) // empty session id
-	_ = binary.Write(&body, binary.BigEndian, uint16(2*(len(suites)+1)))
+	_ = binary.Write(&body, binary.BigEndian, u16(2*(len(suites)+1)))
 	for _, s := range suites {
 		_ = binary.Write(&body, binary.BigEndian, s)
 	}
@@ -62,15 +62,15 @@ func buildClientHello(serverName string, suites []uint16) []byte {
 	if serverName != "" && net.ParseIP(serverName) == nil {
 		name := []byte(serverName)
 		writeExt(&ext, 0x0000, func(b *bytes.Buffer) { // server_name
-			_ = binary.Write(b, binary.BigEndian, uint16(len(name)+3))
+			_ = binary.Write(b, binary.BigEndian, u16(len(name)+3))
 			b.WriteByte(0) // host_name
-			_ = binary.Write(b, binary.BigEndian, uint16(len(name)))
+			_ = binary.Write(b, binary.BigEndian, u16(len(name)))
 			b.Write(name)
 		})
 	}
 	writeExt(&ext, 0x000A, func(b *bytes.Buffer) { // supported_groups: x25519, P-256, P-384, P-521, ffdhe2048
 		groups := []uint16{0x001D, 0x0017, 0x0018, 0x0019, 0x0100}
-		_ = binary.Write(b, binary.BigEndian, uint16(2*len(groups)))
+		_ = binary.Write(b, binary.BigEndian, u16(2*len(groups)))
 		for _, g := range groups {
 			_ = binary.Write(b, binary.BigEndian, g)
 		}
@@ -78,12 +78,12 @@ func buildClientHello(serverName string, suites []uint16) []byte {
 	writeExt(&ext, 0x000B, func(b *bytes.Buffer) { b.Write([]byte{1, 0}) }) // ec_point_formats: uncompressed
 	writeExt(&ext, 0x000D, func(b *bytes.Buffer) {                          // signature_algorithms
 		algs := []uint16{0x0403, 0x0804, 0x0401, 0x0503, 0x0805, 0x0501, 0x0806, 0x0601, 0x0201, 0x0203}
-		_ = binary.Write(b, binary.BigEndian, uint16(2*len(algs)))
+		_ = binary.Write(b, binary.BigEndian, u16(2*len(algs)))
 		for _, a := range algs {
 			_ = binary.Write(b, binary.BigEndian, a)
 		}
 	})
-	_ = binary.Write(&body, binary.BigEndian, uint16(ext.Len()))
+	_ = binary.Write(&body, binary.BigEndian, u16(ext.Len()))
 	body.Write(ext.Bytes())
 
 	hs := []byte{1, byte(body.Len() >> 16), byte(body.Len() >> 8), byte(body.Len())}
@@ -96,8 +96,18 @@ func writeExt(dst *bytes.Buffer, typ uint16, fill func(*bytes.Buffer)) {
 	var b bytes.Buffer
 	fill(&b)
 	_ = binary.Write(dst, binary.BigEndian, typ)
-	_ = binary.Write(dst, binary.BigEndian, uint16(b.Len()))
+	_ = binary.Write(dst, binary.BigEndian, u16(b.Len()))
 	dst.Write(b.Bytes())
+}
+
+// u16 converts a length that must fit a TLS uint16 field. Every length here is
+// bounded by our own constant lists and a DNS name (<= 253 bytes), so an
+// overflow is a programming error, not input-dependent.
+func u16(n int) uint16 {
+	if n < 0 || n > 0xFFFF {
+		panic("tls hello: field length out of range")
+	}
+	return uint16(n)
 }
 
 func offered(suites []uint16, s uint16) bool {

@@ -92,7 +92,7 @@ never creates the `gh-api` group; the API owns it.
 | User-Agent | `GuardHub-Scanner/1.0 (+https://guardhub.dev/scanner)` |
 | Per-request timeout | 10s (`SCANNER_REQUEST_TIMEOUT`) |
 | Per-host rate | 4 req/s, burst 2 (`SCANNER_HOST_RPS`) |
-| Max requests per scan | 80 (`SCANNER_MAX_REQUESTS_PER_SCAN`) |
+| Max requests per scan | 160 (`SCANNER_MAX_REQUESTS_PER_SCAN`; DNS lookups and TLS handshakes count too). Sized from the lab: the heaviest target (Grafana, which redirects every unknown path to its login, so each probe is 2 requests) used 80 with 8 checks; `docs/accuracy` lists each check's max cost |
 | Retries | max 2, exponential backoff 500ms·2ⁿ, only on network error / 429 / 503 |
 | Redirects | max 3; each hop must stay on the same host (http→https allowed) |
 | Body read cap | 256 KiB |

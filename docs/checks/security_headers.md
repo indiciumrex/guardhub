@@ -7,7 +7,7 @@
 
 | Finding key | Severity | Params | Trigger |
 |---|---|---|---|
-| `csp_missing` | medium | – | no `Content-Security-Policy` header (`-Report-Only` does not count) |
+| `csp_missing` | medium | – | no enforced CSP: neither a `Content-Security-Policy` header nor a `<meta http-equiv="Content-Security-Policy">` (`-Report-Only` does not count). Document responses only (HTML), not empty 404s or JSON |
 | `hsts_missing` | medium | – | https only: no `Strict-Transport-Security` |
 | `hsts_weak` | low | `max_age` | https only: HSTS `max-age` < 15552000 (180 days); missing or unparsable max-age is reported as `0` |
 | `nosniff_missing` | low | – | `X-Content-Type-Options` is not `nosniff` |
@@ -33,7 +33,7 @@ For example, `csp_missing`: "No Content-Security-Policy (CSP)". Without it, brow
 ## False-positive risk: low to medium
 
 - Header presence is unambiguous. API-only origins (JSON at `/`) may not need CSP or frame protection. This is low severity, and the user can mark the finding as ignored.
-- `HttpOnly` is reported for every cookie that lacks it. Some cookies must be readable by JavaScript (CSRF double-submit tokens, consent banners); the fix text explains when that is acceptable.
+- `HttpOnly` is reported for every cookie that lacks it, **except framework CSRF double-submit cookies** (`XSRF-TOKEN`, `csrftoken`, `_xsrf`, `csrf-token`), which the page must read by design; `Secure` and `SameSite` still apply to them. (Validation lab, 2026-11: meta-tag CSPs and CSRF cookies were false positives; CSP/nosniff/framing on non-HTML answers too.)
 
 ## Why it is do-no-harm
 

@@ -107,6 +107,11 @@ services:
     <<: *nginx
     volumes: [./nginx/tls-rsa1024.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
     networks: { lab: { aliases: [tls-rsa1024.lab.test] } }
+  # ---- http_hardening: one nginx, one server block per name (nginx/hh.conf) ----
+  hh:
+    <<: *nginx
+    volumes: [./nginx/hh.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro]
+    networks: { lab: { aliases: [hh-cors-cred.lab.test, hh-cors-null.lab.test, hh-cors-public.lab.test, hh-csp-weak.lab.test, hh-csp-strict.lab.test, hh-meta-csp.lab.test, hh-xfo-allowfrom.lab.test, hh-referrer.lab.test, hh-csrf-cookie.lab.test] } }
   tls-httponly:
     <<: *nginx
     volumes: [./nginx/tls-httponly.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro]
@@ -188,7 +193,8 @@ services:
         tls-nochain.lab.test,tls-legacy.lab.test,tls-noredirect.lab.test,tls-httponly.lab.test,
         juice-shop.lab.test,dvwa.lab.test,webgoat.lab.test,leaky.lab.test,phpmyadmin.lab.test,
         grafana.lab.test,wordpress.lab.test,drupal.lab.test,tls-weak.lab.test,tls-3des.lab.test,
-        tls-nopfs.lab.test,tls-rsa1024.lab.test,tls-rc4.lab.test
+        tls-nopfs.lab.test,tls-rsa1024.lab.test,tls-rc4.lab.test,
+        hh-cors-cred.lab.test,hh-cors-null.lab.test,hh-cors-public.lab.test,hh-csp-weak.lab.test,hh-csp-strict.lab.test,hh-meta-csp.lab.test,hh-xfo-allowfrom.lab.test,hh-referrer.lab.test,hh-csrf-cookie.lab.test
       LAB_SOURCE: ${LAB_SOURCE:-unknown}
     volumes:
       - ./manifests:/corpus/manifests:ro

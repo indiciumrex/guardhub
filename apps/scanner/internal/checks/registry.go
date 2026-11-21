@@ -54,6 +54,7 @@ func DefaultWith(o Options) *Registry {
 		DefaultCreds{},
 		InfoLeak{},
 		TLSConfig{Roots: o.Roots},
+		HTTPHardening{},
 	)
 }
 

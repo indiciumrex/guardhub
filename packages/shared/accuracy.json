@@ -17,7 +17,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 21
+      "targets": 30
     },
     "exposed_env": {
       "meets_gate": true,
@@ -28,7 +28,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 21
+      "targets": 30
+    },
+    "http_hardening": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 30
     },
     "info_leak": {
       "meets_gate": true,
@@ -39,7 +50,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 21
+      "targets": 30
     },
     "open_admin": {
       "meets_gate": true,
@@ -50,7 +61,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 21
+      "targets": 30
     },
     "security_headers": {
       "meets_gate": true,
@@ -61,18 +72,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 21
+      "targets": 30
     },
     "tls_cert": {
       "meets_gate": true,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "tp": 15,
+      "tp": 24,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 21
+      "targets": 30
     },
     "tls_config": {
       "meets_gate": true,
@@ -83,7 +94,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 21
+      "targets": 30
     }
   }
 }

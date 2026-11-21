@@ -24,6 +24,8 @@ type TargetRun struct {
 	Failed map[string]string `json:"failed,omitempty"`
 	// Error is set when the target could not be scanned at all (preflight).
 	Error string `json:"error,omitempty"`
+	// Requests: probe requests used per check (and "preflight") on this target.
+	Requests map[string]int `json:"requests,omitempty"`
 }
 
 // Case is one scored item, kept so the scorecard can explain itself.
@@ -44,24 +46,27 @@ type KeyScore struct {
 
 // CheckScore is the scorecard of one check.
 type CheckScore struct {
-	CheckID   string              `json:"check_id"`
-	Targets   int                 `json:"targets"`    // targets it was scored on
-	CleanRuns int                 `json:"clean_runs"` // scored targets with no expected finding
-	TP        int                 `json:"tp"`
-	FP        int                 `json:"fp"`
-	FN        int                 `json:"fn"`         // misses within the declared scope
-	FNOutside int                 `json:"fn_outside"` // misses of real issues beyond it
-	Tolerated int                 `json:"tolerated"`
-	Errors    int                 `json:"errors"` // runs where the check failed
-	Precision *float64            `json:"precision"`
-	Recall    *float64            `json:"recall"`     // TP / (TP + FN): the gate
-	RecallAll *float64            `json:"recall_all"` // TP / (TP + FN + FN outside)
-	MeetsGate bool                `json:"meets_gate"`
-	GateNotes []string            `json:"gate_notes,omitempty"`
-	ByKey     map[string]KeyScore `json:"by_key"`
-	TruePos   []Case              `json:"true_positives"`
-	FalsePos  []Case              `json:"false_positives"`
-	FalseNeg  []Case              `json:"false_negatives"`
+	CheckID   string `json:"check_id"`
+	Targets   int    `json:"targets"`    // targets it was scored on
+	CleanRuns int    `json:"clean_runs"` // scored targets with no expected finding
+	TP        int    `json:"tp"`
+	FP        int    `json:"fp"`
+	FN        int    `json:"fn"`         // misses within the declared scope
+	FNOutside int    `json:"fn_outside"` // misses of real issues beyond it
+	Tolerated int    `json:"tolerated"`
+	Errors    int    `json:"errors"` // runs where the check failed
+	// MaxRequests: the most probe requests the check used on any lab target
+	// (do-no-harm is measured too; the per-scan budget must cover the sum).
+	MaxRequests int                 `json:"max_requests"`
+	Precision   *float64            `json:"precision"`
+	Recall      *float64            `json:"recall"`     // TP / (TP + FN): the gate
+	RecallAll   *float64            `json:"recall_all"` // TP / (TP + FN + FN outside)
+	MeetsGate   bool                `json:"meets_gate"`
+	GateNotes   []string            `json:"gate_notes,omitempty"`
+	ByKey       map[string]KeyScore `json:"by_key"`
+	TruePos     []Case              `json:"true_positives"`
+	FalsePos    []Case              `json:"false_positives"`
+	FalseNeg    []Case              `json:"false_negatives"`
 }
 
 // Score compares runs with manifests and returns one scorecard per check id
@@ -91,6 +96,9 @@ func Score(manifests []Manifest, runs []TargetRun) []CheckScore {
 		for _, id := range m.Checks {
 			s := get(id)
 			s.Targets++
+			if n := run.Requests[id]; n > s.MaxRequests {
+				s.MaxRequests = n
+			}
 			var expected []Expectation
 			for _, e := range m.Expect {
 				if e.Check == id {

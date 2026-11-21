@@ -78,6 +78,17 @@
         { "key": "cert_weak_key", "severity": "medium", "params": ["key_type", "bits"] },
         { "key": "tls13_unsupported", "severity": "info", "params": [] }
       ]
+    },
+    {
+      "id": "http_hardening",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "cors_any_origin_with_credentials", "severity": "high", "params": ["origin"] },
+        { "key": "cors_null_origin_with_credentials", "severity": "medium", "params": [] },
+        { "key": "csp_ineffective", "severity": "low", "params": ["reasons"] },
+        { "key": "xfo_ineffective", "severity": "low", "params": ["value"] },
+        { "key": "referrer_policy_unsafe_url", "severity": "low", "params": [] }
+      ]
     }
   ]
 }

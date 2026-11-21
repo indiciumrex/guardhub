@@ -250,5 +250,41 @@
         "fix": "1. nginx 1.13+ ve OpenSSL 1.1.1+ ile: `ssl_protocols TLSv1.2 TLSv1.3;`\n2. Apache 2.4.37+ ile: `SSLProtocol -all +TLSv1.2 +TLSv1.3`\n3. Çoğu barındırma platformu ve CDN'de varsayılan olarak açıktır; oradaki TLS ayarlarınızı kontrol edin.\n4. Yeniden yükleyin ve taramayı tekrar çalıştırın."
       }
     }
+  },
+  "http_hardening": {
+    "name": "Tarayıcı politikaları (CORS, CSP kalitesi, çerçeveleme, yönlendiren)",
+    "description": "Tarayıcılara sitenize nasıl davranacaklarını söyleyen politikaların sitenizi gerçekten koruyup korumadığını kontrol eder: sayfalarınızı ziyaretçilerinizin oturumlarıyla kimlerin okuyabileceği, Content-Security-Policy'nizin enjekte edilen betikleri gerçekten durdurup durdurmadığı, bağlantıların ve çerçevelemenin nasıl ele alındığı.",
+    "findings": {
+      "cors_any_origin_with_credentials": {
+        "title": "Herhangi bir web sitesi sayfalarınızı oturum açmış ziyaretçileriniz gibi okuyabiliyor",
+        "summary": "Siteniz her kaynağa ({origin} ile denedik) Access-Control-Allow-Origin değerini o kaynak yaparak ve Access-Control-Allow-Credentials: true göndererek cevap veriyor.",
+        "why": "Bu, tarayıcılara diğer her web sitesinin yanıtlarınızı ziyaretçinizin çerezleriyle okuyabileceğini söyler. Oturum açmış bir kullanıcı kötü niyetli bir sayfa açarsa, o sayfa hesap verilerini, API anahtarlarını ya da sitenizin o kullanıcıya gösterdiği her şeyi yükleyip saldırgana gönderebilir. Bir API'nin sahip olabileceği en zarar verici yapılandırma hatalarından biridir.",
+        "fix": "1. İstekteki Origin başlığını asla Access-Control-Allow-Origin'e kopyalamayın. Erişmesi gereken kaynakların açık bir listesini tutun (örneğin kendi ön yüzünüz https://app.example.com) ve yalnızca bu listedeki bir kaynağı geri yansıtın.\n2. Access-Control-Allow-Credentials: true değerini yalnızca bu listedeki kaynaklara ve yalnızca gerçekten çerez gerekiyorsa gönderin.\n3. Framework'lerde: Express `cors({ origin: ['https://app.example.com'], credentials: true })`, Django `CORS_ALLOWED_ORIGINS`, Rails `rack-cors` ile açık kaynak listesi. \"Tüm kaynaklara izin ver\" seçeneklerini kimlik bilgileriyle birlikte kullanmayın.\n4. Yayına alın ve taramayı tekrar çalıştırın."
+      },
+      "cors_null_origin_with_credentials": {
+        "title": "Siteniz \"null\" kaynağına oturumlarla güveniyor",
+        "summary": "Siteniz Origin: null isteğine Access-Control-Allow-Origin: null ve Access-Control-Allow-Credentials: true ile cevap veriyor.",
+        "why": "Tarayıcılar korumalı (sandbox) iframe'lerden, yerel dosyalardan ve bazı yönlendirmelerden Origin: null gönderir ve her saldırgan böyle bir sayfa oluşturabilir. \"null\" kaynağına güvenmek, bu sayfaların yanıtlarınızı ziyaretçinizin çerezleriyle, örneğin hesap verileriyle, okumasına izin verir.",
+        "fix": "1. CORS ayarınızın kabul ettiği kaynaklardan \"null\" değerini kaldırın. Genellikle yerel dosyalarla test yaparken yanlışlıkla eklenir.\n2. Yalnızca gerçek kaynakların açık bir listesine (https://app.example.com) izin verin ve kimlik bilgilerini yalnızca onlara gönderin.\n3. Yayına alın ve taramayı tekrar çalıştırın."
+      },
+      "csp_ineffective": {
+        "title": "Content-Security-Policy'niz enjekte edilen betikleri durdurmuyor",
+        "summary": "Sitenizde bir Content-Security-Policy var ama enjekte edilen betiklerin çalışmasına hâlâ izin veriyor: {reasons}.",
+        "why": "CSP'nin asıl görevi, bir saldırganın sayfaya sokmayı başardığı betikleri (siteler arası betik çalıştırma, XSS) durdurmaktır. Nonce veya hash olmadan 'unsafe-inline', her satır içi betiğin çalışmasına izin verir; https: veya * gibi kaynaklar betiklerin herhangi bir siteden yüklenmesine izin verir. Bunlarla politika var görünür ama çok az koruma sağlar.",
+        "fix": "1. script-src'den 'unsafe-inline' değerini kaldırın. Satır içi betikleri dosyalara taşıyın ya da her birine bir nonce verin (her sayfa yüklemesinde rastgele bir değer, `script-src 'nonce-RASTGELE'`); çoğu framework nonce'ları sizin yerinize ekleyebilir (Next.js middleware, Express için Helmet, django-csp).\n2. https: veya * gibi geniş kaynakları betik yüklediğiniz tam alan adlarıyla değiştirin ya da 'strict-dynamic' ile birlikte bir nonce kullanın.\n3. Güvenle geçiş yapın: yeni politikayı önce Content-Security-Policy-Report-Only olarak gönderin, bildirdiklerini düzeltin, sonra zorunlu moda geçin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "xfo_ineffective": {
+        "title": "Çerçeveleme koruma başlığınızı tarayıcılar yok sayıyor",
+        "summary": "X-Frame-Options \"{value}\" olarak ayarlanmış; tarayıcılar bu değeri desteklemiyor ve CSP'de frame-ancestors kuralı yok.",
+        "why": "Modern tarayıcılar X-Frame-Options'ta DENY ve SAMEORIGIN dışındaki değerleri yok sayar (ALLOW-FROM yıllar önce kaldırıldı). Bu yüzden sayfalarınız başka bir sitenin içine görünmez şekilde yüklenebilir ve ziyaretçiler sitenizdeki düğmelere tıklamaları için kandırılabilir (clickjacking).",
+        "fix": "1. Sayfalarınızı hiçbir başka site çerçevelememeliyse: `X-Frame-Options: DENY` ayarlayın ve Content-Security-Policy'nize `frame-ancestors 'none'` ekleyin.\n2. Tek bir iş ortağı sitesinin sizi çerçevelemesi gerekiyorsa: `Content-Security-Policy: frame-ancestors https://partner.example` kullanın (ALLOW-FROM'un yerini bu aldı) ve geçersiz X-Frame-Options değerini kaldırın.\n3. Yayına alın ve taramayı tekrar çalıştırın."
+      },
+      "referrer_policy_unsafe_url": {
+        "title": "Sayfa adreslerinin tamamı başka sitelere gönderiliyor",
+        "summary": "Siteniz Referrer-Policy: unsafe-url ayarlıyor; tarayıcılar sayfalarınızın tam adresini bağlantı verdikleri veya içerik yükledikleri her siteye gönderiyor.",
+        "why": "Sayfa adresleri çoğu zaman özel bilgiler içerir: şifre sıfırlama kodları, fatura veya belge numaraları, arama terimleri, e-posta adresleri. unsafe-url ile bunlar, düz HTTP üzerinden dahil, üçüncü taraf sitelere gönderilir. Tarayıcıların varsayılan politikası çok daha güvenlidir.",
+        "fix": "1. `Referrer-Policy: strict-origin-when-cross-origin` (tarayıcı varsayılanı) kullanın ya da hiç gerekmiyorsa `no-referrer`.\n2. unsafe-url değerini ayarlandığı her yerden kaldırın (sunucu ayarları, framework güvenlik ayarları, CDN kuralları).\n3. Yayına alın ve taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

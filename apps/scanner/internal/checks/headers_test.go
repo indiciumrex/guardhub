@@ -103,3 +103,51 @@ func TestSecurityHeadersIgnoreNonDocuments(t *testing.T) {
 	}})
 	requireKeys(t, run(t, SecurityHeaders{}, srv.URL), "csp_missing", "nosniff_missing", "clickjacking_unprotected")
 }
+
+// Validation lab: a CSP delivered in <meta> is a CSP (static hosts use it).
+func TestSecurityHeadersMetaCSPCounts(t *testing.T) {
+	srv := site(t, false, map[string]http.HandlerFunc{"/": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		_, _ = w.Write([]byte(`<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'"></head><body></body></html>`))
+	}})
+	for _, f := range run(t, SecurityHeaders{}, srv.URL) {
+		if f.FindingKey == "csp_missing" {
+			t.Fatal("a <meta> CSP was reported as missing")
+		}
+	}
+	// frame-ancestors in <meta> is ignored by browsers: still clickjackable without XFO
+	noXFO := site(t, false, map[string]http.HandlerFunc{"/": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; frame-ancestors 'none'"></head></html>`))
+	}})
+	findKey(t, run(t, SecurityHeaders{}, noXFO.URL), "clickjacking_unprotected")
+}
+
+// CSRF double-submit cookies are readable by JS by design; other flags still apply.
+func TestSecurityHeadersCSRFCookieNeedsNoHttpOnly(t *testing.T) {
+	srv := site(t, false, map[string]http.HandlerFunc{"/": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Set-Cookie", "XSRF-TOKEN=abcdefghij0123456789; Path=/; SameSite=Lax")
+		w.Header().Add("Set-Cookie", "csrftoken=abcdefghij0123456789; Path=/")
+		_, _ = w.Write([]byte("<html></html>"))
+	}})
+	var csrftoken bool
+	for _, f := range run(t, SecurityHeaders{}, srv.URL) {
+		if f.FindingKey != "cookie_flags_missing" {
+			continue
+		}
+		if f.Params["cookie_name"] == "XSRF-TOKEN" {
+			t.Fatalf("XSRF-TOKEN must not need HttpOnly: %v", f.Params)
+		}
+		if f.Params["cookie_name"] == "csrftoken" {
+			csrftoken = true
+			if f.Params["missing_flags"] != "SameSite" {
+				t.Fatalf("csrftoken still needs SameSite, but not HttpOnly: %v", f.Params)
+			}
+		}
+	}
+	if !csrftoken {
+		t.Fatal("csrftoken without SameSite must still be reported")
+	}
+}

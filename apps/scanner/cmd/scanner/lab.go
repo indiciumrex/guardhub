@@ -76,9 +76,9 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 	var runs []accuracy.TargetRun
 	for _, m := range ms {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		findings, checkResults, err := svc.ScanLabOrigin(ctx, m.Origin, cfg.AllowPrivateHosts)
+		findings, checkResults, cost, err := svc.ScanLabOrigin(ctx, m.Origin, cfg.AllowPrivateHosts)
 		cancel()
-		run := accuracy.TargetRun{Target: m.Target, Origin: m.Origin, Findings: findings, Failed: map[string]string{}}
+		run := accuracy.TargetRun{Target: m.Target, Origin: m.Origin, Findings: findings, Failed: map[string]string{}, Requests: cost}
 		if errors.Is(err, queue.ErrNotALabTarget) {
 			logger.Error("refusing a non-lab target", "target", m.Target, "origin", m.Origin)
 			return 1

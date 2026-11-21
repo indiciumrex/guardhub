@@ -250,5 +250,41 @@
         "fix": "1. On nginx 1.13+ with OpenSSL 1.1.1+: `ssl_protocols TLSv1.2 TLSv1.3;`\n2. On Apache 2.4.37+: `SSLProtocol -all +TLSv1.2 +TLSv1.3`\n3. Most hosting platforms and CDNs have it on by default; check your TLS settings there.\n4. Reload and run the scan again."
       }
     }
+  },
+  "http_hardening": {
+    "name": "Browser policies (CORS, CSP quality, framing, referrer)",
+    "description": "Checks whether the policies that tell browsers how to treat your site actually protect it: who may read your pages with your visitors' logins, whether your Content-Security-Policy really blocks injected scripts, and how links and framing are handled.",
+    "findings": {
+      "cors_any_origin_with_credentials": {
+        "title": "Any website can read your pages as your logged-in visitors",
+        "summary": "Your site answers any origin (we tested {origin}) with Access-Control-Allow-Origin set to that origin and Access-Control-Allow-Credentials: true.",
+        "why": "This tells browsers that every other website may read your responses using your visitor's cookies. If a logged-in user opens a malicious page, that page can load account data, API keys or anything else your site shows them, and send it to the attacker. It is one of the most damaging misconfigurations an API can have.",
+        "fix": "1. Never copy the request's Origin header into Access-Control-Allow-Origin. Keep an explicit list of the origins that need access (for example your own front-end at https://app.example.com) and only echo an origin that is on that list.\n2. Send Access-Control-Allow-Credentials: true only for those listed origins, and only if they really need cookies.\n3. In frameworks: Express `cors({ origin: ['https://app.example.com'], credentials: true })`, Django `CORS_ALLOWED_ORIGINS`, Rails `rack-cors` with explicit origins. Avoid \"allow all origins\" options together with credentials.\n4. Deploy and run the scan again."
+      },
+      "cors_null_origin_with_credentials": {
+        "title": "Your site trusts the \"null\" origin with logins",
+        "summary": "Your site answers Origin: null with Access-Control-Allow-Origin: null and Access-Control-Allow-Credentials: true.",
+        "why": "Browsers send Origin: null from sandboxed iframes, local files and some redirects, and any attacker can create such a page. Trusting \"null\" lets those pages read your responses with your visitor's cookies, for example their account data.",
+        "fix": "1. Remove \"null\" from the origins your CORS setup accepts. It is often added by mistake while testing local files.\n2. Allow only an explicit list of real origins (https://app.example.com), and send credentials only for them.\n3. Deploy and run the scan again."
+      },
+      "csp_ineffective": {
+        "title": "Your Content-Security-Policy does not stop injected scripts",
+        "summary": "Your site has a Content-Security-Policy, but it still lets injected scripts run: {reasons}.",
+        "why": "The main job of a CSP is to stop scripts an attacker manages to inject (cross-site scripting). 'unsafe-inline' without a nonce or hash lets any inline script run, and sources like https: or * let scripts load from any website. With these, the policy looks present but gives little protection.",
+        "fix": "1. Remove 'unsafe-inline' from script-src. Move inline scripts into files, or give each one a nonce (a random value per page load, `script-src 'nonce-RANDOM'`); most frameworks can add nonces for you (Next.js middleware, Helmet for Express, django-csp).\n2. Replace broad sources like https: or * with the exact domains you load scripts from, or use a nonce with 'strict-dynamic'.\n3. Roll out safely: send the new policy as Content-Security-Policy-Report-Only first, fix what it reports, then switch to enforcing.\n4. Run the scan again."
+      },
+      "xfo_ineffective": {
+        "title": "Your frame protection header is ignored by browsers",
+        "summary": "X-Frame-Options is set to \"{value}\", which browsers do not support, and there is no CSP frame-ancestors rule.",
+        "why": "Modern browsers ignore X-Frame-Options values other than DENY and SAMEORIGIN (ALLOW-FROM was dropped years ago). Your pages can therefore be loaded invisibly inside another site, where visitors can be tricked into clicking buttons on your site (clickjacking).",
+        "fix": "1. If no other site should frame your pages: set `X-Frame-Options: DENY` and add `frame-ancestors 'none'` to your Content-Security-Policy.\n2. If one partner site must frame you: use `Content-Security-Policy: frame-ancestors https://partner.example` (that is what replaced ALLOW-FROM) and drop the invalid X-Frame-Options value.\n3. Deploy and run the scan again."
+      },
+      "referrer_policy_unsafe_url": {
+        "title": "Full page addresses are sent to other websites",
+        "summary": "Your site sets Referrer-Policy: unsafe-url, so browsers send the full address of your pages to every site they link to or load from.",
+        "why": "Page addresses often contain private details: password-reset tokens, invoice or document IDs, search terms, e-mail addresses. With unsafe-url these are sent to third-party sites, including over plain HTTP. Browsers' default policy is much safer.",
+        "fix": "1. Use `Referrer-Policy: strict-origin-when-cross-origin` (the browser default) or `no-referrer` if you do not need it at all.\n2. Remove the header value unsafe-url wherever it is set (server config, framework security settings, CDN rules).\n3. Deploy and run the scan again."
+      }
+    }
   }
 }

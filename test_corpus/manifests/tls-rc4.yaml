@@ -2,7 +2,7 @@ target: tls-rc4
 origin: https://tls-rc4.lab.test
 description: >
   Go crypto/tls (labtls), RSA certificate, TLS 1.2 only, suites ECDHE-RSA-AES128-GCM + RSA-RC4-128-SHA.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening]
 expect:
   - {check: tls_config, key: weak_cipher_insecure, why: "labtls verify (full crypto/tls handshake): accepted TLS_RSA_WITH_RC4_128_SHA (RC4, RFC 7465)."}
   - {check: tls_config, key: tls13_unsupported, why: "Served with MaxVersion TLS 1.2."}

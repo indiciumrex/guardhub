@@ -19,7 +19,7 @@ const (
 	DefaultRequestTimeout     = 10 * time.Second
 	DefaultHostRPS            = 4.0
 	DefaultHostBurst          = 2
-	DefaultMaxRequestsPerScan = 80
+	DefaultMaxRequestsPerScan = 160
 	DefaultWorkers            = 4
 	DefaultCheckConcurrency   = 3
 	DefaultScanDeadline       = 180 * time.Second

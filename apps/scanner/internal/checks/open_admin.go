@@ -104,7 +104,7 @@ func (c OpenAdmin) Run(ctx context.Context, t Target) ([]evidence.Finding, error
 // as plain text (an HTML page that merely mentions "# HELP" does not count).
 func prometheusMatch(r *probe.Response) (string, bool) {
 	ct := strings.ToLower(r.Header.Get("Content-Type"))
-	if r.StatusCode != 200 || !(strings.HasPrefix(ct, "text/plain") || strings.Contains(ct, "openmetrics")) {
+	if r.StatusCode != 200 || (!strings.HasPrefix(ct, "text/plain") && !strings.Contains(ct, "openmetrics")) {
 		return "", false
 	}
 	if bodyAll("# HELP ", "# TYPE ")(r.Body) {

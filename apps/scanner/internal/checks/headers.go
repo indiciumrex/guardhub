@@ -54,7 +54,11 @@ func (c SecurityHeaders) Run(ctx context.Context, t Target) ([]evidence.Finding,
 	document := !resp.RedirectRefused && isHTMLDocument(resp)
 
 	csp := strings.Join(h.Values("Content-Security-Policy"), "; ")
-	if document && strings.TrimSpace(csp) == "" {
+	// A CSP may also come in <meta http-equiv="Content-Security-Policy"> (static
+	// hosts often do this). It counts as present (validation lab: a meta-only
+	// CSP was reported as missing); frame-ancestors still needs the header.
+	_, metaCSP := enforcedPolicies(h, resp.Body, document)
+	if document && strings.TrimSpace(csp) == "" && len(metaCSP) == 0 {
 		add("csp_missing", map[string]string{}, loc, allHeaders...)
 	}
 
@@ -109,7 +113,9 @@ func (c SecurityHeaders) cookieFindings(resp *probe.Response) []evidence.Finding
 		if https && !ck.Secure {
 			missing = append(missing, "Secure")
 		}
-		if !ck.HttpOnly {
+		// CSRF double-submit cookies must be readable by the page's JavaScript by
+		// design (Laravel/Angular XSRF-TOKEN, Django csrftoken, Tornado _xsrf).
+		if !ck.HttpOnly && !csrfCookieNames[strings.ToLower(ck.Name)] {
 			missing = append(missing, "HttpOnly")
 		}
 		// Absent attribute parses as 0; "SameSite" with no/unknown value as DefaultMode.
@@ -150,3 +156,7 @@ func isHTMLDocument(resp *probe.Response) bool {
 	}
 	return ct == "" && looksLikeHTML(resp.Body)
 }
+
+// csrfCookieNames: framework CSRF double-submit cookies, which JavaScript must
+// read (so HttpOnly is wrong for them). Secure and SameSite still apply.
+var csrfCookieNames = map[string]bool{"xsrf-token": true, "csrftoken": true, "_xsrf": true, "csrf-token": true}

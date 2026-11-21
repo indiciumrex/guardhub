@@ -267,18 +267,26 @@ func (c *Client) reserve(ctx context.Context, host string) error {
 // page (e.g. the origin root) cost one request.
 func (c *Client) Get(ctx context.Context, rawURL string) (*Response, error) {
 	return c.cached(ctx, rawURL, func() (*Response, error) {
-		return c.do(ctx, http.MethodGet, rawURL, true)
+		return c.do(ctx, http.MethodGet, rawURL, true, "")
 	})
+}
+
+// GetWithOrigin sends GET rawURL with an Origin header (what any browser sends
+// for a cross-origin request), following same-host redirects. Uncached: the
+// same URL asked from another origin is a different question (CORS). Only the
+// Origin header can be set this way.
+func (c *Client) GetWithOrigin(ctx context.Context, rawURL, origin string) (*Response, error) {
+	return c.do(ctx, http.MethodGet, rawURL, true, origin)
 }
 
 // GetNoFollow fetches rawURL with GET and does not follow redirects.
 func (c *Client) GetNoFollow(ctx context.Context, rawURL string) (*Response, error) {
-	return c.do(ctx, http.MethodGet, rawURL, false)
+	return c.do(ctx, http.MethodGet, rawURL, false, "")
 }
 
 // Head sends a HEAD request, following same-host redirects.
 func (c *Client) Head(ctx context.Context, rawURL string) (*Response, error) {
-	return c.do(ctx, http.MethodHead, rawURL, true)
+	return c.do(ctx, http.MethodHead, rawURL, true, "")
 }
 
 // Do sends a request with the given method. Only GET and HEAD are accepted;
@@ -287,7 +295,7 @@ func (c *Client) Do(ctx context.Context, method, rawURL string) (*Response, erro
 	if method == http.MethodGet {
 		return c.Get(ctx, rawURL)
 	}
-	return c.do(ctx, method, rawURL, true)
+	return c.do(ctx, method, rawURL, true, "")
 }
 
 func (c *Client) cached(ctx context.Context, key string, fetch func() (*Response, error)) (*Response, error) {
@@ -333,7 +341,7 @@ func validateURL(rawURL string) (*url.URL, error) {
 	return u, nil
 }
 
-func (c *Client) do(ctx context.Context, method, rawURL string, follow bool) (*Response, error) {
+func (c *Client) do(ctx context.Context, method, rawURL string, follow bool, origin string) (*Response, error) {
 	if method != http.MethodGet && method != http.MethodHead {
 		return nil, ErrMethodNotAllowed
 	}
@@ -343,7 +351,7 @@ func (c *Client) do(ctx context.Context, method, rawURL string, follow bool) (*R
 	}
 	var hops []string
 	for redirects := 0; ; redirects++ {
-		resp, err := c.roundTrip(ctx, method, u)
+		resp, err := c.roundTrip(ctx, method, u, origin)
 		if err != nil {
 			return nil, err
 		}
@@ -407,13 +415,13 @@ func effectivePort(u *url.URL) string {
 }
 
 // roundTrip sends one hop, retrying on network errors, 429 and 503.
-func (c *Client) roundTrip(ctx context.Context, method string, u *url.URL) (*Response, error) {
+func (c *Client) roundTrip(ctx context.Context, method string, u *url.URL, origin string) (*Response, error) {
 	host := strings.ToLower(u.Hostname())
 	for attempt := 0; ; attempt++ {
 		if err := c.reserve(ctx, host); err != nil {
 			return nil, err
 		}
-		resp, err := c.once(ctx, method, u)
+		resp, err := c.once(ctx, method, u, origin)
 		retryable := err != nil || resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable
 		if !retryable || attempt >= c.opts.MaxRetries || ctx.Err() != nil ||
 			errors.Is(err, ErrBlockedAddress) || errors.Is(err, ErrMethodNotAllowed) {
@@ -456,13 +464,16 @@ func parseRetryAfter(v string, now time.Time) (time.Duration, bool) {
 	return 0, false
 }
 
-func (c *Client) once(ctx context.Context, method string, u *url.URL) (*Response, error) {
+func (c *Client) once(ctx context.Context, method string, u *url.URL, origin string) (*Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Accept", "*/*")
+	if origin != "" {
+		req.Header.Set("Origin", origin)
+	}
 	res, err := c.hc.Do(req)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "a38ed80ac882+wip",
+  "source": "4f9a6dada46d+wip",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -12,6 +12,15 @@
     "drupal",
     "dvwa",
     "grafana",
+    "hh-cors-cred",
+    "hh-cors-null",
+    "hh-cors-public",
+    "hh-csp-strict",
+    "hh-csp-weak",
+    "hh-csrf-cookie",
+    "hh-meta-csp",
+    "hh-referrer",
+    "hh-xfo-allowfrom",
     "juice-shop",
     "leaky",
     "phpmyadmin",
@@ -33,14 +42,15 @@
   "checks": [
     {
       "check_id": "default_creds",
-      "targets": 21,
-      "clean_runs": 17,
+      "targets": 30,
+      "clean_runs": 26,
       "tp": 3,
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 10,
       "precision": 1,
       "recall": 1,
       "recall_all": 0.6,
@@ -95,14 +105,15 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 21,
-      "clean_runs": 20,
+      "targets": 30,
+      "clean_runs": 29,
       "tp": 3,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 16,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
@@ -148,15 +159,99 @@
       "false_negatives": null
     },
     {
+      "check_id": "http_hardening",
+      "targets": 30,
+      "clean_runs": 24,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 4,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cors_any_origin_with_credentials": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "cors_null_origin_with_credentials": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "csp_ineffective": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "referrer_policy_unsafe_url": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "xfo_ineffective": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "hh-cors-cred",
+          "key": "cors_any_origin_with_credentials",
+          "location": "http://hh-cors-cred.lab.test/",
+          "why": "Origin https://guardhub-cors-check.invalid is echoed in Access-Control-Allow-Origin with Allow-Credentials: true."
+        },
+        {
+          "target": "hh-cors-null",
+          "key": "cors_null_origin_with_credentials",
+          "location": "http://hh-cors-null.lab.test/",
+          "why": "Origin null gets Access-Control-Allow-Origin: null + Allow-Credentials: true; other origins are not echoed."
+        },
+        {
+          "target": "hh-csp-weak",
+          "key": "csp_ineffective",
+          "location": "http://hh-csp-weak.lab.test/",
+          "why": "script-src 'self' 'unsafe-inline' https: with no nonce/hash and no strict-dynamic."
+        },
+        {
+          "target": "hh-referrer",
+          "key": "referrer_policy_unsafe_url",
+          "location": "http://hh-referrer.lab.test/",
+          "why": "Referrer-Policy: unsafe-url (the only policy token)."
+        },
+        {
+          "target": "hh-xfo-allowfrom",
+          "key": "xfo_ineffective",
+          "location": "http://hh-xfo-allowfrom.lab.test/",
+          "why": "X-Frame-Options: ALLOW-FROM https://partner.lab.test, CSP default-src 'self' without frame-ancestors."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "csp_ineffective",
+          "location": "http://phpmyadmin.lab.test/",
+          "why": "Its CSP has script-src 'self' 'unsafe-inline' 'unsafe-eval' with no nonce or hash: injected inline scripts would run."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "info_leak",
-      "targets": 21,
-      "clean_runs": 15,
+      "targets": 30,
+      "clean_runs": 24,
       "tp": 10,
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 10,
       "precision": 1,
       "recall": 1,
       "recall_all": 0.8333333333333334,
@@ -263,14 +358,15 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 21,
-      "clean_runs": 18,
+      "targets": 30,
+      "clean_runs": 27,
       "tp": 3,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 38,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
@@ -312,14 +408,15 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 21,
-      "clean_runs": 15,
+      "targets": 30,
+      "clean_runs": 24,
       "tp": 15,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 0,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
@@ -443,14 +540,15 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 21,
+      "targets": 30,
       "clean_runs": 6,
-      "tp": 15,
+      "tp": 24,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 3,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
@@ -477,7 +575,7 @@
           "fn": 0
         },
         "https_unavailable": {
-          "tp": 9,
+          "tp": 18,
           "fp": 0,
           "fn": 0
         },
@@ -505,6 +603,60 @@
           "key": "https_unavailable",
           "location": "grafana.lab.test:443",
           "why": "Nothing listens on 443."
+        },
+        {
+          "target": "hh-cors-cred",
+          "key": "https_unavailable",
+          "location": "hh-cors-cred.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-cors-null",
+          "key": "https_unavailable",
+          "location": "hh-cors-null.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-cors-public",
+          "key": "https_unavailable",
+          "location": "hh-cors-public.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-csp-strict",
+          "key": "https_unavailable",
+          "location": "hh-csp-strict.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-csp-weak",
+          "key": "https_unavailable",
+          "location": "hh-csp-weak.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-csrf-cookie",
+          "key": "https_unavailable",
+          "location": "hh-csrf-cookie.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-meta-csp",
+          "key": "https_unavailable",
+          "location": "hh-meta-csp.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-referrer",
+          "key": "https_unavailable",
+          "location": "hh-referrer.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
+        },
+        {
+          "target": "hh-xfo-allowfrom",
+          "key": "https_unavailable",
+          "location": "hh-xfo-allowfrom.lab.test:443",
+          "why": "Plain HTTP only: nothing listens on 443."
         },
         {
           "target": "juice-shop",
@@ -584,14 +736,15 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 21,
-      "clean_runs": 15,
+      "targets": 30,
+      "clean_runs": 24,
       "tp": 9,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
+      "max_requests": 5,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,

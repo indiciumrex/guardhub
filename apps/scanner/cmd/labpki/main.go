@@ -86,7 +86,7 @@ func run(dir string, specs []string, now time.Time) error {
 		if !ok || !strings.HasSuffix(name, ".lab.test") {
 			return fmt.Errorf("bad spec %q (want <name>.lab.test:<kind>)", spec)
 		}
-		if err := leaf(dir, name, kind, root, inter, now); err != nil {
+		if err := leaf(dir, name, kind, inter, now); err != nil {
 			return fmt.Errorf("%s: %w", spec, err)
 		}
 	}
@@ -129,7 +129,7 @@ func newCA(cn string, parent *issuer, now time.Time) (*issuer, error) {
 	return &issuer{cert: cert, key: key, der: der}, nil
 }
 
-func leaf(dir, name, kind string, root, inter *issuer, now time.Time) error {
+func leaf(dir, name, kind string, inter *issuer, now time.Time) error {
 	var key crypto.Signer
 	var err error
 	switch kind {

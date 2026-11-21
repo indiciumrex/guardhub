@@ -4,7 +4,7 @@ description: >
   WordPress 6.8.3 (official image, pinned) connected to an empty database: / redirects
   to /wp-admin/install.php, the install form (Site Title / weblog_title) that lets
   ANYONE create the admin account. /wp-login.php only redirects to the installer.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening]
 expect:
   - {check: default_creds, key: installer_exposed, why: "/wp-admin/install.php shows the WordPress install form."}
   - {check: security_headers, key: csp_missing, why: "The installer page sends no Content-Security-Policy."}

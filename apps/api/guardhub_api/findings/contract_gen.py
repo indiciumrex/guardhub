@@ -85,6 +85,13 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'cert_weak_key': 'medium',
         'tls13_unsupported': 'info',
     },
+    'http_hardening': {
+        'cors_any_origin_with_credentials': 'high',
+        'cors_null_origin_with_credentials': 'medium',
+        'csp_ineffective': 'low',
+        'xfo_ineffective': 'low',
+        'referrer_policy_unsafe_url': 'low',
+    },
 }
 
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)

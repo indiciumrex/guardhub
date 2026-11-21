@@ -11,6 +11,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -104,13 +105,21 @@ func verify(args []string) error {
 		return err
 	}
 	host := strings.Split(*addr, ":")[0]
-	conn, err := tls.Dial("tcp", *addr, &tls.Config{ //nolint:gosec // ground-truth probe of a lab target
-		ServerName: host, InsecureSkipVerify: true, MaxVersion: tls.VersionTLS12, CipherSuites: ids,
-	})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	d := &tls.Dialer{Config: &tls.Config{
+		ServerName: host,
+		// ground truth about cipher suites of a lab target, not about its certificate
+		InsecureSkipVerify: true, //nolint:gosec // see comment above
+		MaxVersion:         tls.VersionTLS12,
+		CipherSuites:       ids,
+	}}
+	raw, err := d.DialContext(ctx, "tcp", *addr)
 	if err != nil {
 		fmt.Printf("%s refused: %v\n", *addr, err)
 		return nil
 	}
+	conn := raw.(*tls.Conn)
 	defer conn.Close()
 	st := conn.ConnectionState()
 	fmt.Printf("%s accepted %s (%s)\n", *addr, tls.CipherSuiteName(st.CipherSuite), tls.VersionName(st.Version))

@@ -19,7 +19,7 @@ func TestDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cfg.RequestTimeout != 10*time.Second || cfg.HostRPS != 4 || cfg.HostBurst != 2 ||
-		cfg.MaxRequestsPerScan != 80 || cfg.Workers != 4 || cfg.CheckConcurrency != 3 {
+		cfg.MaxRequestsPerScan != 160 || cfg.Workers != 4 || cfg.CheckConcurrency != 3 {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 	if cfg.LogLevel != slog.LevelInfo || cfg.RedisURL == "" || cfg.ConsumerName == "" {

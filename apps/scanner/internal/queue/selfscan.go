@@ -69,10 +69,10 @@ var ErrNotALabTarget = errors.New("lab scans are limited to *" + LabDomain + " h
 // Redis. It needs no ownership proof because it can only reach lab containers:
 // the host must be under LabDomain AND on the SCANNER_ALLOW_PRIVATE_HOSTS
 // allowlist (allowed is that list). Used by `scanner lab` only (§9.2).
-func (s *Service) ScanLabOrigin(ctx context.Context, origin string, allowed []string) ([]evidence.Finding, []CheckResult, error) {
+func (s *Service) ScanLabOrigin(ctx context.Context, origin string, allowed []string) ([]evidence.Finding, []CheckResult, map[string]int, error) {
 	u, err := checks.ParseOrigin(origin)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	host := strings.ToLower(u.Hostname())
 	onList := false
@@ -80,19 +80,30 @@ func (s *Service) ScanLabOrigin(ctx context.Context, origin string, allowed []st
 		onList = onList || strings.EqualFold(strings.TrimSpace(h), host)
 	}
 	if !strings.HasSuffix(host, LabDomain) || !onList {
-		return nil, nil, ErrNotALabTarget
+		return nil, nil, nil, ErrNotALabTarget
 	}
 	client := s.NewScanProbe()
 	defer client.Close()
 	target, err := checks.NewTarget(origin, client)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := preflight(ctx, target); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	findings, results := s.RunChecks(ctx, target, s.Registry.IDs())
-	return findings, results, nil
+	// Request cost per check (the lab reports it: do-no-harm is measured too).
+	// Checks run one after another here, so the counter delta is per check.
+	cost := map[string]int{"preflight": client.RequestsUsed()}
+	findings := []evidence.Finding{}
+	results := make([]CheckResult, 0)
+	for _, id := range s.Registry.IDs() {
+		before := client.RequestsUsed()
+		found, res := s.isolatedCheck(ctx, id, target)
+		cost[id] = client.RequestsUsed() - before
+		findings = append(findings, found...)
+		results = append(results, res)
+	}
+	return findings, results, cost, nil
 }
 
 // RunChecks runs the given checks one after another against target, outside

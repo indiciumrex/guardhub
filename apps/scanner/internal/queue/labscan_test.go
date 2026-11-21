@@ -28,7 +28,7 @@ func TestScanLabOriginRefusesNonLabTargets(t *testing.T) {
 		{"https://evil.lab.test.example.com", []string{"evil.lab.test.example.com"}},
 	}
 	for _, c := range cases {
-		_, _, err := s.ScanLabOrigin(context.Background(), c.origin, c.allowed)
+		_, _, _, err := s.ScanLabOrigin(context.Background(), c.origin, c.allowed)
 		if !errors.Is(err, ErrNotALabTarget) {
 			t.Errorf("%s (allowed %v): want ErrNotALabTarget, got %v", c.origin, c.allowed, err)
 		}
