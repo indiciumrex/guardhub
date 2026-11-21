@@ -15,3 +15,11 @@ paths = [
   '''ops/demo-target/site/.*''',
   '''\.env\.example''',
 ]
+# Catalogue identifiers, not secrets: `"key": "weak_cipher_3des"` (check-ids.json, the
+# accuracy scorecards) trips generic-api-key. Only a "key" whose value is a snake_case
+# identifier (lowercase words joined by underscores) is exempt; random tokens (hex, base64,
+# mixed case) do not have that shape and are still caught.
+regexTarget = "line"
+regexes = [
+  '''"key":\s*"[a-z]+(?:_[a-z0-9]+)+"''',
+]

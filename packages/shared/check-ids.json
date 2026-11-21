@@ -66,6 +66,18 @@
         { "key": "debug_mode_enabled", "severity": "high", "params": ["framework"] },
         { "key": "directory_listing_enabled", "severity": "medium", "params": ["path"] }
       ]
+    },
+    {
+      "id": "tls_config",
+      "category": "transport",
+      "finding_keys": [
+        { "key": "weak_cipher_insecure", "severity": "high", "params": ["suite"] },
+        { "key": "weak_cipher_3des", "severity": "low", "params": ["suite"] },
+        { "key": "no_forward_secrecy", "severity": "medium", "params": ["suite"] },
+        { "key": "chain_incomplete", "severity": "medium", "params": ["issuer"] },
+        { "key": "cert_weak_key", "severity": "medium", "params": ["key_type", "bits"] },
+        { "key": "tls13_unsupported", "severity": "info", "params": [] }
+      ]
     }
   ]
 }

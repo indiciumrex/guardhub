@@ -1,0 +1,38 @@
+target: dvwa
+origin: http://dvwa.lab.test
+description: >
+  DVWA (pinned by digest) with its MariaDB. / redirects to /login.php. Facts verified
+  with curl inside the lab.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - check: security_headers
+    key: csp_missing
+    why: "/login.php (the page / redirects to) sends no Content-Security-Policy."
+  - check: security_headers
+    key: nosniff_missing
+    why: "/login.php sends no X-Content-Type-Options."
+  - check: security_headers
+    key: clickjacking_unprotected
+    why: "/login.php sends neither X-Frame-Options nor CSP frame-ancestors."
+  - check: security_headers
+    key: cookie_flags_missing
+    why: "Cookie 'security' is set with HttpOnly but without SameSite."
+  - check: info_leak
+    key: server_version_disclosed
+    why: >-
+      'Server: Apache/2.4.69 (Debian)'; the 404 page footer shows the same string. One
+      issue: Apache's footer follows ServerTokens, so one setting fixes both.
+  - check: info_leak
+    key: framework_version_disclosed
+    why: "Response header 'X-Powered-By: PHP/8.5.12'."
+  - check: default_creds
+    key: installer_exposed
+    outside: true # default_creds declares a fixed product catalogue; DVWA is not in it (nor should be)
+    why: "/setup.php ('Database Setup', 'Create / Reset Database') is reachable without logging in."
+  - check: default_creds
+    key: default_login_product
+    outside: true # not in the declared catalogue (a training app, never deployed for real)
+    why: "/login.php is DVWA's login, whose documented default account is admin/password."
+  - check: tls_cert
+    key: https_unavailable
+    why: "Nothing listens on 443."

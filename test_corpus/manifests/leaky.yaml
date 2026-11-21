@@ -1,0 +1,17 @@
+target: leaky
+origin: http://leaky.lab.test
+description: >
+  A careless static deployment (nginx/leaky.conf + leaky-init.sh): the project folder
+  is the web root, nginx defaults everywhere, autoindex on /backup/. Secrets are random
+  per lab run. Verified with curl inside the lab.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - {check: exposed_env, key: env_file_exposed, why: "/.env is served (DATABASE_URL, STRIPE_SECRET_KEY, APP_KEY)."}
+  - {check: exposed_env, key: git_repository_exposed, why: "/.git/HEAD and /.git/config are served."}
+  - {check: exposed_env, key: cloud_credentials_exposed, why: "/.aws/credentials is served with an access key pair."}
+  - {check: info_leak, key: directory_listing_enabled, why: "/backup/ is an nginx autoindex page."}
+  - {check: info_leak, key: server_version_disclosed, why: "'Server: nginx/1.27.5' (server_tokens on, the default)."}
+  - {check: security_headers, key: csp_missing, why: "No Content-Security-Policy."}
+  - {check: security_headers, key: nosniff_missing, why: "No X-Content-Type-Options."}
+  - {check: security_headers, key: clickjacking_unprotected, why: "Neither X-Frame-Options nor frame-ancestors."}
+  - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}

@@ -1,0 +1,27 @@
+target: juice-shop
+origin: http://juice-shop.lab.test:3000
+description: >
+  OWASP Juice Shop v17.1.0 (pinned by digest). A single-page app that answers 200 with
+  its shell for ANY path (/.env, /.git/HEAD, /admin ...), so status-code-only detection
+  produces false positives here. Facts below were verified with curl inside the lab.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - check: security_headers
+    key: csp_missing
+    why: "GET / has no Content-Security-Policy (only XCTO, XFO SAMEORIGIN, Feature-Policy)."
+  - check: tls_cert
+    key: https_unavailable
+    why: "Nothing listens on 443: the app is served over plain HTTP only."
+  - check: info_leak
+    key: directory_listing_enabled
+    outside: true # info_leak declares listings at / and common asset folders (/uploads/, /images/, ...)
+    why: >-
+      /ftp, /encryptionkeys and /support/logs are browsable directory indexes (documented
+      challenges). One issue: info_leak reports listings once per site by design.
+  - check: info_leak
+    key: stack_trace_exposed
+    outside: true # info_leak declares stack traces on the root and on its one 404 probe only
+    why: "GET /rest/<unknown> returns 500 with an Express stack trace incl. /juice-shop/node_modules paths."
+  - check: open_admin
+    key: server_status_exposed
+    why: "/metrics serves Prometheus metrics without authentication (documented challenge)."

@@ -48,6 +48,7 @@ const (
 	CheckOpenAdmin       = "open_admin"
 	CheckDefaultCreds    = "default_creds"
 	CheckInfoLeak        = "info_leak"
+	CheckTlsConfig       = "tls_config"
 )
 
 // FindingKeys maps check id -> finding key -> default severity (check-ids.json).
@@ -92,5 +93,13 @@ var FindingKeys = map[string]map[string]Severity{
 		"stack_trace_exposed":         SeverityMedium,
 		"debug_mode_enabled":          SeverityHigh,
 		"directory_listing_enabled":   SeverityMedium,
+	},
+	"tls_config": {
+		"weak_cipher_insecure": SeverityHigh,
+		"weak_cipher_3des":     SeverityLow,
+		"no_forward_secrecy":   SeverityMedium,
+		"chain_incomplete":     SeverityMedium,
+		"cert_weak_key":        SeverityMedium,
+		"tls13_unsupported":    SeverityInfo,
 	},
 }

@@ -1,0 +1,17 @@
+target: grafana
+origin: http://grafana.lab.test:3000
+description: >
+  Grafana OSS 11.6.0 (pinned), default configuration: / redirects to /login, whose
+  documented default account is admin/admin. Sends X-Frame-Options and nosniff, no CSP
+  (Grafana's content_security_policy is off by default).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - {check: default_creds, key: default_login_product, why: "Grafana login with the documented default admin/admin account, never changed."}
+  - {check: security_headers, key: csp_missing, why: "/login sends no Content-Security-Policy."}
+  - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}
+  - check: open_admin
+    key: server_status_exposed
+    why: >-
+      /metrics serves Grafana's Prometheus metrics (text/plain, "# HELP"/"# TYPE") without
+      authentication, Grafana's default. Missing from this manifest at first; the lab run
+      surfaced it and curl confirmed it (2026-11-21).

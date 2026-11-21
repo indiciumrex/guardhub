@@ -66,6 +66,9 @@ func run() int {
 	if len(os.Args) > 1 && os.Args[1] == "selfscan" {
 		return runSelfScan(cfg, logger, os.Args[2:])
 	}
+	if len(os.Args) > 1 && os.Args[1] == "lab" {
+		return runLab(cfg, logger, os.Args[2:])
+	}
 
 	ropts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {

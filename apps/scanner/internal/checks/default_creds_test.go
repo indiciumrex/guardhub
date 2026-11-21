@@ -85,3 +85,22 @@ func TestDefaultCredsNegative(t *testing.T) {
 	})
 	requireKeys(t, run(t, DefaultCreds{}, srv.URL))
 }
+
+// Validation lab (Grafana 11): a single-page app answers every path with the
+// same shell, so its login equals the soft-404 baseline. A product-specific
+// marker on that shell still proves the product; a generic catch-all does not.
+func TestDefaultCredsSPAProductShell(t *testing.T) {
+	grafana := newCatchAll(t, `<!doctype html><html><head><title>Grafana</title></head><body><script>window.grafanaBootData = {"settings":{}};</script></body></html>`)
+	fs := run(t, DefaultCreds{}, grafana)
+	f := findKey(t, fs, "default_login_product")
+	if f.Params["product"] != "Grafana" || f.Params["path"] != "/login" {
+		t.Fatalf("grafana: %+v", f.Params)
+	}
+	if len(fs) != 1 {
+		t.Fatalf("only the Grafana probe may match on a Grafana shell, got %d findings", len(fs))
+	}
+	other := newCatchAll(t, `<!doctype html><html><head><title>Shop</title></head><body><div id="app">login</div></body></html>`)
+	if fs := run(t, DefaultCreds{}, other); len(fs) != 0 {
+		t.Fatalf("a generic SPA shell must not match anything: %+v", fs)
+	}
+}

@@ -39,6 +39,9 @@ var openAdminProbes = []pathProbe{
 		match: status200All(`"utime"`, `"datetime"`, `"uri"`)},
 	{path: "/rails/info/properties", key: "debug_endpoint_exposed", product: "Rails info page",
 		match: status200All("Rails version", "Ruby version")},
+	// "/" first: the official docker image serves phpMyAdmin at the origin root
+	// (its own site, e.g. pma.example.com). The root GET is cached.
+	{path: "/", key: "db_admin_exposed", product: "phpMyAdmin", match: phpMyAdminMatch},
 	{path: "/phpmyadmin/", key: "db_admin_exposed", product: "phpMyAdmin", match: phpMyAdminMatch},
 	{path: "/phpMyAdmin/", key: "db_admin_exposed", product: "phpMyAdmin", match: phpMyAdminMatch},
 	{path: "/pma/", key: "db_admin_exposed", product: "phpMyAdmin", match: phpMyAdminMatch},
@@ -50,9 +53,13 @@ var openAdminProbes = []pathProbe{
 		match: status200All("Apache Server Status for")},
 	{path: "/nginx_status", key: "server_status_exposed", group: "server-status",
 		match: status200All("Active connections:", "server accepts handled requests")},
+	// Prometheus metrics (internal counters, routes, versions) open to anyone.
+	{path: "/metrics", key: "server_status_exposed", group: "prometheus-metrics", match: prometheusMatch},
 	{path: "/wp-login.php", key: "admin_login_exposed", group: "admin-login",
 		match: func(r *probe.Response) (string, bool) {
-			if r.StatusCode == 200 && passwordInputRe.Match(r.Body) && bodyAny(`id="loginform"`, "wp-submit", "user_login")(r.Body) {
+			// id="loginform" only: the installer page also has user_login + a password
+			// field (validation lab: a mid-install site was reported as "login exposed").
+			if r.StatusCode == 200 && passwordInputRe.Match(r.Body) && bodyAll(`id="loginform"`)(r.Body) {
 				return `WordPress login form ("loginform" + password field)`, true
 			}
 			return "", false
@@ -67,10 +74,19 @@ func phpMyAdminMatch(r *probe.Response) (string, bool) {
 		bodyAll("phpmyadmin"), bodyAny("pma_username", "pma_password", "pmahomme", "phpmyadmin.css", "<title>phpmyadmin"))(r)
 }
 
+// installerTitleRe: page titles of install/setup wizards.
+var installerTitleRe = regexp.MustCompile(`(?i)\b(install|installation|installer|setup)\b`)
+
 // adminLoginMatch: an HTML page with a password field that is about an
 // admin area (final URL or page text mentions "admin").
 func adminLoginMatch(r *probe.Response) (string, bool) {
 	if r.StatusCode != 200 || !passwordInputRe.Match(r.Body) {
+		return "", false
+	}
+	// An install/setup wizard has a password field too (choose the admin
+	// password) but is not a login: default_creds reports installers.
+	// (Validation lab: WordPress mid-install, /admin -> /wp-admin/install.php.)
+	if installerTitleRe.MatchString(pageTitle(r.Body)) {
 		return "", false
 	}
 	if strings.Contains(strings.ToLower(r.URL.Path), "admin") || containsFold([]byte(pageTitle(r.Body)), "admin") {
@@ -82,4 +98,17 @@ func adminLoginMatch(r *probe.Response) (string, bool) {
 // Run implements Check.
 func (c OpenAdmin) Run(ctx context.Context, t Target) ([]evidence.Finding, error) {
 	return runProbes(ctx, c.ID(), t, openAdminProbes)
+}
+
+// prometheusMatch: the Prometheus/OpenMetrics text exposition format, served
+// as plain text (an HTML page that merely mentions "# HELP" does not count).
+func prometheusMatch(r *probe.Response) (string, bool) {
+	ct := strings.ToLower(r.Header.Get("Content-Type"))
+	if r.StatusCode != 200 || !(strings.HasPrefix(ct, "text/plain") || strings.Contains(ct, "openmetrics")) {
+		return "", false
+	}
+	if bodyAll("# HELP ", "# TYPE ")(r.Body) {
+		return `Prometheus metrics ("# HELP" + "# TYPE" lines, text/plain)`, true
+	}
+	return "", false
 }

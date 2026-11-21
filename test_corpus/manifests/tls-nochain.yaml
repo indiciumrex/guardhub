@@ -1,0 +1,13 @@
+target: tls-nochain
+origin: https://tls-nochain.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/good_headers.inc) and wrong in exactly one TLS
+  property (see nginx/tls-nochain.conf and the labpki kind in docker-compose.lab.yml).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - check: tls_cert
+    key: cert_untrusted
+    why: "labpki 'nochain': the intermediate is not served, so the chain cannot be built to the root."
+  - check: tls_config
+    key: chain_incomplete
+    why: "Only the leaf is served (openssl: 1 certificate, 'unable to verify the first certificate'); it names its issuer's AIA URL."

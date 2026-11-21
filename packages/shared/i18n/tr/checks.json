@@ -208,5 +208,47 @@
         "fix": "1. Dizin listelemeyi kapatın. nginx: `autoindex` kapalı olsun (varsayılan olarak kapalıdır; varsa `autoindex on;` satırını kaldırın). Apache: yapılandırmanızda veya `.htaccess` içinde `Options -Indexes`. IIS: Directory Browsing'i kapatın.\n2. {path} altında listelenen dosyaları gözden geçirin ve herkese açık olmaması gereken her şeyi (yedekler, dışa aktarımlar gibi) kaldırın. Bunlardan herhangi biri şifre veya anahtar içeriyorsa yenileyin (değiştirin).\n3. {path} adresinin artık dosya listelemediğini doğrulamak için taramayı yeniden çalıştırın."
       }
     }
+  },
+  "tls_config": {
+    "name": "TLS yapılandırması",
+    "description": "HTTPS'in sertifikanın ötesinde ne kadar iyi kurulduğunu kontrol eder: sunucunuzun kabul ettiği şifreleme yöntemleri, anahtarınız bir gün sızarsa kaydedilmiş trafiğin gizli kalıp kalmayacağı, gönderdiğiniz sertifika zinciri ve anahtar gücünüz.",
+    "findings": {
+      "weak_cipher_insecure": {
+        "title": "Sunucunuz kırık bir şifrelemeyi kabul ediyor ({suite})",
+        "summary": "Sunucunuz hâlâ {suite} kullanmayı kabul ediyor; bu yöntem çok az koruma sağlıyor ya da hiç sağlamıyor.",
+        "why": "Bazı eski yöntemler hiçbir şeyi şifrelemez (NULL), karşı tarafın kim olduğunu doğrulamaz (anonim) ya da kırılmıştır (RC4, DES, export). Bir ziyaretçinin bağlantısı bunlardan birine düşerse, aynı ağdaki biri gönderdiği her şeyi, şifreler ve oturum çerezleri dahil, okuyabilir veya değiştirebilir. Saldırganlar bağlantıları bu yöntemlere zorlamayı deneyebilir.",
+        "fix": "1. Yalnızca modern şifre takımlarına izin verin. nginx'te: `ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;` Apache'de aynı listeyi `SSLCipherSuite` ile verin.\n2. Şifre ayarlarınızdan NULL, aNULL, EXPORT, DES, RC4 veya MD5 içeren her şeyi kaldırın; yük dengeleyici ve CDN ayarlarınız dahil.\n3. Mozilla'nın SSL Configuration Generator aracı (ssl-config.mozilla.org, \"Intermediate\") çoğu sunucu için hazır bir yapılandırma verir.\n4. Sunucuyu yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "weak_cipher_3des": {
+        "title": "Sunucunuz hâlâ 3DES kabul ediyor ({suite})",
+        "summary": "Sunucunuz {suite} kullanmayı kabul ediyor; bu eski şifreleme yöntemi artık güvenli sayılmıyor.",
+        "why": "3DES veriyi küçük bloklar halinde işler. Tek bir bağlantıda çok büyük miktarda trafik geçtikten sonra, bu trafiği izleyip etkileyebilen bir saldırgan bazı parçaları çözebilir (\"Sweet32\" saldırısı). Gerçekleştirmesi zordur, bu yüzden risk düşüktür; ama hiçbir modern tarayıcının 3DES'e ihtiyacı yoktur ve kapatılmalıdır.",
+        "fix": "1. Şifre listenizden 3DES'i (DES-CBC3, 3DES_EDE) çıkarın. nginx'te ssl-config.mozilla.org'daki modern listeyi (\"Intermediate\") kullanın.\n2. Go tabanlı sunucu ve proxy'lerde (örneğin Traefik), TLS seçeneklerinden adında `3DES` geçen tüm şifre takımlarını kaldırın.\n3. Yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "no_forward_secrecy": {
+        "title": "Anahtarınız sızarsa kaydedilmiş trafik korunmuyor",
+        "summary": "Sunucunuz yalnızca ileri gizlilik (forward secrecy) sağlamayan anahtar değişimlerini kullanıyor ({suite} seçildi).",
+        "why": "İleri gizlilikte her bağlantı kendi geçici anahtarını alır. Bu olmadan, ziyaretçilerinizin şifreli trafiğini bugün kaydeden biri, sunucunuzun özel anahtarı bir gün çalınır veya sızarsa tamamını sonradan çözebilir. Her modern tarayıcı ileri gizliliği destekler; onsuz kalmak için bir neden yok.",
+        "fix": "1. ECDHE şifre takımlarını açın ve en başa koyun. nginx'te ssl-config.mozilla.org'daki \"Intermediate\" yapılandırmasını kullanın.\n2. Daha da iyisi TLS 1.3'ü açın (`ssl_protocols TLSv1.2 TLSv1.3;`); TLS 1.3 her zaman ileri gizlilik kullanır.\n3. Yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "chain_incomplete": {
+        "title": "Sertifika zinciriniz eksik",
+        "summary": "Sunucunuz kendi sertifikasını gönderiyor ama onu güvenilir bir otoriteye bağlayan ara sertifikayı göndermiyor ({issuer}).",
+        "why": "Bazı tarayıcılar eksik parçayı kendileri indirir, bu yüzden site size sorunsuz görünebilir. Ama birçok telefon, uygulama, ödeme sağlayıcılarının webhook'ları ve komut satırı araçları indirmez: onlar için siteniz güvenlik hatası verir ya da bağlantı kurulamaz.",
+        "fix": "1. Yalnızca kendi sertifikanızı değil, zincirin tamamını yükleyin. Let's Encrypt/certbot ile sunucunuzu `cert.pem` yerine `fullchain.pem` dosyasına yönlendirin (nginx: `ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;`).\n2. Satın aldığınız bir sertifikada, sağlayıcınızın verdiği ara sertifika(lar)ı sertifika dosyanızın sonuna ekleyin; kendi sertifikanız en başta olmalı.\n3. Sunucuyu yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "cert_weak_key": {
+        "title": "Sertifika anahtarınız çok zayıf ({key_type} {bits} bit)",
+        "summary": "Sertifikanız {bits} bitlik bir {key_type} anahtarı kullanıyor; bu, bugünkü alt sınırın (RSA 2048 bit, EC 256 bit) altında.",
+        "why": "Kısa anahtarlar yeterli işlem gücüyle kırılabilir. Anahtarınızı kıran biri sitenizin kimliğine bürünebilir ya da ileri gizlilik yoksa kaydedilmiş trafiği çözebilir. Genel sertifika otoriteleri yıllardır bu tür anahtarlara sertifika vermiyor ve birçok istemci bunları reddediyor.",
+        "fix": "1. En az RSA 2048 bit veya EC P-256 yeni bir anahtar oluşturun (örneğin `openssl ecparam -genkey -name prime256v1` ya da anahtarı certbot'a oluşturtun).\n2. Bu anahtar için yeni bir sertifika alın ve zincirin tamamıyla birlikte yükleyin.\n3. Eski sertifika genel bir otoriteden alındıysa iptal ettirin, sonra taramayı tekrar çalıştırın."
+      },
+      "tls13_unsupported": {
+        "title": "TLS 1.3 açık değil",
+        "summary": "Sunucunuz HTTPS'in en yeni ve en hızlı sürümü olan TLS 1.3'ü sunmuyor.",
+        "why": "Bu bir güvenlik açığı değil. TLS 1.3 tasarımı gereği daha sade ve daha güvenlidir (her zaman ileri gizlilik kullanır, eski ve zayıf seçenekleri kaldırır) ve bağlantıları hızlandırır. Desteklemek güncel en iyi uygulamadır.",
+        "fix": "1. nginx 1.13+ ve OpenSSL 1.1.1+ ile: `ssl_protocols TLSv1.2 TLSv1.3;`\n2. Apache 2.4.37+ ile: `SSLProtocol -all +TLSv1.2 +TLSv1.3`\n3. Çoğu barındırma platformu ve CDN'de varsayılan olarak açıktır; oradaki TLS ayarlarınızı kontrol edin.\n4. Yeniden yükleyin ve taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

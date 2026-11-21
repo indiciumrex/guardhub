@@ -51,17 +51,66 @@ func (s *Service) SelfScan(ctx context.Context, origin, token string) (SelfScanR
 	if err != nil {
 		return SelfScanReport{}, err
 	}
-	report := SelfScanReport{Target: canonical, VerifiedBy: out.method, Findings: []evidence.Finding{}}
-	for _, id := range s.Registry.IDs() {
-		found, res := s.selfScanCheck(ctx, id, target)
-		report.Findings = append(report.Findings, found...)
-		report.CheckResults = append(report.CheckResults, res)
-	}
+	report := SelfScanReport{Target: canonical, VerifiedBy: out.method}
+	report.Findings, report.CheckResults = s.RunChecks(ctx, target, s.Registry.IDs())
 	return report, nil
 }
 
-// selfScanCheck runs one check; a panic is contained and reported as failed.
-func (s *Service) selfScanCheck(ctx context.Context, id string, target checks.Target) (found []evidence.Finding, res CheckResult) {
+// LabDomain is the only domain the validation lab may scan. ".test" is
+// reserved (RFC 2606) and never resolves on the public internet, so a lab run
+// cannot reach a real site even if a manifest is wrong.
+const LabDomain = ".lab.test"
+
+// ErrNotALabTarget: ScanOrigin refuses anything outside LabDomain.
+var ErrNotALabTarget = errors.New("lab scans are limited to *" + LabDomain + " hosts on the private-host allowlist")
+
+// ScanLabOrigin runs every registered check against a LAB origin the way a
+// production scan does (same probe client and budget, same preflight), without
+// Redis. It needs no ownership proof because it can only reach lab containers:
+// the host must be under LabDomain AND on the SCANNER_ALLOW_PRIVATE_HOSTS
+// allowlist (allowed is that list). Used by `scanner lab` only (§9.2).
+func (s *Service) ScanLabOrigin(ctx context.Context, origin string, allowed []string) ([]evidence.Finding, []CheckResult, error) {
+	u, err := checks.ParseOrigin(origin)
+	if err != nil {
+		return nil, nil, err
+	}
+	host := strings.ToLower(u.Hostname())
+	onList := false
+	for _, h := range allowed {
+		onList = onList || strings.EqualFold(strings.TrimSpace(h), host)
+	}
+	if !strings.HasSuffix(host, LabDomain) || !onList {
+		return nil, nil, ErrNotALabTarget
+	}
+	client := s.NewScanProbe()
+	defer client.Close()
+	target, err := checks.NewTarget(origin, client)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := preflight(ctx, target); err != nil {
+		return nil, nil, err
+	}
+	findings, results := s.RunChecks(ctx, target, s.Registry.IDs())
+	return findings, results, nil
+}
+
+// RunChecks runs the given checks one after another against target, outside
+// the Redis job flow (self-scan, validation lab). Each check is isolated: a
+// failure or panic is reported in its CheckResult and the others still run.
+func (s *Service) RunChecks(ctx context.Context, target checks.Target, ids []string) ([]evidence.Finding, []CheckResult) {
+	findings := []evidence.Finding{}
+	results := make([]CheckResult, 0, len(ids))
+	for _, id := range ids {
+		found, res := s.isolatedCheck(ctx, id, target)
+		findings = append(findings, found...)
+		results = append(results, res)
+	}
+	return findings, results
+}
+
+// isolatedCheck runs one check; a panic is contained and reported as failed.
+func (s *Service) isolatedCheck(ctx context.Context, id string, target checks.Target) (found []evidence.Finding, res CheckResult) {
 	res = CheckResult{CheckID: id, Status: "done"}
 	defer func() {
 		if r := recover(); r != nil {

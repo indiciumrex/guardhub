@@ -46,7 +46,7 @@ var defaultCredsProbes = []pathProbe{
 	{path: "/", key: "default_login_product", product: "RabbitMQ Management",
 		match: status200All("RabbitMQ Management")},
 	{path: "/login", key: "default_login_product", product: "Grafana",
-		match: status200All("grafanaBootData")},
+		match: status200All("grafanaBootData"), spaShell: true},
 	{path: "/manager/html", key: "default_login_product", product: "Apache Tomcat Manager",
 		match: func(r *probe.Response) (string, bool) {
 			if r.StatusCode == 401 && tomcatRealmRe.MatchString(r.Header.Get("WWW-Authenticate")) {

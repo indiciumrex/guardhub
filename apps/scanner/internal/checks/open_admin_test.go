@@ -98,3 +98,57 @@ func TestOpenAdminNegative(t *testing.T) {
 	})
 	requireKeys(t, run(t, OpenAdmin{}, srv3.URL))
 }
+
+// Validation lab (WordPress mid-install): wp-login.php redirects to the
+// installer, which has user_login + a password field. That is the installer
+// (default_creds), not an exposed login page.
+func TestOpenAdminWordPressInstallerIsNotALogin(t *testing.T) {
+	installer := `<!doctype html><html><head><title>WordPress &rsaquo; Installation</title></head><body>
+<form id="setup" method="post" action="install.php?step=2"><input name="weblog_title"><input name="user_name" id="user_login">
+<input type="password" name="admin_password"></form></body></html>`
+	srv := site(t, false, map[string]http.HandlerFunc{
+		"/wp-login.php": func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/wp-admin/install.php", http.StatusFound)
+		},
+		"/wp-admin/install.php": func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(installer)) },
+	})
+	for _, f := range run(t, OpenAdmin{}, srv.URL) {
+		if f.FindingKey == "admin_login_exposed" {
+			t.Fatalf("installer reported as a login page: %+v", f)
+		}
+	}
+}
+
+// phpMyAdmin's official image serves it at the origin root (validation lab).
+func TestOpenAdminPhpMyAdminAtRoot(t *testing.T) {
+	srv := site(t, false, map[string]http.HandlerFunc{"/": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(`<!doctype html><html><head><title>phpMyAdmin</title></head><body><form id="login_form" action="index.php?route=/"><input name="pma_username"><input type="password" name="pma_password"></form></body></html>`))
+	}})
+	f := findKey(t, run(t, OpenAdmin{}, srv.URL), "db_admin_exposed")
+	if f.Params["product"] != "phpMyAdmin" || f.Params["path"] != "/" {
+		t.Fatalf("%+v", f.Params)
+	}
+}
+
+func TestOpenAdminPrometheusMetrics(t *testing.T) {
+	metrics := "# HELP http_requests_total Total requests.\n# TYPE http_requests_total counter\nhttp_requests_total{route=\"/api\"} 42\n"
+	srv := site(t, false, map[string]http.HandlerFunc{"/metrics": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+		_, _ = w.Write([]byte(metrics))
+	}})
+	f := findKey(t, run(t, OpenAdmin{}, srv.URL), "server_status_exposed")
+	if f.Params["path"] != "/metrics" {
+		t.Fatalf("%+v", f.Params)
+	}
+	// an HTML page (e.g. docs) that quotes the format is not an exposed endpoint
+	doc := site(t, false, map[string]http.HandlerFunc{"/metrics": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><pre>" + metrics + "</pre></html>"))
+	}})
+	for _, f := range run(t, OpenAdmin{}, doc.URL) {
+		if f.FindingKey == "server_status_exposed" {
+			t.Fatalf("HTML docs page reported as metrics: %+v", f)
+		}
+	}
+}

@@ -20,6 +20,11 @@ type pathProbe struct {
 	group string
 	// match returns a short description of the matched signature.
 	match func(resp *probe.Response) (string, bool)
+	// spaShell: the product is a single-page app whose shell answers EVERY
+	// path, so its real page equals the soft-404 baseline. Set it only with a
+	// product-specific marker: on a catch-all that carries the marker, the site
+	// IS that product. (Validation lab: Grafana's default login was missed.)
+	spaShell bool
 }
 
 func (p pathProbe) groupKey() string {
@@ -46,7 +51,7 @@ func runProbes(ctx context.Context, checkID string, t Target, probes []pathProbe
 		if err != nil {
 			return out, err
 		}
-		if resp == nil || (len(resp.Body) == 0 && resp.StatusCode != 401) || sameAsBaseline(resp, base) {
+		if resp == nil || (len(resp.Body) == 0 && resp.StatusCode != 401) || (!p.spaShell && sameAsBaseline(resp, base)) {
 			continue
 		}
 		sig, ok := p.match(resp)

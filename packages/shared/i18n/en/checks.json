@@ -208,5 +208,47 @@
         "fix": "1. Turn off directory listing. nginx: make sure `autoindex` is off (it is off by default; remove any `autoindex on;`). Apache: `Options -Indexes` in your config or `.htaccess`. IIS: disable Directory Browsing.\n2. Look through the files that were listed at {path} and remove anything that should not be public, such as backups and exports. If any contained passwords or keys, rotate (change) them.\n3. Run the scan again to confirm {path} no longer lists files."
       }
     }
+  },
+  "tls_config": {
+    "name": "TLS configuration",
+    "description": "Checks how well HTTPS is set up beyond the certificate: which encryption methods your server accepts, whether recorded traffic stays private if your key ever leaks, the certificate chain you send, and your key strength.",
+    "findings": {
+      "weak_cipher_insecure": {
+        "title": "Your server accepts broken encryption ({suite})",
+        "summary": "Your server still agrees to use {suite}, an encryption method that gives little or no protection.",
+        "why": "Some old methods encrypt nothing at all (NULL), do not check who is on the other end (anonymous), or are broken (RC4, DES, export grade). If a visitor's connection ends up using one of them, someone on the same network can read or change everything they send, including passwords and session cookies. Attackers can try to push a connection onto these methods.",
+        "fix": "1. Allow only modern cipher suites. On nginx: `ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;` On Apache: the same list in `SSLCipherSuite`.\n2. Remove anything with NULL, aNULL, EXPORT, DES, RC4 or MD5 from your cipher settings, including in your load balancer or CDN.\n3. Mozilla's SSL Configuration Generator (ssl-config.mozilla.org, \"Intermediate\") gives a ready-made config for most servers.\n4. Reload the server and run the scan again."
+      },
+      "weak_cipher_3des": {
+        "title": "Your server still accepts 3DES ({suite})",
+        "summary": "Your server agrees to use {suite}, an old encryption method that is no longer considered safe.",
+        "why": "3DES works on small blocks of data. After a very large amount of traffic on one connection, an attacker who can watch and influence that traffic can recover pieces of it (the \"Sweet32\" attack). It is hard to pull off, so this is a low risk, but no modern browser needs 3DES and it should be switched off.",
+        "fix": "1. Remove 3DES (DES-CBC3, 3DES_EDE) from your cipher list. On nginx, use the modern list from ssl-config.mozilla.org (\"Intermediate\").\n2. In Go-based servers and proxies (for example Traefik), remove every cipher suite name that contains `3DES` from the TLS options.\n3. Reload and run the scan again."
+      },
+      "no_forward_secrecy": {
+        "title": "Recorded traffic is not protected if your key leaks",
+        "summary": "Your server only uses key exchanges without forward secrecy (it chose {suite}).",
+        "why": "With forward secrecy, every connection gets its own temporary key. Without it, anyone who records your visitors' encrypted traffic today can decrypt all of it later if your server's private key is ever stolen or leaked. Every modern browser supports forward secrecy, so there is no reason to go without it.",
+        "fix": "1. Enable ECDHE cipher suites and put them first. On nginx: use the \"Intermediate\" config from ssl-config.mozilla.org.\n2. Better still, enable TLS 1.3 (`ssl_protocols TLSv1.2 TLSv1.3;`), which always uses forward secrecy.\n3. Reload and run the scan again."
+      },
+      "chain_incomplete": {
+        "title": "Your certificate chain is incomplete",
+        "summary": "Your server sends its certificate but not the intermediate certificate that connects it to a trusted authority ({issuer}).",
+        "why": "Some browsers fetch the missing piece themselves, so the site may look fine to you. But many phones, apps, payment providers' webhooks and command-line tools do not: for them, your site shows a security error or the connection fails.",
+        "fix": "1. Install the full chain, not just your own certificate. With Let's Encrypt/certbot, point your server at `fullchain.pem`, not `cert.pem` (nginx: `ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;`).\n2. With a certificate you bought, append the intermediate certificate(s) from your provider to your certificate file, your certificate first.\n3. Reload the server and run the scan again."
+      },
+      "cert_weak_key": {
+        "title": "Your certificate key is too weak ({key_type} {bits}-bit)",
+        "summary": "Your certificate uses a {bits}-bit {key_type} key, below today's minimum (RSA 2048-bit, EC 256-bit).",
+        "why": "Short keys can be broken with enough computing power. Anyone who breaks your key can impersonate your site or, without forward secrecy, decrypt recorded traffic. Public certificate authorities have not issued such keys for years, and many clients refuse them.",
+        "fix": "1. Create a new key of at least RSA 2048-bit or EC P-256 (for example `openssl ecparam -genkey -name prime256v1`, or let certbot create it).\n2. Get a new certificate for that key and install it with the full chain.\n3. Revoke the old certificate if it was publicly issued, then run the scan again."
+      },
+      "tls13_unsupported": {
+        "title": "TLS 1.3 is not enabled",
+        "summary": "Your server does not offer TLS 1.3, the newest and fastest version of HTTPS.",
+        "why": "This is not a vulnerability. TLS 1.3 is simpler and safer by design (it always uses forward secrecy and drops old, weak options) and makes connections faster. Supporting it is current best practice.",
+        "fix": "1. On nginx 1.13+ with OpenSSL 1.1.1+: `ssl_protocols TLSv1.2 TLSv1.3;`\n2. On Apache 2.4.37+: `SSLProtocol -all +TLSv1.2 +TLSv1.3`\n3. Most hosting platforms and CDNs have it on by default; check your TLS settings there.\n4. Reload and run the scan again."
+      }
+    }
   }
 }

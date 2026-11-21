@@ -1,0 +1,691 @@
+{
+  "version": 1,
+  "source": "a38ed80ac882+wip",
+  "gate": {
+    "min_precision": 0.95,
+    "min_recall": 0.8,
+    "min_positives": 3,
+    "min_clean_runs": 1
+  },
+  "targets": [
+    "clean",
+    "drupal",
+    "dvwa",
+    "grafana",
+    "juice-shop",
+    "leaky",
+    "phpmyadmin",
+    "tls-3des",
+    "tls-expired",
+    "tls-httponly",
+    "tls-legacy",
+    "tls-nochain",
+    "tls-nopfs",
+    "tls-noredirect",
+    "tls-rc4",
+    "tls-rsa1024",
+    "tls-selfsigned",
+    "tls-weak",
+    "tls-wronghost",
+    "webgoat",
+    "wordpress"
+  ],
+  "checks": [
+    {
+      "check_id": "default_creds",
+      "targets": 21,
+      "clean_runs": 17,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.6,
+      "meets_gate": true,
+      "by_key": {
+        "default_login_product": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1
+        },
+        "installer_exposed": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 1
+        }
+      },
+      "true_positives": [
+        {
+          "target": "drupal",
+          "key": "installer_exposed",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "/core/install.php shows Drupal's web installer."
+        },
+        {
+          "target": "grafana",
+          "key": "default_login_product",
+          "location": "http://grafana.lab.test:3000/login",
+          "why": "Grafana login with the documented default admin/admin account, never changed."
+        },
+        {
+          "target": "wordpress",
+          "key": "installer_exposed",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "/wp-admin/install.php shows the WordPress install form."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": [
+        {
+          "target": "dvwa",
+          "key": "default_login_product",
+          "outside": true,
+          "why": "/login.php is DVWA's login, whose documented default account is admin/password."
+        },
+        {
+          "target": "dvwa",
+          "key": "installer_exposed",
+          "outside": true,
+          "why": "/setup.php ('Database Setup', 'Create / Reset Database') is reachable without logging in."
+        }
+      ]
+    },
+    {
+      "check_id": "exposed_env",
+      "targets": 21,
+      "clean_runs": 20,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cloud_credentials_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "env_file_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "git_repository_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "leaky",
+          "key": "cloud_credentials_exposed",
+          "location": "http://leaky.lab.test/.aws/credentials",
+          "why": "/.aws/credentials is served with an access key pair."
+        },
+        {
+          "target": "leaky",
+          "key": "env_file_exposed",
+          "location": "http://leaky.lab.test/.env",
+          "why": "/.env is served (DATABASE_URL, STRIPE_SECRET_KEY, APP_KEY)."
+        },
+        {
+          "target": "leaky",
+          "key": "git_repository_exposed",
+          "location": "http://leaky.lab.test/.git/HEAD",
+          "why": "/.git/HEAD and /.git/config are served."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "info_leak",
+      "targets": 21,
+      "clean_runs": 15,
+      "tp": 10,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.8333333333333334,
+      "meets_gate": true,
+      "by_key": {
+        "directory_listing_enabled": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1
+        },
+        "framework_version_disclosed": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "server_version_disclosed": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0
+        },
+        "stack_trace_exposed": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1
+        }
+      },
+      "true_positives": [
+        {
+          "target": "drupal",
+          "key": "framework_version_disclosed",
+          "location": "http://drupal.lab.test/core/install.php#header=X-Powered-By",
+          "why": "'X-Powered-By: PHP/8.4.15'."
+        },
+        {
+          "target": "drupal",
+          "key": "server_version_disclosed",
+          "location": "http://drupal.lab.test/core/install.php#header=Server",
+          "why": "'Server: Apache/2.4.65 (Debian)'."
+        },
+        {
+          "target": "dvwa",
+          "key": "framework_version_disclosed",
+          "location": "http://dvwa.lab.test/login.php#header=X-Powered-By",
+          "why": "Response header 'X-Powered-By: PHP/8.5.12'."
+        },
+        {
+          "target": "dvwa",
+          "key": "server_version_disclosed",
+          "location": "http://dvwa.lab.test/login.php#header=Server",
+          "why": "'Server: Apache/2.4.69 (Debian)'; the 404 page footer shows the same string. One issue: Apache's footer follows ServerTokens, so one setting fixes both."
+        },
+        {
+          "target": "leaky",
+          "key": "directory_listing_enabled",
+          "location": "http://leaky.lab.test/backup/",
+          "why": "/backup/ is an nginx autoindex page."
+        },
+        {
+          "target": "leaky",
+          "key": "server_version_disclosed",
+          "location": "http://leaky.lab.test/#header=Server",
+          "why": "'Server: nginx/1.27.5' (server_tokens on, the default)."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "framework_version_disclosed",
+          "location": "http://phpmyadmin.lab.test/#header=X-Powered-By",
+          "why": "'X-Powered-By: PHP/8.2.29'."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "server_version_disclosed",
+          "location": "http://phpmyadmin.lab.test/#header=Server",
+          "why": "'Server: Apache/2.4.65 (Debian)'."
+        },
+        {
+          "target": "wordpress",
+          "key": "framework_version_disclosed",
+          "location": "http://wordpress.lab.test/wp-admin/install.php#header=X-Powered-By",
+          "why": "'X-Powered-By: PHP/8.3.28'."
+        },
+        {
+          "target": "wordpress",
+          "key": "server_version_disclosed",
+          "location": "http://wordpress.lab.test/wp-admin/install.php#header=Server",
+          "why": "'Server: Apache/2.4.65 (Debian)'."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": [
+        {
+          "target": "juice-shop",
+          "key": "directory_listing_enabled",
+          "outside": true,
+          "why": "/ftp, /encryptionkeys and /support/logs are browsable directory indexes (documented challenges). One issue: info_leak reports listings once per site by design."
+        },
+        {
+          "target": "juice-shop",
+          "key": "stack_trace_exposed",
+          "outside": true,
+          "why": "GET /rest/\u003cunknown\u003e returns 500 with an Express stack trace incl. /juice-shop/node_modules paths."
+        }
+      ]
+    },
+    {
+      "check_id": "open_admin",
+      "targets": 21,
+      "clean_runs": 18,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "db_admin_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "server_status_exposed": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "grafana",
+          "key": "server_status_exposed",
+          "location": "http://grafana.lab.test:3000/metrics",
+          "why": "/metrics serves Grafana's Prometheus metrics (text/plain, \"# HELP\"/\"# TYPE\") without authentication, Grafana's default. Missing from this manifest at first; the lab run surfaced it and curl confirmed it (2026-11-21)."
+        },
+        {
+          "target": "juice-shop",
+          "key": "server_status_exposed",
+          "location": "http://juice-shop.lab.test:3000/metrics",
+          "why": "/metrics serves Prometheus metrics without authentication (documented challenge)."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "db_admin_exposed",
+          "location": "http://phpmyadmin.lab.test/",
+          "why": "phpMyAdmin's login is reachable from the network at /."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "security_headers",
+      "targets": 21,
+      "clean_runs": 15,
+      "tp": 15,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "clickjacking_unprotected": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "cookie_flags_missing": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "csp_missing": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0
+        },
+        "nosniff_missing": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "drupal",
+          "key": "clickjacking_unprotected",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "The installer page sends neither X-Frame-Options nor frame-ancestors."
+        },
+        {
+          "target": "drupal",
+          "key": "csp_missing",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "The installer page sends no Content-Security-Policy."
+        },
+        {
+          "target": "drupal",
+          "key": "nosniff_missing",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "The installer page sends no X-Content-Type-Options."
+        },
+        {
+          "target": "dvwa",
+          "key": "clickjacking_unprotected",
+          "location": "http://dvwa.lab.test/login.php",
+          "why": "/login.php sends neither X-Frame-Options nor CSP frame-ancestors."
+        },
+        {
+          "target": "dvwa",
+          "key": "cookie_flags_missing",
+          "location": "http://dvwa.lab.test/login.php#set-cookie=security",
+          "why": "Cookie 'security' is set with HttpOnly but without SameSite."
+        },
+        {
+          "target": "dvwa",
+          "key": "csp_missing",
+          "location": "http://dvwa.lab.test/login.php",
+          "why": "/login.php (the page / redirects to) sends no Content-Security-Policy."
+        },
+        {
+          "target": "dvwa",
+          "key": "nosniff_missing",
+          "location": "http://dvwa.lab.test/login.php",
+          "why": "/login.php sends no X-Content-Type-Options."
+        },
+        {
+          "target": "grafana",
+          "key": "csp_missing",
+          "location": "http://grafana.lab.test:3000/login",
+          "why": "/login sends no Content-Security-Policy."
+        },
+        {
+          "target": "juice-shop",
+          "key": "csp_missing",
+          "location": "http://juice-shop.lab.test:3000/",
+          "why": "GET / has no Content-Security-Policy (only XCTO, XFO SAMEORIGIN, Feature-Policy)."
+        },
+        {
+          "target": "leaky",
+          "key": "clickjacking_unprotected",
+          "location": "http://leaky.lab.test/",
+          "why": "Neither X-Frame-Options nor frame-ancestors."
+        },
+        {
+          "target": "leaky",
+          "key": "csp_missing",
+          "location": "http://leaky.lab.test/",
+          "why": "No Content-Security-Policy."
+        },
+        {
+          "target": "leaky",
+          "key": "nosniff_missing",
+          "location": "http://leaky.lab.test/",
+          "why": "No X-Content-Type-Options."
+        },
+        {
+          "target": "wordpress",
+          "key": "clickjacking_unprotected",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "The installer page sends neither X-Frame-Options nor frame-ancestors."
+        },
+        {
+          "target": "wordpress",
+          "key": "csp_missing",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "The installer page sends no Content-Security-Policy."
+        },
+        {
+          "target": "wordpress",
+          "key": "nosniff_missing",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "The installer page sends no X-Content-Type-Options."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "tls_cert",
+      "targets": 21,
+      "clean_runs": 6,
+      "tp": 15,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cert_expired": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "cert_hostname_mismatch": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "cert_untrusted": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "http_not_redirected": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "https_unavailable": {
+          "tp": 9,
+          "fp": 0,
+          "fn": 0
+        },
+        "legacy_tls_supported": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "drupal",
+          "key": "https_unavailable",
+          "location": "drupal.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "dvwa",
+          "key": "https_unavailable",
+          "location": "dvwa.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "grafana",
+          "key": "https_unavailable",
+          "location": "grafana.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "juice-shop",
+          "key": "https_unavailable",
+          "location": "juice-shop.lab.test:443",
+          "why": "Nothing listens on 443: the app is served over plain HTTP only."
+        },
+        {
+          "target": "leaky",
+          "key": "https_unavailable",
+          "location": "leaky.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "https_unavailable",
+          "location": "phpmyadmin.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "tls-expired",
+          "key": "cert_expired",
+          "location": "tls-expired.lab.test:443",
+          "why": "labpki 'expired': notAfter is 30 days in the past (chain otherwise valid)."
+        },
+        {
+          "target": "tls-httponly",
+          "key": "https_unavailable",
+          "location": "tls-httponly.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "tls-legacy",
+          "key": "legacy_tls_supported",
+          "location": "tls-legacy.lab.test:443",
+          "why": "nginx ssl_protocols includes TLSv1 (SECLEVEL=0)."
+        },
+        {
+          "target": "tls-nochain",
+          "key": "cert_untrusted",
+          "location": "tls-nochain.lab.test:443",
+          "why": "labpki 'nochain': the intermediate is not served, so the chain cannot be built to the root."
+        },
+        {
+          "target": "tls-noredirect",
+          "key": "http_not_redirected",
+          "location": "http://tls-noredirect.lab.test/",
+          "why": "Port 80 serves the page (200) instead of redirecting to HTTPS."
+        },
+        {
+          "target": "tls-selfsigned",
+          "key": "cert_untrusted",
+          "location": "tls-selfsigned.lab.test:443",
+          "why": "labpki 'selfsigned': the leaf is self-signed, not under the lab root."
+        },
+        {
+          "target": "tls-wronghost",
+          "key": "cert_hostname_mismatch",
+          "location": "tls-wronghost.lab.test:443",
+          "why": "labpki 'wronghost': the certificate names only other.lab.test."
+        },
+        {
+          "target": "webgoat",
+          "key": "https_unavailable",
+          "location": "webgoat.lab.test:443",
+          "why": "Nothing listens on 443."
+        },
+        {
+          "target": "wordpress",
+          "key": "https_unavailable",
+          "location": "wordpress.lab.test:443",
+          "why": "Nothing listens on 443."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "tls_config",
+      "targets": 21,
+      "clean_runs": 15,
+      "tp": 9,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cert_weak_key": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "chain_incomplete": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "no_forward_secrecy": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "tls13_unsupported": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0
+        },
+        "weak_cipher_3des": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "weak_cipher_insecure": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "tls-3des",
+          "key": "tls13_unsupported",
+          "location": "tls-3des.lab.test:443",
+          "why": "Served with MaxVersion TLS 1.2."
+        },
+        {
+          "target": "tls-3des",
+          "key": "weak_cipher_3des",
+          "location": "tls-3des.lab.test:443",
+          "why": "labtls verify (full crypto/tls handshake): accepted TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA."
+        },
+        {
+          "target": "tls-nochain",
+          "key": "chain_incomplete",
+          "location": "tls-nochain.lab.test:443",
+          "why": "Only the leaf is served (openssl: 1 certificate, 'unable to verify the first certificate'); it names its issuer's AIA URL."
+        },
+        {
+          "target": "tls-nopfs",
+          "key": "no_forward_secrecy",
+          "location": "tls-nopfs.lab.test:443",
+          "why": "openssl: -cipher ECDHE:DHE refused, kRSA accepted (AES256-GCM-SHA384)."
+        },
+        {
+          "target": "tls-nopfs",
+          "key": "tls13_unsupported",
+          "location": "tls-nopfs.lab.test:443",
+          "why": "openssl -tls1_3: refused (ssl_protocols TLSv1.2)."
+        },
+        {
+          "target": "tls-rc4",
+          "key": "tls13_unsupported",
+          "location": "tls-rc4.lab.test:443",
+          "why": "Served with MaxVersion TLS 1.2."
+        },
+        {
+          "target": "tls-rc4",
+          "key": "weak_cipher_insecure",
+          "location": "tls-rc4.lab.test:443",
+          "why": "labtls verify (full crypto/tls handshake): accepted TLS_RSA_WITH_RC4_128_SHA (RC4, RFC 7465)."
+        },
+        {
+          "target": "tls-rsa1024",
+          "key": "cert_weak_key",
+          "location": "tls-rsa1024.lab.test:443",
+          "why": "openssl x509: 'Public-Key: (1024 bit)'."
+        },
+        {
+          "target": "tls-weak",
+          "key": "weak_cipher_insecure",
+          "location": "tls-weak.lab.test:443",
+          "why": "openssl -cipher eNULL:aNULL: accepted ECDHE-ECDSA-NULL-SHA (no encryption)."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    }
+  ]
+}

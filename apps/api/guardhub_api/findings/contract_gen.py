@@ -77,6 +77,14 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'debug_mode_enabled': 'high',
         'directory_listing_enabled': 'medium',
     },
+    'tls_config': {
+        'weak_cipher_insecure': 'high',
+        'weak_cipher_3des': 'low',
+        'no_forward_secrecy': 'medium',
+        'chain_incomplete': 'medium',
+        'cert_weak_key': 'medium',
+        'tls13_unsupported': 'info',
+    },
 }
 
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)

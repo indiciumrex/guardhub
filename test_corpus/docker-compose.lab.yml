@@ -1,0 +1,200 @@
+# GuardHub validation lab (docs/accuracy/, test_corpus/README.md).
+#
+# DELIBERATELY VULNERABLE SOFTWARE. Everything runs on the `lab` network, which
+# is `internal: true` (no route to the internet) and nothing is published to the
+# host. The scanner can only scan *.lab.test hosts on its allowlist
+# (queue.ScanLabOrigin). Never deploy any of this anywhere.
+#
+#   bash test_corpus/run.sh          # build, start, measure, write docs/accuracy, stop
+name: guardhub-lab
+
+x-nginx: &nginx
+  image: nginx:1.27-alpine
+  depends_on: { pki: { condition: service_completed_successfully } }
+  read_only: true
+  tmpfs: [/var/cache/nginx, /var/run, /tmp]
+
+volumes:
+  pki: {}
+  leak: {}
+
+networks:
+  lab:
+    internal: true
+
+services:
+  # throwaway CA + certificates, generated at every start (no key is ever committed)
+  pki:
+    build: { context: ../apps/scanner, dockerfile: ../../test_corpus/Dockerfile.lab }
+    image: guardhub-lab-tools:local
+    command:
+      - labpki
+      - -out
+      - /pki
+      - clean.lab.test:valid
+      - tls-expired.lab.test:expired
+      - tls-selfsigned.lab.test:selfsigned
+      - tls-wronghost.lab.test:wronghost
+      - tls-nochain.lab.test:nochain
+      - tls-legacy.lab.test:valid
+      - tls-noredirect.lab.test:valid
+      - tls-weak.lab.test:valid
+      - tls-3des.lab.test:rsa2048
+      - tls-rc4.lab.test:rsa2048
+      - tls-nopfs.lab.test:rsa2048
+      - tls-rsa1024.lab.test:rsa1024
+    volumes: [pki:/pki]
+    network_mode: none
+
+  # ---- known-good reference ----
+  clean:
+    <<: *nginx
+    volumes: [./nginx/clean.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [clean.lab.test] } }
+
+  # ---- TLS variants: each wrong in exactly one way ----
+  tls-expired:
+    <<: *nginx
+    volumes: [./nginx/tls-expired.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-expired.lab.test] } }
+  tls-selfsigned:
+    <<: *nginx
+    volumes: [./nginx/tls-selfsigned.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-selfsigned.lab.test] } }
+  tls-wronghost:
+    <<: *nginx
+    volumes: [./nginx/tls-wronghost.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-wronghost.lab.test] } }
+  tls-nochain:
+    <<: *nginx
+    volumes: [./nginx/tls-nochain.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-nochain.lab.test] } }
+  tls-legacy:
+    <<: *nginx
+    volumes: [./nginx/tls-legacy.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-legacy.lab.test] } }
+  tls-noredirect:
+    <<: *nginx
+    volumes: [./nginx/tls-noredirect.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-noredirect.lab.test] } }
+  tls-weak:
+    <<: *nginx
+    volumes: [./nginx/tls-weak.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-weak.lab.test] } }
+  # Go crypto/tls (as in Traefik and other Go proxies): still serves 3DES/RC4 when configured,
+  # which current OpenSSL builds cannot. labtls verify is the independent ground truth.
+  tls-3des:
+    image: guardhub-lab-tools:local
+    depends_on: { pki: { condition: service_completed_successfully } }
+    command: [labtls, serve, -name, tls-3des.lab.test, -cert, /pki/tls-3des.lab.test.crt, -key, /pki/tls-3des.lab.test.key,
+              -suites, "C02F,C012"] # ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-3DES-EDE-CBC-SHA
+    read_only: true
+    volumes: [pki:/pki:ro]
+    networks: { lab: { aliases: [tls-3des.lab.test] } }
+  tls-rc4:
+    image: guardhub-lab-tools:local
+    depends_on: { pki: { condition: service_completed_successfully } }
+    command: [labtls, serve, -name, tls-rc4.lab.test, -cert, /pki/tls-rc4.lab.test.crt, -key, /pki/tls-rc4.lab.test.key,
+              -suites, "C02F,0005"] # ECDHE-RSA-AES128-GCM-SHA256, RSA-RC4-128-SHA
+    read_only: true
+    volumes: [pki:/pki:ro]
+    networks: { lab: { aliases: [tls-rc4.lab.test] } }
+  tls-nopfs:
+    <<: *nginx
+    volumes: [./nginx/tls-nopfs.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-nopfs.lab.test] } }
+  tls-rsa1024:
+    <<: *nginx
+    volumes: [./nginx/tls-rsa1024.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [tls-rsa1024.lab.test] } }
+  tls-httponly:
+    <<: *nginx
+    volumes: [./nginx/tls-httponly.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro]
+    networks: { lab: { aliases: [tls-httponly.lab.test] } }
+
+  # ---- a careless static deployment (content generated at start, see leaky-init.sh) ----
+  leaky-init:
+    image: guardhub-lab-tools:local
+    command: ["sh", "/leaky-init.sh"]
+    volumes: [./leaky-init.sh:/leaky-init.sh:ro, leak:/srv/leak]
+    network_mode: none
+  leaky:
+    image: nginx:1.27-alpine
+    depends_on: { leaky-init: { condition: service_completed_successfully } }
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run, /tmp]
+    volumes: [./nginx/leaky.conf:/etc/nginx/conf.d/default.conf:ro, leak:/srv/leak:ro]
+    networks: { lab: { aliases: [leaky.lab.test] } }
+
+  # ---- real products the existing checks look for (pinned by digest, default setups) ----
+  phpmyadmin:
+    image: phpmyadmin:5.2.2-apache@sha256:6b5ab5f9ebfe3dbb38388b5695c2ff5ba3e26cdc2c4ce0bd97092eefc6a20bfd
+    environment: { PMA_HOST: dvwa-db }
+    depends_on: [dvwa-db]
+    networks: { lab: { aliases: [phpmyadmin.lab.test] } }
+  grafana:
+    image: grafana/grafana-oss:11.6.0@sha256:62d2b9d20a19714ebfe48d1bb405086081bc602aa053e28cf6d73c7537640dfb
+    environment: { GF_ANALYTICS_REPORTING_ENABLED: "false", GF_ANALYTICS_CHECK_FOR_UPDATES: "false" }
+    networks: { lab: { aliases: [grafana.lab.test] } }
+  wordpress:
+    image: wordpress:6.8.3-php8.3-apache@sha256:30bff39330d1693b0ce13d32fc9b7bb67193064f040b7d60d3494e136fa599d4
+    environment: # throwaway lab credentials, not a secret
+      WORDPRESS_DB_HOST: wordpress-db
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp-lab-only
+      WORDPRESS_DB_NAME: wordpress
+    depends_on: [wordpress-db]
+    networks: { lab: { aliases: [wordpress.lab.test] } }
+  drupal:
+    image: drupal:11.2.8-apache@sha256:789452563ec58dd90a1970e87b72840be8493f0bfef198c70cdd6c54d9b7a15c
+    networks: { lab: { aliases: [drupal.lab.test] } }
+  wordpress-db:
+    image: mariadb:10.11.8@sha256:75f6e61397758489d1dccf95db33b6b49ebfc7ec1253d40060fdf8ceb7f938a3
+    environment: # throwaway lab credentials, not a secret
+      MARIADB_ROOT_PASSWORD: wp-lab-root
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: wp-lab-only
+    networks: [lab]
+
+  # ---- third-party vulnerable applications (pinned) ----
+  juice-shop:
+    image: bkimminich/juice-shop:v17.1.0@sha256:57170ba190744b9e22469d9ab5934946cd3e53e2e66b12e4c0c1019e1bea7a6b
+    networks: { lab: { aliases: [juice-shop.lab.test] } }
+  dvwa:
+    image: ghcr.io/digininja/dvwa@sha256:61167ec23fbf861f7d96a7beb4be3612d043d48dbc6b239d4f90d7e8cdff8115 # pinned by digest (pulled 2026-11-21); the "2.3.3" tag used elsewhere does not exist
+    environment: { DB_SERVER: dvwa-db } # lab-only throwaway database, see dvwa-db
+    depends_on: [dvwa-db]
+    networks: { lab: { aliases: [dvwa.lab.test] } }
+  dvwa-db:
+    image: mariadb:10.11.8@sha256:75f6e61397758489d1dccf95db33b6b49ebfc7ec1253d40060fdf8ceb7f938a3
+    environment: # throwaway lab credentials (DVWA's documented defaults), not a secret
+      MARIADB_ROOT_PASSWORD: dvwa-lab-root
+      MARIADB_DATABASE: dvwa
+      MARIADB_USER: dvwa
+      MARIADB_PASSWORD: p@ssw0rd
+    networks: [lab]
+  webgoat:
+    image: webgoat/webgoat:v2023.8@sha256:01672eb9aeba60d042ae1131d6de683b98fa64e9da60fa5d3daad2642a6795dd
+    networks: { lab: { aliases: [webgoat.lab.test] } }
+
+  # ---- the measurement (docker compose --profile run run --rm runner) ----
+  runner:
+    image: guardhub-lab-tools:local
+    profiles: [run]
+    environment:
+      SCANNER_ALLOW_PRIVATE_HOSTS: >-
+        clean.lab.test,tls-expired.lab.test,tls-selfsigned.lab.test,tls-wronghost.lab.test,
+        tls-nochain.lab.test,tls-legacy.lab.test,tls-noredirect.lab.test,tls-httponly.lab.test,
+        juice-shop.lab.test,dvwa.lab.test,webgoat.lab.test,leaky.lab.test,phpmyadmin.lab.test,
+        grafana.lab.test,wordpress.lab.test,drupal.lab.test,tls-weak.lab.test,tls-3des.lab.test,
+        tls-nopfs.lab.test,tls-rsa1024.lab.test,tls-rc4.lab.test
+      LAB_SOURCE: ${LAB_SOURCE:-unknown}
+    volumes:
+      - ./manifests:/corpus/manifests:ro
+      - ./runner.sh:/corpus/runner.sh:ro
+      - ../docs/accuracy:/out
+      - ../packages/shared:/shared
+      - pki:/pki:ro
+    entrypoint: ["sh", "/corpus/runner.sh"]
+    networks: [lab]

@@ -47,9 +47,11 @@ func (c SecurityHeaders) Run(ctx context.Context, t Target) ([]evidence.Finding,
 	}
 	allHeaders := []string{"Content-Security-Policy", "Strict-Transport-Security", "X-Content-Type-Options", "X-Frame-Options"}
 
-	// A redirect to another host (e.g. example.com -> www.example.com) is
-	// not a document: only HSTS and cookies are meaningful on it.
-	document := !resp.RedirectRefused
+	// CSP, nosniff and clickjacking protect HTML documents. A redirect to
+	// another host (example.com -> www.example.com), an empty 404 or a JSON
+	// API answer is not one: only HSTS and cookies are meaningful there.
+	// (Validation lab: an empty 404 at the origin root was judged as a page.)
+	document := !resp.RedirectRefused && isHTMLDocument(resp)
 
 	csp := strings.Join(h.Values("Content-Security-Policy"), "; ")
 	if document && strings.TrimSpace(csp) == "" {
@@ -137,4 +139,14 @@ func maskCookie(raw string) string {
 		out += ";" + attrs
 	}
 	return evidence.Truncate(out, 300)
+}
+
+// isHTMLDocument reports whether resp is an HTML page: declared text/html
+// (or XHTML), or undeclared but HTML-looking content.
+func isHTMLDocument(resp *probe.Response) bool {
+	ct := strings.ToLower(resp.Header.Get("Content-Type"))
+	if strings.Contains(ct, "html") {
+		return true
+	}
+	return ct == "" && looksLikeHTML(resp.Body)
 }

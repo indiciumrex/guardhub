@@ -77,3 +77,29 @@ func TestSecurityHeadersCrossHostRedirectOnlyChecksTransport(t *testing.T) {
 	})
 	requireKeys(t, run(t, SecurityHeaders{}, srv.URL))
 }
+
+// Validation lab finding (WebGoat): an origin root that answers an empty 404,
+// or an API that answers JSON, is not a page; document headers don't apply.
+func TestSecurityHeadersIgnoreNonDocuments(t *testing.T) {
+	for name, h := range map[string]http.HandlerFunc{
+		"empty 404": func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNotFound) },
+		"json api": func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"ok"}`))
+		},
+	} {
+		srv := site(t, false, map[string]http.HandlerFunc{"/": h})
+		for _, f := range run(t, SecurityHeaders{}, srv.URL) {
+			if f.FindingKey == "csp_missing" || f.FindingKey == "nosniff_missing" || f.FindingKey == "clickjacking_unprotected" {
+				t.Errorf("%s: document finding %s on a non-document", name, f.FindingKey)
+			}
+		}
+	}
+	// still a document: an HTML 404 page, and HTML served without a Content-Type
+	srv := site(t, false, map[string]http.HandlerFunc{"/": func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("<!doctype html><title>Not found</title>"))
+	}})
+	requireKeys(t, run(t, SecurityHeaders{}, srv.URL), "csp_missing", "nosniff_missing", "clickjacking_unprotected")
+}

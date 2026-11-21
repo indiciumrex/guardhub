@@ -1,6 +1,18 @@
 package checks
 
-import "github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+import (
+	"crypto/x509"
+
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+)
+
+// Options configures the production checks. The zero value is production:
+// system roots for certificate verification.
+type Options struct {
+	// Roots verifies certificate chains; nil = the system roots. The
+	// validation lab passes its own CA (test_corpus), production never does.
+	Roots *x509.CertPool
+}
 
 // Registry maps check ids to checks. Adding a check = new file + one line in
 // Default().
@@ -28,14 +40,20 @@ func NewRegistry(cs ...Check) *Registry {
 }
 
 // Default returns every production check in catalog order.
-func Default() *Registry {
+func Default() *Registry { return DefaultWith(Options{}) }
+
+// DefaultWith is Default with injected options (validation lab).
+func DefaultWith(o Options) *Registry {
+	tlsCert := NewTLSCert()
+	tlsCert.Roots = o.Roots
 	return NewRegistry(
 		ExposedEnv{},
 		SecurityHeaders{},
-		NewTLSCert(),
+		tlsCert,
 		OpenAdmin{},
 		DefaultCreds{},
 		InfoLeak{},
+		TLSConfig{Roots: o.Roots},
 	)
 }
 

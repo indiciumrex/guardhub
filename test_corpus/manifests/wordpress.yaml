@@ -1,0 +1,15 @@
+target: wordpress
+origin: http://wordpress.lab.test
+description: >
+  WordPress 6.8.3 (official image, pinned) connected to an empty database: / redirects
+  to /wp-admin/install.php, the install form (Site Title / weblog_title) that lets
+  ANYONE create the admin account. /wp-login.php only redirects to the installer.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - {check: default_creds, key: installer_exposed, why: "/wp-admin/install.php shows the WordPress install form."}
+  - {check: security_headers, key: csp_missing, why: "The installer page sends no Content-Security-Policy."}
+  - {check: security_headers, key: nosniff_missing, why: "The installer page sends no X-Content-Type-Options."}
+  - {check: security_headers, key: clickjacking_unprotected, why: "The installer page sends neither X-Frame-Options nor frame-ancestors."}
+  - {check: info_leak, key: server_version_disclosed, why: "'Server: Apache/2.4.65 (Debian)'."}
+  - {check: info_leak, key: framework_version_disclosed, why: "'X-Powered-By: PHP/8.3.28'."}
+  - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}

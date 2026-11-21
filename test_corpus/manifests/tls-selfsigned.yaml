@@ -1,0 +1,10 @@
+target: tls-selfsigned
+origin: https://tls-selfsigned.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/good_headers.inc) and wrong in exactly one TLS
+  property (see nginx/tls-selfsigned.conf and the labpki kind in docker-compose.lab.yml).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - check: tls_cert
+    key: cert_untrusted
+    why: "labpki 'selfsigned': the leaf is self-signed, not under the lab root."

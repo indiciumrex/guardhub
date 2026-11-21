@@ -37,3 +37,4 @@ ops/demo-target/site/.well-known/
 # local Claude Code state (agent worktrees)
 .claude/
 ops/demo-target/site/.env.parked
+docs/accuracy/raw-results.json

@@ -1,0 +1,12 @@
+target: webgoat
+origin: http://webgoat.lab.test:8080
+description: >
+  OWASP WebGoat v2023.8 (pinned by digest). The app lives under /WebGoat; the origin
+  root answers an EMPTY 404 (no document), and /WebGoat/actuator redirects to the login,
+  so nothing is exposed at the paths the checks look at. A false-positive trap for
+  checks that judge non-documents.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config]
+expect:
+  - check: tls_cert
+    key: https_unavailable
+    why: "Nothing listens on 443."
