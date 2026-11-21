@@ -4,7 +4,7 @@ description: >
   Drupal 11.2.8 (official image, pinned) with no configuration: / redirects to the web
   installer at /core/install.php ("Choose language | Drupal"), which lets anyone set up
   the site and its admin account. Verified with curl inside the lab.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
 expect:
   - {check: default_creds, key: installer_exposed, why: "/core/install.php shows Drupal's web installer."}
   - {check: security_headers, key: csp_missing, why: "The installer page sends no Content-Security-Policy."}

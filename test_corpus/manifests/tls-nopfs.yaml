@@ -2,7 +2,7 @@ target: tls-nopfs
 origin: https://tls-nopfs.lab.test
 description: >
   nginx (OpenSSL 3), RSA certificate, TLS 1.2 only, static-RSA suites only (nginx/tls-nopfs.conf).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
 expect:
   - {check: tls_config, key: no_forward_secrecy, why: "openssl: -cipher ECDHE:DHE refused, kRSA accepted (AES256-GCM-SHA384)."}
   - {check: tls_config, key: tls13_unsupported, why: "openssl -tls1_3: refused (ssl_protocols TLSv1.2)."}

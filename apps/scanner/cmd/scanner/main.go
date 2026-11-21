@@ -95,6 +95,7 @@ func run() int {
 	}
 	scanOpts := base
 	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
+	scanOpts.DNSServer = cfg.DNSServer
 
 	svc := &queue.Service{
 		RDB:              rdb,
@@ -144,6 +145,7 @@ func runSelfScan(cfg config.Config, logger *slog.Logger, args []string) int {
 	}
 	scanOpts := base
 	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
+	scanOpts.DNSServer = cfg.DNSServer
 	svc := &queue.Service{
 		Registry:       checks.Default(),
 		NewScanProbe:   func() *probe.Client { return probe.New(scanOpts) },

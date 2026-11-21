@@ -87,6 +87,12 @@ type Options struct {
 	Limiters *Limiters
 	// Resolver overrides DNS (tests). Nil means net.DefaultResolver.
 	Resolver Resolver
+	// DNSServer is the recursive resolver ("host:port") for DNS record checks
+	// (dns_email). Empty means the first nameserver in /etc/resolv.conf.
+	DNSServer string
+	// DNSPort is the port queries to a zone's nameservers go to (default
+	// "53"; tests use a high port).
+	DNSPort string
 }
 
 func (o *Options) withDefaults() {

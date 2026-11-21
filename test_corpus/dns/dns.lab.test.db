@@ -1,0 +1,60 @@
+; dns.lab.test: the mail-domain targets of dns_email (test_corpus/README.md). Every target
+; is a NAME in this one zone (not a zone apex), so only the mail rules apply to it.
+$ORIGIN dns.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+; --- good: MX + SPF (with an include) + DMARC reject: NOTHING to report
+good             IN MX  10 mx.good.dns.lab.test.
+good             IN TXT "v=spf1 mx include:_spf.mailer.dns.lab.test -all"
+_dmarc.good      IN TXT "v=DMARC1; p=reject; rua=mailto:dmarc@good.dns.lab.test"
+; --- nospf: MX, no SPF -> spf_missing
+nospf            IN MX  10 mx.nospf.dns.lab.test.
+_dmarc.nospf     IN TXT "v=DMARC1; p=reject"
+; --- plusall: SPF ends in +all -> spf_allow_all
+plusall          IN MX  10 mx.plusall.dns.lab.test.
+plusall          IN TXT "v=spf1 mx +all"
+_dmarc.plusall   IN TXT "v=DMARC1; p=reject"
+; --- chunked: ONE valid SPF record split mid-token into two strings: NOTHING to report
+;     (joined without a separator it reads "...include:_spf.mailer..."; with a space it is invalid)
+chunked          IN MX  10 mx.chunked.dns.lab.test.
+chunked          IN TXT "v=spf1 ip4:192.0.2.0/24 inclu" "de:_spf.mailer.dns.lab.test -all"
+_dmarc.chunked   IN TXT "v=DMARC1; p=reject"
+; --- twospf: two SPF records (permerror) -> spf_invalid
+twospf           IN MX  10 mx.twospf.dns.lab.test.
+twospf           IN TXT "v=spf1 mx -all"
+twospf           IN TXT "v=spf1 a -all"
+_dmarc.twospf    IN TXT "v=DMARC1; p=reject"
+; --- toomany: include chain needing 12 DNS lookups (> 10, permerror) -> spf_invalid
+toomany          IN MX  10 mx.toomany.dns.lab.test.
+toomany          IN TXT "v=spf1 include:n0.mailer.dns.lab.test -all"
+_dmarc.toomany   IN TXT "v=DMARC1; p=reject"
+; --- nodmarc: mail domain without DMARC (nor at the organisational domain) -> dmarc_missing
+nodmarc          IN MX  10 mx.nodmarc.dns.lab.test.
+nodmarc          IN TXT "v=spf1 mx -all"
+; --- pnone: DMARC p=none -> dmarc_not_enforced
+pnone            IN MX  10 mx.pnone.dns.lab.test.
+pnone            IN TXT "v=spf1 mx -all"
+_dmarc.pnone     IN TXT "v=DMARC1; p=none; rua=mailto:dmarc@pnone.dns.lab.test"
+; --- nullmx: RFC 7505 "accepts no mail" + SPF -all: NOTHING to report
+nullmx           IN MX  0 .
+nullmx           IN TXT "v=spf1 -all"
+; --- nomail: no MX, no SPF (not a mail domain): NOTHING to report
+nomail           IN TXT "google-site-verification=lab-not-a-secret"
+; --- the shared sender: one valid include, and an 11-deep include chain for toomany
+_spf.mailer      IN TXT "v=spf1 ip4:198.51.100.0/24 -all"
+n0.mailer        IN TXT "v=spf1 include:n1.mailer.dns.lab.test -all"
+n1.mailer        IN TXT "v=spf1 include:n2.mailer.dns.lab.test -all"
+n2.mailer        IN TXT "v=spf1 include:n3.mailer.dns.lab.test -all"
+n3.mailer        IN TXT "v=spf1 include:n4.mailer.dns.lab.test -all"
+n4.mailer        IN TXT "v=spf1 include:n5.mailer.dns.lab.test -all"
+n5.mailer        IN TXT "v=spf1 include:n6.mailer.dns.lab.test -all"
+n6.mailer        IN TXT "v=spf1 include:n7.mailer.dns.lab.test -all"
+n7.mailer        IN TXT "v=spf1 include:n8.mailer.dns.lab.test -all"
+n8.mailer        IN TXT "v=spf1 include:n9.mailer.dns.lab.test -all"
+n9.mailer        IN TXT "v=spf1 include:n10.mailer.dns.lab.test -all"
+n10.mailer        IN TXT "v=spf1 include:n11.mailer.dns.lab.test -all"
+n11.mailer       IN TXT "v=spf1 ip4:198.51.100.1 -all"
+; delegations of the two apex targets
+axfr             IN NS  ns.dns.lab.test.
+openres          IN NS  ns-open.dns.lab.test.

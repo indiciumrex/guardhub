@@ -17,7 +17,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 30
+      "targets": 42
+    },
+    "dns_email": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 42
     },
     "exposed_env": {
       "meets_gate": true,
@@ -28,7 +39,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     },
     "http_hardening": {
       "meets_gate": true,
@@ -39,7 +50,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     },
     "info_leak": {
       "meets_gate": true,
@@ -50,7 +61,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 30
+      "targets": 42
     },
     "open_admin": {
       "meets_gate": true,
@@ -61,7 +72,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     },
     "security_headers": {
       "meets_gate": true,
@@ -72,18 +83,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     },
     "tls_cert": {
       "meets_gate": true,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "tp": 24,
+      "tp": 36,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     },
     "tls_config": {
       "meets_gate": true,
@@ -94,7 +105,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 30
+      "targets": 42
     }
   }
 }

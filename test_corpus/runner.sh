@@ -13,4 +13,4 @@ for origin in $(grep -h '^origin:' /corpus/manifests/*.yaml | awk '{print $2}');
   echo "up: $origin"
 done
 exec scanner lab --manifests /corpus/manifests --out /out --results /tmp/raw-results.json \
-  --roots /pki/ca.pem --source "$LAB_SOURCE" --shared /shared/accuracy.json
+  --roots /pki/ca.pem --source "$LAB_SOURCE" --shared /shared/accuracy.json   --dns-recursion-probe clean.lab.test.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "4f9a6dada46d+wip",
+  "source": "70b6e4601402+wip",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -9,6 +9,18 @@
   },
   "targets": [
     "clean",
+    "dns-axfr",
+    "dns-chunked",
+    "dns-good",
+    "dns-nodmarc",
+    "dns-nomail",
+    "dns-nospf",
+    "dns-nullmx",
+    "dns-openres",
+    "dns-plusall",
+    "dns-pnone",
+    "dns-toomany",
+    "dns-twospf",
     "drupal",
     "dvwa",
     "grafana",
@@ -42,8 +54,8 @@
   "checks": [
     {
       "check_id": "default_creds",
-      "targets": 30,
-      "clean_runs": 26,
+      "targets": 42,
+      "clean_runs": 38,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -104,9 +116,114 @@
       ]
     },
     {
+      "check_id": "dns_email",
+      "targets": 42,
+      "clean_runs": 34,
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 14,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "dmarc_missing": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "dmarc_not_enforced": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "open_resolver": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "spf_allow_all": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "spf_invalid": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "spf_missing": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "zone_transfer_open": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "dns-axfr",
+          "key": "zone_transfer_open",
+          "location": "AXFR axfr.dns.lab.test @ns.dns.lab.test",
+          "why": "dig AXFR axfr.dns.lab.test @ns.dns.lab.test: 7 records; other zones: Transfer failed."
+        },
+        {
+          "target": "dns-nodmarc",
+          "key": "dmarc_missing",
+          "location": "TXT _dmarc.nodmarc.dns.lab.test",
+          "why": "dig: _dmarc.nodmarc.dns.lab.test has no TXT; _dmarc.lab.test is NXDOMAIN."
+        },
+        {
+          "target": "dns-nospf",
+          "key": "spf_missing",
+          "location": "TXT nospf.dns.lab.test",
+          "why": "dig: MX 10 mx.nospf..., no TXT starting with v=spf1."
+        },
+        {
+          "target": "dns-openres",
+          "key": "open_resolver",
+          "location": "NS ns-open.dns.lab.test",
+          "why": "dig A clean.lab.test @ns-open: NOERROR, RA set, 1 answer; @ns (the other nameserver): REFUSED."
+        },
+        {
+          "target": "dns-plusall",
+          "key": "spf_allow_all",
+          "location": "TXT plusall.dns.lab.test",
+          "why": "dig: the SPF record ends in +all: every sender passes SPF (and so DMARC alignment)."
+        },
+        {
+          "target": "dns-pnone",
+          "key": "dmarc_not_enforced",
+          "location": "TXT _dmarc.pnone.dns.lab.test",
+          "why": "dig: _dmarc.pnone.dns.lab.test is 'v=DMARC1; p=none; ...'."
+        },
+        {
+          "target": "dns-toomany",
+          "key": "spf_invalid",
+          "location": "TXT toomany.dns.lab.test",
+          "why": "dig: include:n0.mailer -\u003e n1 -\u003e ... -\u003e n11: 12 includes."
+        },
+        {
+          "target": "dns-twospf",
+          "key": "spf_invalid",
+          "location": "TXT twospf.dns.lab.test",
+          "why": "dig: two TXT records start with v=spf1."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "exposed_env",
-      "targets": 30,
-      "clean_runs": 29,
+      "targets": 42,
+      "clean_runs": 41,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -160,8 +277,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 30,
-      "clean_runs": 24,
+      "targets": 42,
+      "clean_runs": 36,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -243,8 +360,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 30,
-      "clean_runs": 24,
+      "targets": 42,
+      "clean_runs": 36,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -358,8 +475,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 30,
-      "clean_runs": 27,
+      "targets": 42,
+      "clean_runs": 39,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -408,8 +525,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 30,
-      "clean_runs": 24,
+      "targets": 42,
+      "clean_runs": 36,
       "tp": 15,
       "fp": 0,
       "fn": 0,
@@ -540,9 +657,9 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 30,
+      "targets": 42,
       "clean_runs": 6,
-      "tp": 24,
+      "tp": 36,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -575,7 +692,7 @@
           "fn": 0
         },
         "https_unavailable": {
-          "tp": 18,
+          "tp": 30,
           "fp": 0,
           "fn": 0
         },
@@ -586,6 +703,78 @@
         }
       },
       "true_positives": [
+        {
+          "target": "dns-axfr",
+          "key": "https_unavailable",
+          "location": "axfr.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-chunked",
+          "key": "https_unavailable",
+          "location": "chunked.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-good",
+          "key": "https_unavailable",
+          "location": "good.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-nodmarc",
+          "key": "https_unavailable",
+          "location": "nodmarc.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-nomail",
+          "key": "https_unavailable",
+          "location": "nomail.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-nospf",
+          "key": "https_unavailable",
+          "location": "nospf.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-nullmx",
+          "key": "https_unavailable",
+          "location": "nullmx.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-openres",
+          "key": "https_unavailable",
+          "location": "openres.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-plusall",
+          "key": "https_unavailable",
+          "location": "plusall.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-pnone",
+          "key": "https_unavailable",
+          "location": "pnone.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-toomany",
+          "key": "https_unavailable",
+          "location": "toomany.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
+        {
+          "target": "dns-twospf",
+          "key": "https_unavailable",
+          "location": "twospf.dns.lab.test:443",
+          "why": "Plain HTTP only (dns-web): nothing listens on 443."
+        },
         {
           "target": "drupal",
           "key": "https_unavailable",
@@ -736,8 +925,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 30,
-      "clean_runs": 24,
+      "targets": 42,
+      "clean_runs": 36,
       "tp": 9,
       "fp": 0,
       "fn": 0,

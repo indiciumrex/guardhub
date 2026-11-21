@@ -4,7 +4,7 @@ description: >
   OWASP Juice Shop v17.1.0 (pinned by digest). A single-page app that answers 200 with
   its shell for ANY path (/.env, /.git/HEAD, /admin ...), so status-code-only detection
   produces false positives here. Facts below were verified with curl inside the lab.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
 expect:
   - check: security_headers
     key: csp_missing

@@ -286,5 +286,53 @@
         "fix": "1. Use `Referrer-Policy: strict-origin-when-cross-origin` (the browser default) or `no-referrer` if you do not need it at all.\n2. Remove the header value unsafe-url wherever it is set (server config, framework security settings, CDN rules).\n3. Deploy and run the scan again."
       }
     }
+  },
+  "dns_email": {
+    "name": "E-mail spoofing protection and DNS",
+    "description": "Checks whether others can send e-mail that looks like it comes from your domain (SPF, DMARC), and whether your nameservers give away more than they should (open resolver, zone transfer).",
+    "findings": {
+      "spf_allow_all": {
+        "title": "Your SPF record lets anyone send e-mail as {domain}",
+        "summary": "The SPF record of {domain} ends in \"+all\" (or a bare \"all\"), which authorises every server in the world to send mail for your domain.",
+        "why": "SPF tells receiving mail servers which servers may send e-mail for your domain. \"+all\" says \"all of them\", so fake e-mails pretending to be from you pass the check. They even satisfy DMARC through SPF, which makes phishing in your name, fake invoices or password-reset scams look legitimate.",
+        "fix": "1. List only the services that really send your mail, and end the record with ~all or -all. For example `v=spf1 include:_spf.google.com include:sendgrid.net -all`.\n2. Your e-mail provider's help pages give the exact include for Google Workspace, Microsoft 365, SendGrid, Mailgun, Postmark and others.\n3. Change the TXT record at your DNS provider and run the scan again (DNS changes can take a few minutes to an hour)."
+      },
+      "spf_invalid": {
+        "title": "Your SPF record is broken ({reason})",
+        "summary": "Receiving mail servers cannot evaluate the SPF record of {domain} ({reason}), so it protects nothing.",
+        "why": "When an SPF record is invalid, for example two separate SPF records, more than 10 DNS lookups through nested includes, a typo, or an include pointing to a domain without SPF, mail servers treat it as a permanent error. Your legitimate mail can land in spam, and spoofed mail is not blocked.",
+        "fix": "1. Keep exactly ONE TXT record that starts with v=spf1; merge any others into it.\n2. If there are too many lookups, remove includes for services you no longer use, or replace includes with the ip4:/ip6: ranges your provider publishes.\n3. Check the record with a free SPF validator, fix the reported problem, then run the scan again."
+      },
+      "spf_missing": {
+        "title": "No SPF record for {domain}",
+        "summary": "{domain} receives e-mail (it has MX records) but has no SPF record saying which servers may send mail for it.",
+        "why": "Without SPF, receiving mail servers have no way to tell your real e-mails from fakes, so attackers can more easily send phishing that appears to come from your domain. Many providers also put unauthenticated mail into spam.",
+        "fix": "1. Add a TXT record on {domain} listing the services that send your mail, for example `v=spf1 include:_spf.google.com -all` for Google Workspace (your provider's help page has the exact value).\n2. If the domain never sends mail, use `v=spf1 -all`.\n3. Run the scan again after DNS has updated."
+      },
+      "dmarc_missing": {
+        "title": "No DMARC policy for {domain}",
+        "summary": "{domain} handles e-mail but publishes no DMARC policy, so mail servers are not told what to do with e-mails that fail authentication.",
+        "why": "DMARC ties SPF and DKIM together and tells receivers to quarantine or reject e-mails that fake your domain. Without it, most spoofed messages still get delivered, and you get no reports about who is sending mail in your name.",
+        "fix": "1. Start in monitoring mode: add a TXT record at `_dmarc.{domain}` with `v=DMARC1; p=none; rua=mailto:dmarc@{domain}`.\n2. Check the reports for a couple of weeks and make sure all your real senders pass SPF or DKIM.\n3. Then enforce: change to `p=quarantine` and later `p=reject`.\n4. Run the scan again."
+      },
+      "dmarc_not_enforced": {
+        "title": "DMARC for {domain} only monitors (p=none)",
+        "summary": "The DMARC policy that applies to {domain} is p=none: it reports, but it does not stop fake e-mails.",
+        "why": "p=none is the right first step, but spoofed e-mails in your name are still delivered normally. The protection only starts with p=quarantine or p=reject.",
+        "fix": "1. Use the DMARC reports to confirm that all your real senders pass SPF or DKIM.\n2. Change the policy to `p=quarantine` (optionally with `pct=` to ramp up), then to `p=reject`.\n3. If the policy comes from your main domain's record, check its `sp=` value, which applies to subdomains.\n4. Run the scan again."
+      },
+      "open_resolver": {
+        "title": "Your nameserver answers DNS questions for anyone ({nameserver})",
+        "summary": "{nameserver}, a nameserver of your domain, looks up names of other domains for any computer on the internet (an open resolver).",
+        "why": "Open resolvers are abused to flood other networks (DNS amplification attacks) using your server and bandwidth, which can get your IP addresses blocklisted. They can also be used to poison cached answers. A nameserver for your domain only needs to answer questions about your own domain.",
+        "fix": "1. Turn off recursion for the public: in BIND set `recursion no;` (or `allow-recursion { localhost; your-networks; };`); in Unbound or PowerDNS Recursor, restrict `access-control` to your own networks.\n2. If you use a managed DNS provider, this should never happen; contact their support.\n3. Run the scan again."
+      },
+      "zone_transfer_open": {
+        "title": "Anyone can download your whole DNS zone ({nameserver})",
+        "summary": "{nameserver} hands out a complete copy of your DNS zone (AXFR zone transfer) to anyone who asks.",
+        "why": "A zone transfer reveals every name in your domain: staging and internal servers, admin panels, mail and VPN hosts. That gives attackers a ready-made map of targets they would otherwise have to guess.",
+        "fix": "1. Allow zone transfers only to your own secondary nameservers: in BIND `allow-transfer { secondary-ip; };`, in PowerDNS `allow-axfr-ips`, in Windows DNS \"Zone Transfers\" set to listed servers only.\n2. Managed DNS providers usually block this by default; check the zone transfer setting in their dashboard.\n3. Run the scan again."
+      }
+    }
   }
 }

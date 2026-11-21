@@ -89,6 +89,19 @@
         { "key": "xfo_ineffective", "severity": "low", "params": ["value"] },
         { "key": "referrer_policy_unsafe_url", "severity": "low", "params": [] }
       ]
+    },
+    {
+      "id": "dns_email",
+      "category": "dns",
+      "finding_keys": [
+        { "key": "spf_allow_all", "severity": "high", "params": ["domain"] },
+        { "key": "spf_invalid", "severity": "medium", "params": ["domain", "reason"] },
+        { "key": "spf_missing", "severity": "medium", "params": ["domain"] },
+        { "key": "dmarc_missing", "severity": "medium", "params": ["domain"] },
+        { "key": "dmarc_not_enforced", "severity": "low", "params": ["domain"] },
+        { "key": "open_resolver", "severity": "medium", "params": ["nameserver"] },
+        { "key": "zone_transfer_open", "severity": "medium", "params": ["nameserver"] }
+      ]
     }
   ]
 }

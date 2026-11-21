@@ -1,0 +1,8 @@
+# dns-open (ns-open.dns.lab.test): authoritative for openres.dns.lab.test AND recursive for
+# anyone (forwards every other name): an open resolver. No zone transfer.
+openres.dns.lab.test:53 {
+    file /zones/openres.db
+}
+.:53 {
+    forward . 127.0.0.11
+}

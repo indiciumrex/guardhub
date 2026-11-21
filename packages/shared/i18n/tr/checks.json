@@ -286,5 +286,53 @@
         "fix": "1. `Referrer-Policy: strict-origin-when-cross-origin` (tarayıcı varsayılanı) kullanın ya da hiç gerekmiyorsa `no-referrer`.\n2. unsafe-url değerini ayarlandığı her yerden kaldırın (sunucu ayarları, framework güvenlik ayarları, CDN kuralları).\n3. Yayına alın ve taramayı tekrar çalıştırın."
       }
     }
+  },
+  "dns_email": {
+    "name": "E-posta sahteciliğine karşı koruma ve DNS",
+    "description": "Başkalarının alan adınızdan geliyormuş gibi görünen e-postalar gönderip gönderemeyeceğini (SPF, DMARC) ve ad sunucularınızın olması gerekenden fazlasını açığa verip vermediğini (açık çözümleyici, zone transfer) kontrol eder.",
+    "findings": {
+      "spf_allow_all": {
+        "title": "SPF kaydınız herkesin {domain} adına e-posta göndermesine izin veriyor",
+        "summary": "{domain} alan adının SPF kaydı \"+all\" (veya yalnızca \"all\") ile bitiyor; bu, dünyadaki her sunucuya alan adınız adına e-posta gönderme yetkisi veriyor.",
+        "why": "SPF, alıcı e-posta sunucularına alan adınız adına hangi sunucuların e-posta gönderebileceğini söyler. \"+all\" \"hepsi\" demektir; bu yüzden sizden geliyormuş gibi davranan sahte e-postalar kontrolden geçer. SPF üzerinden DMARC'ı bile karşılarlar ve adınıza oltalama, sahte faturalar ya da şifre sıfırlama dolandırıcılıkları meşru görünür.",
+        "fix": "1. Yalnızca e-postanızı gerçekten gönderen hizmetleri listeleyin ve kaydı ~all veya -all ile bitirin. Örneğin `v=spf1 include:_spf.google.com include:sendgrid.net -all`.\n2. E-posta sağlayıcınızın yardım sayfaları Google Workspace, Microsoft 365, SendGrid, Mailgun, Postmark ve diğerleri için doğru include değerini verir.\n3. TXT kaydını DNS sağlayıcınızda değiştirin ve taramayı tekrar çalıştırın (DNS değişikliklerinin yansıması birkaç dakika ile bir saat sürebilir)."
+      },
+      "spf_invalid": {
+        "title": "SPF kaydınız bozuk ({reason})",
+        "summary": "Alıcı e-posta sunucuları {domain} alan adının SPF kaydını değerlendiremiyor ({reason}); bu yüzden kayıt hiçbir şeyi korumuyor.",
+        "why": "Bir SPF kaydı geçersiz olduğunda (örneğin iki ayrı SPF kaydı, iç içe include'lar üzerinden 10'dan fazla DNS sorgusu, bir yazım hatası ya da SPF'i olmayan bir alan adına işaret eden bir include) e-posta sunucuları bunu kalıcı hata sayar. Gerçek e-postalarınız spam'e düşebilir ve sahte e-postalar engellenmez.",
+        "fix": "1. v=spf1 ile başlayan TAM OLARAK BİR TXT kaydı tutun; diğerlerini onunla birleştirin.\n2. Sorgu sayısı fazlaysa artık kullanmadığınız hizmetlerin include'larını kaldırın ya da include'ları sağlayıcınızın yayınladığı ip4:/ip6: aralıklarıyla değiştirin.\n3. Kaydı ücretsiz bir SPF doğrulayıcı ile kontrol edin, bildirilen sorunu düzeltin, sonra taramayı tekrar çalıştırın."
+      },
+      "spf_missing": {
+        "title": "{domain} için SPF kaydı yok",
+        "summary": "{domain} e-posta alıyor (MX kayıtları var) ama kendi adına hangi sunucuların e-posta gönderebileceğini söyleyen bir SPF kaydı yok.",
+        "why": "SPF olmadan alıcı e-posta sunucuları gerçek e-postalarınızı sahtelerinden ayıramaz; bu yüzden saldırganlar alan adınızdan geliyormuş gibi görünen oltalama e-postalarını daha kolay gönderebilir. Birçok sağlayıcı kimliği doğrulanmamış e-postaları spam'e de atar.",
+        "fix": "1. {domain} üzerine e-postanızı gönderen hizmetleri listeleyen bir TXT kaydı ekleyin; örneğin Google Workspace için `v=spf1 include:_spf.google.com -all` (doğru değer sağlayıcınızın yardım sayfasında yazar).\n2. Alan adı hiç e-posta göndermiyorsa `v=spf1 -all` kullanın.\n3. DNS güncellendikten sonra taramayı tekrar çalıştırın."
+      },
+      "dmarc_missing": {
+        "title": "{domain} için DMARC politikası yok",
+        "summary": "{domain} e-posta ile çalışıyor ama bir DMARC politikası yayınlamıyor; bu yüzden e-posta sunucularına kimlik doğrulamasından geçemeyen e-postalarla ne yapacakları söylenmiyor.",
+        "why": "DMARC, SPF ve DKIM'i birbirine bağlar ve alıcılara alan adınızı taklit eden e-postaları karantinaya almalarını ya da reddetmelerini söyler. Onsuz sahte mesajların çoğu yine de teslim edilir ve adınıza kimlerin e-posta gönderdiğine dair rapor almazsınız.",
+        "fix": "1. İzleme moduyla başlayın: `_dmarc.{domain}` adına `v=DMARC1; p=none; rua=mailto:dmarc@{domain}` değerinde bir TXT kaydı ekleyin.\n2. Birkaç hafta raporları inceleyin ve tüm gerçek gönderenlerinizin SPF veya DKIM'den geçtiğinden emin olun.\n3. Sonra zorunlu kılın: önce `p=quarantine`, ardından `p=reject` yapın.\n4. Taramayı tekrar çalıştırın."
+      },
+      "dmarc_not_enforced": {
+        "title": "{domain} için DMARC yalnızca izliyor (p=none)",
+        "summary": "{domain} için geçerli DMARC politikası p=none: rapor veriyor ama sahte e-postaları durdurmuyor.",
+        "why": "p=none doğru ilk adımdır, ama adınıza gönderilen sahte e-postalar normal şekilde teslim edilmeye devam eder. Koruma ancak p=quarantine veya p=reject ile başlar.",
+        "fix": "1. DMARC raporlarıyla tüm gerçek gönderenlerinizin SPF veya DKIM'den geçtiğini doğrulayın.\n2. Politikayı `p=quarantine` (isterseniz kademeli geçiş için `pct=` ile), ardından `p=reject` yapın.\n3. Politika ana alan adınızın kaydından geliyorsa, alt alan adlarına uygulanan `sp=` değerini kontrol edin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "open_resolver": {
+        "title": "Ad sunucunuz herkesin DNS sorularını cevaplıyor ({nameserver})",
+        "summary": "Alan adınızın ad sunucularından biri olan {nameserver}, internetteki herhangi bir bilgisayar için başka alan adlarını da çözümlüyor (açık çözümleyici).",
+        "why": "Açık çözümleyiciler, sizin sunucunuz ve bant genişliğinizle başka ağları boğmak için (DNS amplification saldırıları) kötüye kullanılır ve IP adreslerinizin kara listeye alınmasına yol açabilir. Önbellekteki cevapları zehirlemek için de kullanılabilirler. Alan adınızın ad sunucusunun yalnızca kendi alan adınızla ilgili soruları cevaplaması gerekir.",
+        "fix": "1. Herkese açık özyinelemeyi (recursion) kapatın: BIND'de `recursion no;` (veya `allow-recursion { localhost; kendi-ağlarınız; };`); Unbound veya PowerDNS Recursor'da `access-control` ayarını kendi ağlarınızla sınırlayın.\n2. Yönetilen bir DNS sağlayıcısı kullanıyorsanız bu hiç olmamalı; destek ekibiyle iletişime geçin.\n3. Taramayı tekrar çalıştırın."
+      },
+      "zone_transfer_open": {
+        "title": "Herkes DNS bölgenizin tamamını indirebiliyor ({nameserver})",
+        "summary": "{nameserver}, DNS bölgenizin eksiksiz bir kopyasını (AXFR zone transfer) isteyen herkese veriyor.",
+        "why": "Bir zone transfer alan adınızdaki her adı açığa çıkarır: test ve iç sunucular, yönetim panelleri, e-posta ve VPN sunucuları. Bu, saldırganlara aksi halde tahmin etmeleri gereken hedeflerin hazır bir haritasını verir.",
+        "fix": "1. Zone transfer'e yalnızca kendi ikincil ad sunucularınız için izin verin: BIND'de `allow-transfer { ikincil-ip; };`, PowerDNS'te `allow-axfr-ips`, Windows DNS'te \"Zone Transfers\" ayarını yalnızca listelenen sunucular olarak belirleyin.\n2. Yönetilen DNS sağlayıcıları bunu genellikle varsayılan olarak engeller; panellerindeki zone transfer ayarını kontrol edin.\n3. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

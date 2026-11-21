@@ -41,6 +41,9 @@ type Config struct {
 	CheckConcurrency   int
 	VerifyDeadline     time.Duration
 	ShutdownTimeout    time.Duration
+	// DNSServer is the recursive resolver for DNS record checks ("host:port");
+	// empty = the system resolver (/etc/resolv.conf).
+	DNSServer string
 	// AllowPrivateHosts are exact hostnames that bypass the dial-time IP
 	// guard. It exists ONLY for the local e2e demo target.
 	AllowPrivateHosts []string
@@ -113,6 +116,8 @@ func FromLookup(lookup func(string) (string, bool)) (Config, error) {
 	if cfg.CheckConcurrency, err = intVar(get("SCANNER_CHECK_CONCURRENCY"), cfg.CheckConcurrency); err != nil {
 		return Config{}, fmt.Errorf("SCANNER_CHECK_CONCURRENCY: %w", err)
 	}
+
+	cfg.DNSServer = get("SCANNER_DNS_SERVER")
 
 	for _, h := range strings.Split(get("SCANNER_ALLOW_PRIVATE_HOSTS"), ",") {
 		h = strings.ToLower(strings.TrimSpace(h))

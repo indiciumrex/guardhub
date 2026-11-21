@@ -1,0 +1,6 @@
+; _dmarc.lab.test: the organisational-domain DMARC name of every *.dns.lab.test target.
+; It has no record (so the fallback lookup gets a clean "no DMARC", not a resolver error).
+$ORIGIN _dmarc.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.

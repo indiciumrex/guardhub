@@ -1,10 +1,10 @@
 # `tls_cert` accuracy
 
-Lab source revision `4f9a6dada46d+wip`. Verdict: **meets the gate**.
+Lab source revision `70b6e4601402+wip`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 24 | 0 | 0 | 0 | 0 | 30 | 6 | 0 |
+| 100.0% | 100.0% | 100.0% | 36 | 0 | 0 | 0 | 0 | 42 | 6 | 0 |
 
 ## By finding
 
@@ -14,7 +14,7 @@ Lab source revision `4f9a6dada46d+wip`. Verdict: **meets the gate**.
 | `cert_hostname_mismatch` | 1 | 0 | 0 |
 | `cert_untrusted` | 2 | 0 | 0 |
 | `http_not_redirected` | 1 | 0 | 0 |
-| `https_unavailable` | 18 | 0 | 0 |
+| `https_unavailable` | 30 | 0 | 0 |
 | `legacy_tls_supported` | 1 | 0 | 0 |
 
 ## False positives (0)
@@ -25,8 +25,20 @@ None.
 
 None.
 
-## True positives (24)
+## True positives (36)
 
+- `dns-axfr` / `https_unavailable` at `axfr.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-chunked` / `https_unavailable` at `chunked.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-good` / `https_unavailable` at `good.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-nodmarc` / `https_unavailable` at `nodmarc.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-nomail` / `https_unavailable` at `nomail.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-nospf` / `https_unavailable` at `nospf.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-nullmx` / `https_unavailable` at `nullmx.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-openres` / `https_unavailable` at `openres.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-plusall` / `https_unavailable` at `plusall.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-pnone` / `https_unavailable` at `pnone.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-toomany` / `https_unavailable` at `toomany.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dns-twospf` / `https_unavailable` at `twospf.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `drupal` / `https_unavailable` at `drupal.lab.test:443`: Nothing listens on 443.
 - `dvwa` / `https_unavailable` at `dvwa.lab.test:443`: Nothing listens on 443.
 - `grafana` / `https_unavailable` at `grafana.lab.test:443`: Nothing listens on 443.

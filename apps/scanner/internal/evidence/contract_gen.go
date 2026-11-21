@@ -50,6 +50,7 @@ const (
 	CheckInfoLeak        = "info_leak"
 	CheckTlsConfig       = "tls_config"
 	CheckHttpHardening   = "http_hardening"
+	CheckDnsEmail        = "dns_email"
 )
 
 // FindingKeys maps check id -> finding key -> default severity (check-ids.json).
@@ -109,5 +110,14 @@ var FindingKeys = map[string]map[string]Severity{
 		"csp_ineffective":                   SeverityLow,
 		"xfo_ineffective":                   SeverityLow,
 		"referrer_policy_unsafe_url":        SeverityLow,
+	},
+	"dns_email": {
+		"spf_allow_all":      SeverityHigh,
+		"spf_invalid":        SeverityMedium,
+		"spf_missing":        SeverityMedium,
+		"dmarc_missing":      SeverityMedium,
+		"dmarc_not_enforced": SeverityLow,
+		"open_resolver":      SeverityMedium,
+		"zone_transfer_open": SeverityMedium,
 	},
 }

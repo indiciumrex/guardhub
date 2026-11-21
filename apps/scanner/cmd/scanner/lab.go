@@ -33,6 +33,7 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 	results := fs.String("results", "", "optional: also write the raw findings per target (JSON)")
 	rootsFile := fs.String("roots", "", "optional: PEM file with the lab CA (certificate verification)")
 	source := fs.String("source", "unknown", "git revision the lab runs on (recorded in the scorecard)")
+	recursionProbe := fs.String("dns-recursion-probe", "", "out-of-zone name for the open-resolver test (the lab has no internet)")
 	shared := fs.String("shared", "", "optional: also write the API's gate file (packages/shared/accuracy.json)")
 	if err := fs.Parse(args); err != nil || *manifests == "" || *out == "" {
 		logger.Error("usage: scanner lab --manifests DIR --out DIR [--results FILE] [--roots PEM] [--source REV] [--shared FILE]")
@@ -43,7 +44,7 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 		logger.Error("invalid manifests", "err", err)
 		return 1
 	}
-	opts := checks.Options{}
+	opts := checks.Options{DNSRecursionProbe: *recursionProbe}
 	if *rootsFile != "" {
 		pem, err := os.ReadFile(*rootsFile)
 		if err != nil {
@@ -65,6 +66,7 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 		AllowPrivateHosts:  cfg.AllowPrivateHosts,
 		Limiters:           probe.NewLimiters(cfg.HostRPS, cfg.HostBurst),
 		InsecureSkipVerify: true, // same as production scans: tls_cert reports certificate problems
+		DNSServer:          cfg.DNSServer,
 	}
 	svc := &queue.Service{
 		Registry:     checks.DefaultWith(opts),

@@ -1,0 +1,8 @@
+target: dns-plusall
+origin: http://plusall.dns.lab.test
+description: >
+  SPF 'v=spf1 mx +all' (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
+expect:
+  - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
+  - {check: dns_email, key: spf_allow_all, why: "dig: the SPF record ends in +all: every sender passes SPF (and so DMARC alignment)."}

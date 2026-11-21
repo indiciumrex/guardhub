@@ -1,0 +1,8 @@
+target: dns-toomany
+origin: http://toomany.dns.lab.test
+description: >
+  SPF whose include chain needs 12 DNS lookups (limit 10, permerror) (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email]
+expect:
+  - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
+  - {check: dns_email, key: spf_invalid, why: "dig: include:n0.mailer -> n1 -> ... -> n11: 12 includes."}

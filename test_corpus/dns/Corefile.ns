@@ -1,0 +1,11 @@
+# dns-ns (ns.dns.lab.test): authoritative only. Not recursive (other names: REFUSED).
+# Zone transfer allowed for axfr.dns.lab.test ONLY.
+dns.lab.test:53 {
+    file /zones/dns.lab.test.db
+}
+axfr.dns.lab.test:53 {
+    file /zones/axfr.db
+    transfer {
+        to *
+    }
+}

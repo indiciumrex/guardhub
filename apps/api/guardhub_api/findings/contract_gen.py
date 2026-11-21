@@ -92,6 +92,15 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'xfo_ineffective': 'low',
         'referrer_policy_unsafe_url': 'low',
     },
+    'dns_email': {
+        'spf_allow_all': 'high',
+        'spf_invalid': 'medium',
+        'spf_missing': 'medium',
+        'dmarc_missing': 'medium',
+        'dmarc_not_enforced': 'low',
+        'open_resolver': 'medium',
+        'zone_transfer_open': 'medium',
+    },
 }
 
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)

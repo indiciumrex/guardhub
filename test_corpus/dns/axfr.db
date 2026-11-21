@@ -1,0 +1,10 @@
+; axfr.dns.lab.test: its own zone (an apex target), well configured for mail, but its
+; nameserver (dns-ns) hands the whole zone to anyone (AXFR) -> zone_transfer_open
+$ORIGIN axfr.dns.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.axfr.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+@        IN MX  10 mx.axfr.dns.lab.test.
+@        IN TXT "v=spf1 mx -all"
+_dmarc   IN TXT "v=DMARC1; p=reject"
+internal-admin IN TXT "the kind of name a zone transfer reveals"

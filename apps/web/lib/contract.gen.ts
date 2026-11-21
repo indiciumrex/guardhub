@@ -20,5 +20,5 @@ export interface RawFinding {
   fingerprint: string;
 }
 
-export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening"] as const;
+export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email"] as const;
 export type CheckId = (typeof CHECK_IDS)[number];

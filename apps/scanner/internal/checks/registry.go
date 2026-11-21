@@ -12,6 +12,9 @@ type Options struct {
 	// Roots verifies certificate chains; nil = the system roots. The
 	// validation lab passes its own CA (test_corpus), production never does.
 	Roots *x509.CertPool
+	// DNSRecursionProbe is the out-of-zone name dns_email asks nameservers
+	// (default "example.com."; the internet-less lab uses a lab name).
+	DNSRecursionProbe string
 }
 
 // Registry maps check ids to checks. Adding a check = new file + one line in
@@ -55,6 +58,7 @@ func DefaultWith(o Options) *Registry {
 		InfoLeak{},
 		TLSConfig{Roots: o.Roots},
 		HTTPHardening{},
+		DNSEmail{RecursionProbe: o.DNSRecursionProbe},
 	)
 }
 
