@@ -1,0 +1,4 @@
+{
+  "password": "Password must contain at least 12 characters",
+  "secret_question": "What was the name of your first pet?"
+}

@@ -64,7 +64,7 @@ class SchedulerReport:
 
 def proof_is_gone(error: UnprocessableError) -> bool:
     """A definitive "no proof" (pause) vs. "could not check right now" (retry later)."""
-    if error.code == "trusted_domain_inactive":
+    if error.code in ("trusted_domain_inactive", "repo_access_lost"):
         return True
     if error.code == "ownership_not_verified":
         reason = (error.details or {}).get("reason")

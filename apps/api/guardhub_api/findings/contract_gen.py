@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Severity = Literal['critical', 'high', 'medium', 'low', 'info']
-EvidenceKind = Literal['http_response', 'http_header', 'tls_handshake', 'dns_record']
+EvidenceKind = Literal['http_response', 'http_header', 'tls_handshake', 'dns_record', 'repo_file', 'dependency']
 
 
 class Evidence(BaseModel):
@@ -105,6 +105,21 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'unclaimed_resource': 'high',
         'dangling_cname': 'low',
     },
+    'dependency_vulns': {
+        'vulnerable_dependency_high': 'high',
+        'vulnerable_dependency_medium': 'medium',
+        'vulnerable_dependency_low': 'low',
+        'vulnerable_dev_dependency': 'low',
+        'vulnerable_dependency_no_fix': 'medium',
+    },
+    'repo_secrets': {
+        'hardcoded_secret': 'high',
+        'generic_secret': 'medium',
+        'test_mode_secret': 'low',
+    },
 }
 
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)
+# Checks that scan a connected repository (check-ids.json "target": "repo", ADR-0006).
+REPO_CHECK_IDS: tuple[str, ...] = ('dependency_vulns', 'repo_secrets')
+SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS)

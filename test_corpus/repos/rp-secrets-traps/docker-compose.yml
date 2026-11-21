@@ -1,0 +1,5 @@
+services:
+  api:
+    environment:
+      DATABASE_URL: postgres://postgres:{{secret:password:trap8}}@db:5432/app
+      REDIS_URL: redis://:{{secret:password:trap9}}@localhost:6379/0

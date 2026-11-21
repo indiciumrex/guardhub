@@ -1,13 +1,13 @@
 # Validation lab tools (test_corpus/): the production scanner binary (run as
-# `scanner lab`) and the throwaway PKI generator. Build context: apps/scanner.
+# `scanner lab`), the throwaway PKI generator and the GitHub/OSV stand-in (labrepo). Build context: apps/scanner.
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 ENV CGO_ENABLED=0 GOOS=linux GOTOOLCHAIN=local GOFLAGS=-trimpath
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 COPY . .
-RUN go build -o /out/scanner ./cmd/scanner && go build -o /out/labpki ./cmd/labpki && go build -o /out/labtls ./cmd/labtls
+RUN go build -o /out/scanner ./cmd/scanner && go build -o /out/labpki ./cmd/labpki && go build -o /out/labtls ./cmd/labtls && go build -o /out/labrepo ./cmd/labrepo
 
 FROM alpine:3.22
 RUN apk add --no-cache curl openssl bind-tools
-COPY --from=build /out/scanner /out/labpki /out/labtls /usr/local/bin/
+COPY --from=build /out/scanner /out/labpki /out/labtls /out/labrepo /usr/local/bin/

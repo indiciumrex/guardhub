@@ -1,0 +1,48 @@
+version = 1
+requires-python = ">=3.11"
+
+[[package]]
+name = "inventory"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "starlette" },
+    { name = "py" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "black" },
+]
+
+[[package]]
+name = "starlette"
+version = "0.27.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+
+[[package]]
+name = "anyio"
+version = "4.4.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "py"
+version = "1.11.0"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "black"
+version = "22.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+]
+
+[[package]]
+name = "click"
+version = "8.1.7"
+source = { registry = "https://pypi.org/simple" }
+

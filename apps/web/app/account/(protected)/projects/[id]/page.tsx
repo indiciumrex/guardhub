@@ -34,6 +34,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     ]),
   );
   const t = await getTranslations("project");
+  const tGitHub = await getTranslations("github");
   const tSchedule = await getTranslations("schedule");
   const tTrend = await getTranslations("trend");
   const tCompare = await getTranslations("compare");
@@ -59,7 +60,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <h2 id="ownership-heading" className="text-xl font-semibold">
           {t("ownershipHeading")}
         </h2>
-        {project.verified ? (
+        {project.kind === "repo" ? (
+          project.verified ? (
+            <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100">
+              {project.ownership_verified_at
+                ? tGitHub("repoConnectedOn", { date: formatDate(project.ownership_verified_at) })
+                : tGitHub("repoConnected")}
+            </p>
+          ) : (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+              {tGitHub("repoAccessLost")}{" "}
+              <Link href="/account#github" className="gh-link">
+                {tGitHub("backToAccount")}
+              </Link>
+            </p>
+          )
+        ) : project.verified ? (
           <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100">
             {project.ownership_verified_at
               ? t("verifiedOn", { date: formatDate(project.ownership_verified_at) })
@@ -112,7 +128,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <RescanButton projectId={project.id} disabled={!project.verified || scanInProgress} />
         </div>
         {!project.verified ? (
-          <p className="gh-muted text-sm">{t("rescanNeedsVerification")}</p>
+          <p className="gh-muted text-sm">
+            {project.kind === "repo" ? tGitHub("repoAccessLost") : t("rescanNeedsVerification")}
+          </p>
         ) : null}
         {scanInProgress ? <p className="gh-muted text-sm">{t("scanInProgress")}</p> : null}
         {scans.length === 0 ? (

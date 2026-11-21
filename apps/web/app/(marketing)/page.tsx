@@ -4,7 +4,7 @@
  */
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { CHECK_IDS } from "@/lib/contract.gen";
+import { SITE_CHECK_IDS } from "@/lib/contract.gen";
 import { ShieldMark } from "@/components/brand/ShieldMark";
 
 const STEPS = ["enter", "see", "fix"] as const;
@@ -69,7 +69,7 @@ export default async function LandingPage() {
           </h2>
           <p className="gh-muted mt-3 max-w-2xl">{t("checks.intro")}</p>
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {CHECK_IDS.map((id) => (
+            {SITE_CHECK_IDS.map((id) => (
               <li key={id} className="rounded-xl border border-slate-200 p-5 dark:border-navy-700">
                 <h3 className="font-semibold">{tChecks(`${id}.name`)}</h3>
                 <p className="gh-muted mt-2 text-sm leading-relaxed">

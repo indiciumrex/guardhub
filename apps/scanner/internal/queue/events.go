@@ -23,12 +23,20 @@ const (
 	ErrCodeTargetBlocked     = "target_blocked"
 	ErrCodeTimeout           = "timeout"
 	ErrCodeInternal          = "internal"
+	// Repo scans (ADR-0006).
+	ErrCodeRepoAccessLost = "repo_access_lost" // the token cannot read the repository
+	ErrCodeRepoEmpty      = "repo_empty"       // no commits yet
 )
 
 // check_results error codes (in addition to the scan.failed codes).
 const (
 	ErrCodeUnknownCheck   = "unknown_check"
 	ErrCodeBudgetExceeded = "budget_exceeded"
+	// Repo checks: the snapshot hit a cap (partial results are kept).
+	ErrCodeRepoTooLarge = "repo_too_large"
+	// dependency_vulns: OSV could not be asked, or a lockfile was unreadable.
+	ErrCodeAdvisoryDBUnavailable = "advisory_db_unavailable"
+	ErrCodeManifestUnreadable    = "manifest_unreadable"
 )
 
 // ScanStarted is the scan.started event.

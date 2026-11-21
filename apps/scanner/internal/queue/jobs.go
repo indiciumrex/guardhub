@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/repo"
 )
 
 // Redis names from docs/architecture.md §2.
@@ -32,7 +34,14 @@ const (
 const (
 	KindScan   = "scan"
 	KindVerify = "verify"
+	// KindRepoScan scans a connected GitHub repository (ADR-0006): the job
+	// names the repository and the one-time Redis key holding its token.
+	KindRepoScan = "repo_scan"
 )
+
+// RepoTokenPrefix is the one-time Redis key prefix for repo scan tokens
+// (gh:repo-token:<job_id>; read with GETDEL, never stored in the stream).
+const RepoTokenPrefix = "gh:repo-token:" //nolint:gosec // a Redis key prefix, not a credential
 
 // Scan deadline bounds (docs/architecture.md §3).
 const (
@@ -51,6 +60,8 @@ type Job struct {
 	DeadlineSeconds int      `json:"deadline_seconds,omitempty"`
 	Token           string   `json:"token,omitempty"`
 	ReplyKey        string   `json:"reply_key,omitempty"`
+	Repo            string   `json:"repo,omitempty"`      // repo_scan: owner/name
+	TokenKey        string   `json:"token_key,omitempty"` // repo_scan: RepoTokenPrefix + job_id
 }
 
 // ErrMalformedJob wraps every job validation error.
@@ -96,6 +107,22 @@ func ParseJob(payload string) (Job, error) {
 		if !idRe.MatchString(j.ScanID) {
 			return bad("invalid scan_id")
 		}
+	case KindRepoScan:
+		if !idRe.MatchString(j.ScanID) {
+			return bad("invalid scan_id")
+		}
+		if !repo.ValidFullName(j.Repo) {
+			return bad("invalid repo")
+		}
+		if j.TokenKey != RepoTokenPrefix+j.JobID {
+			return bad("token_key must be %s<job_id>", RepoTokenPrefix)
+		}
+		for _, id := range j.Checks {
+			if !evidence.RepoChecks[id] {
+				return bad("not a repo check: %q", id)
+			}
+		}
+		return j, nil
 	case KindVerify:
 		if !strings.HasPrefix(j.ReplyKey, VerifyReplyPrefix) || !idRe.MatchString(strings.TrimPrefix(j.ReplyKey, VerifyReplyPrefix)) {
 			return bad("reply_key must be %s<id>", VerifyReplyPrefix)

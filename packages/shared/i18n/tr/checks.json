@@ -352,5 +352,65 @@
         "fix": "1. {subdomain} adresini artık kullanmıyorsanız: DNS sağlayıcınızda CNAME kaydını silin.\n2. Hâlâ gerekiyorsa: kaydı hizmetin güncel adresine yönlendirin.\n3. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "dependency_vulns": {
+    "name": "Açıklı bağımlılıklar",
+    "description": "Deponuzdaki kilit dosyalarında (lockfile; npm ve Python) yazan tam paket sürümlerini okur ve herkese açık bir güvenlik açığı veritabanıyla (GitHub Advisory Database'i de kapsayan OSV) karşılaştırır. Hangi paketin bilinen bir güvenlik açığı olduğunu ve hangi sürümün onu düzelttiğini söyler.",
+    "findings": {
+      "vulnerable_dependency_high": {
+        "title": "{package} {version} sürümünde ciddi bilinen açıklar var",
+        "summary": "{package} {version} ({ecosystem}, {manifest} içinde) yüksek ya da kritik dereceli bilinen açıklardan etkileniyor: {advisories}. {fixed_version} sürümü bunları düzeltiyor.",
+        "why": "Bu açıklar herkese açık ve belgelenmiştir; çoğunun çalışan istismar kodu vardır. Uygulamanız bu paketi kullanıyor: açıklı kısım kullanılıyorsa bir saldırgan kod çalıştırabilir, veri okuyabilir ya da hizmeti durdurabilir. GuardHub, kodunuzun açıklı fonksiyonu çağırıp çağırmadığını göremez; bu yüzden yükseltene kadar açık kabul edin.",
+        "fix": "1. {package} paketini {fixed_version} ya da daha yeni bir sürüme yükseltin. npm ile: `npm install {package}@{fixed_version}` (ya da onu getiren paketi güncelleyin). pip ile: sürümü `{package}=={fixed_version}` (ya da daha yeni) yapın ve yeniden kurun.\n2. Güncellenen kilit dosyasını ({manifest}) commit edin.\n3. Testlerinizi çalıştırın, yayına alın ve yeniden tarayın.\n4. Hemen yükseltemiyorsanız açıklara ({advisories}) bakın: çoğu geçici bir çözüm anlatır."
+      },
+      "vulnerable_dependency_medium": {
+        "title": "{package} {version} sürümünde bilinen açıklar var",
+        "summary": "{package} {version} ({ecosystem}, {manifest} içinde) orta dereceli (ya da henüz derecelendirilmemiş) bilinen açıklardan etkileniyor: {advisories}. {fixed_version} sürümü bunları düzeltiyor.",
+        "why": "Orta dereceli açıkların istismarı genellikle belirli koşullar ister: belirli bir yapılandırma, kullanıcı etkileşimi ya da girdi gibi. Yine de herkese açıktırlar ve kolayca aranırlar; yükseltmeyi bekletmek yerine planlayın.",
+        "fix": "1. {package} paketini {fixed_version} ya da daha yeni bir sürüme yükseltin. npm ile: `npm install {package}@{fixed_version}` (ya da onu getiren paketi güncelleyin). pip ile: sürümü `{package}=={fixed_version}` (ya da daha yeni) yapın ve yeniden kurun.\n2. Güncellenen kilit dosyasını ({manifest}) commit edin.\n3. Testlerinizi çalıştırın, yayına alın ve yeniden tarayın.\n4. Hemen yükseltemiyorsanız açıklara ({advisories}) bakın: çoğu geçici bir çözüm anlatır."
+      },
+      "vulnerable_dependency_low": {
+        "title": "{package} {version} sürümünde küçük bilinen açıklar var",
+        "summary": "{package} {version} ({ecosystem}, {manifest} içinde) düşük dereceli bilinen açıklardan etkileniyor: {advisories}. {fixed_version} sürümü bunları düzeltiyor.",
+        "why": "Düşük dereceli açıkların etkisi sınırlıdır ya da istismarı zordur. Yükseltmek onları kalıcı olarak kaldırır ve bağımlılıklarınızı güncel tutar; bir sonraki ciddi düzeltmeyi uygulamak da kolaylaşır.",
+        "fix": "1. {package} paketini {fixed_version} ya da daha yeni bir sürüme yükseltin. npm ile: `npm install {package}@{fixed_version}` (ya da onu getiren paketi güncelleyin). pip ile: sürümü `{package}=={fixed_version}` (ya da daha yeni) yapın ve yeniden kurun.\n2. Güncellenen kilit dosyasını ({manifest}) commit edin.\n3. Testlerinizi çalıştırın, yayına alın ve yeniden tarayın.\n4. Hemen yükseltemiyorsanız açıklara ({advisories}) bakın: çoğu geçici bir çözüm anlatır."
+      },
+      "vulnerable_dev_dependency": {
+        "title": "Geliştirme bağımlılığı {package} {version} bilinen açıklar içeriyor",
+        "summary": "{package} {version} ({ecosystem}, {manifest} içinde) yalnızca geliştirme ya da test için kullanılıyor ve bilinen açıklardan etkileniyor: {advisories}. Düzeltilmiş sürüm: {fixed_version} (\"-\", henüz düzeltme yayımlanmadığı anlamına gelir).",
+        "why": "Geliştirme araçları canlı sunucularınıza gitmez; bu yüzden kullanıcılarınız için risk düşüktür. Yine de geliştiricilerin bilgisayarlarında ve CI ortamınızda çalışırlar ve orada kaynak kodunuzu ve sırlarınızı görebilirler. Güncel tutun.",
+        "fix": "1. Geliştirme bağımlılıklarınızda {package} paketini {fixed_version} ya da daha yeni bir sürüme yükseltin. Düzeltilmiş sürüm \"-\" ise henüz düzeltme yoktur: aracı değiştirin ya da artık gerekmiyorsa kaldırın.\n2. Güncellenen kilit dosyasını ({manifest}) commit edin ve yeniden tarayın."
+      },
+      "vulnerable_dependency_no_fix": {
+        "title": "{package} {version} sürümünde henüz düzeltmesi olmayan bilinen açıklar var",
+        "summary": "{package} {version} ({ecosystem}, {manifest} içinde), yayımlanmış hiçbir sürümün düzeltmediği bilinen açıklardan etkileniyor: {advisories}.",
+        "why": "Yükseltilecek bir sürüm yok; çoğu zaman paket artık bakım görmüyordur. Açıklar herkese açık kalır, bu yüzden paketi kullandığınız sürece açık kalırsınız.",
+        "fix": "1. Açıkları ({advisories}) okuyun: bazıları geçici bir çözüm ya da açığın geçerli olduğu koşulları anlatır.\n2. {package} paketini bakımı süren bir alternatifle değiştirin ya da mümkünse kaldırın.\n3. Tutmanız gerekiyorsa etkilenen özelliği kullanmaktan kaçının ve düzeltme için açıkları takip edin.\n4. Değişiklikten sonra yeniden tarayın."
+      }
+    }
+  },
+  "repo_secrets": {
+    "name": "Kodunuzdaki sırlar",
+    "description": "Deponuzun güncel dosyalarında koda yazılmış kimlik bilgilerini arar: API anahtarları, erişim token'ları, özel anahtarlar ve veritabanı parolaları. Testlerdeki ve örneklerdeki sahte anahtarlar ile yer tutucular yok sayılır. Bulunan her şeyin yalnızca son dört karakteri saklanır.",
+    "findings": {
+      "hardcoded_secret": {
+        "title": "{file} dosyasında bir {secret_type} yazılı",
+        "summary": "{file} (satır {line}) bir {secret_type} içeriyor. Bu dosyada bu türden bulunan değer sayısı: {count}. GuardHub yalnızca son dört karakteri sakladı.",
+        "why": "Depoyu okuyabilen herkes bu kimlik bilgisini kullanabilir: şimdiki ve eski ekip üyeleri, dış yükleniciler, CI servisleri ve erişimi olan her araç; depo herkese açıksa ya da açılırsa bütün internet. Sonradan koddan silmek yetmez, çünkü git geçmişinde kalır. Sızan bir anahtar, pek çok veri ihlalinin başlangıç noktasıdır.",
+        "fix": "1. {secret_type} değerini, onu veren serviste hemen iptal edin ya da yenileyin. Depo gizli olsa bile sızmış kabul edin.\n2. Değeri {file} dosyasından kaldırın; bunun yerine bir ortam değişkeninden ya da bir sır yöneticisinden okuyun.\n3. Servisin kayıtlarında tanımadığınız bir kullanım olup olmadığına bakın.\n4. Git geçmişinden de silmeyi düşünün (git filter-repo ya da GitHub'ın hassas veri kaldırma rehberi). Değeri zararsız yapan şey ise yenilemektir.\n5. Yeniden tarayın."
+      },
+      "generic_secret": {
+        "title": "{file} dosyasındaki {variable}, koda yazılmış bir sır gibi görünüyor",
+        "summary": "{file} (satır {line}), {variable} değişkenine uzun ve rastgele bir değer atıyor. Bu dosyada bu türden bulunan değer sayısı: {count}. GuardHub yalnızca son dört karakteri sakladı.",
+        "why": "Değişkenin adı ve değerin rastgeleliği bir parolaya, imzalama anahtarına ya da API sırrına işaret ediyor. Gerçekten öyleyse depoya erişimi olan herkes onu kullanabilir ve değer git geçmişinde kalır. GuardHub hangi servise ait olduğunu bilemediği için bu bulgu orta derecelidir: kontrol edin.",
+        "fix": "1. {variable} değerinin ne olduğunu kontrol edin. Gerçek bir sırsa ilgili serviste yenileyin ya da yenisini üretin (imzalama anahtarıysa açık oturumlar kapanır).\n2. Değeri {file} dosyasından çıkarın: bir ortam değişkeninden ya da bir sır yöneticisinden okuyun.\n3. Sır değilse (bir test değeri ya da herkese açık bir kimlik), bu bulguyu yok sayabilirsiniz.\n4. Yeniden tarayın."
+      },
+      "test_mode_secret": {
+        "title": "{file} dosyasında bir {secret_type} yazılı",
+        "summary": "{file} (satır {line}) bir {secret_type} içeriyor. Bu dosyada bu türden bulunan değer sayısı: {count}. GuardHub yalnızca son dört karakteri sakladı.",
+        "why": "Test modu anahtarları gerçek para hareket ettiremez ve canlı müşteri verisine ulaşamaz; bu yüzden risk düşüktür. Yine de test hesabınıza ve ayarlarına erişim verirler. Test anahtarlarını koda yazma alışkanlığı, canlı anahtarların da koda girmesine yol açar.",
+        "fix": "1. Anahtarı sağlayıcının panelinde (test modunda) yenileyin.\n2. Değeri {file} yerine bir ortam değişkeninden okuyun.\n3. Yeniden tarayın."
+      }
+    }
   }
 }

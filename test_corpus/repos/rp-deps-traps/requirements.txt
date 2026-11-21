@@ -1,0 +1,4 @@
+Django>=2.0
+flask
+requests~=2.19
+git+https://github.com/example/private-lib.git#egg=private-lib

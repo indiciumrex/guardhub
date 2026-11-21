@@ -46,11 +46,11 @@
         "kind": {
           "type": "string",
           "description": "What was observed.",
-          "enum": ["http_response", "http_header", "tls_handshake", "dns_record"]
+          "enum": ["http_response", "http_header", "tls_handshake", "dns_record", "repo_file", "dependency"]
         },
         "location": {
           "type": "string",
-          "description": "URL or host:port where the evidence was captured.",
+          "description": "URL or host:port where the evidence was captured; for repo evidence, the file's GitHub URL (stable across commits).",
           "maxLength": 2048
         },
         "redacted_payload": {

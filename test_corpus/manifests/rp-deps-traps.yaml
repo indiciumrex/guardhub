@@ -1,0 +1,8 @@
+target: rp-deps-traps
+repo: lab/rp-deps-traps
+description: >
+  Nothing exact to read: ranges without a lockfile, an unpinned/VCS requirements file, a committed node_modules (vendored, skipped). Real but outside the declared scope: yarn.lock (not supported yet) and a vendored requirements file.
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-deps-traps/blob/HEAD/vendor/legacy/requirements.txt#pyyaml", params: {fixed_version: "5.4"}, outside: true, why: "osv-scanner v2.2.4: pyyaml@5.3 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 5.4; outside the declared scope: vendored directories are skipped"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-deps-traps/blob/HEAD/yarn.lock#lodash", params: {fixed_version: "4.18.0"}, outside: true, why: "osv-scanner v2.2.4: lodash@4.17.15 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 4.18.0; outside the declared scope: yarn.lock is not supported yet"}

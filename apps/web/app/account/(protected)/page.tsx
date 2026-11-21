@@ -1,15 +1,17 @@
 /**
- * Account home: the user's projects with their latest scan, plus "add project".
+ * Account home: the user's projects with their latest scan, "add project", and the connected
+ * GitHub repositories (ADR-0006).
  */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { AddProjectForm } from "@/components/account/AddProjectForm";
+import { GitHubSection } from "@/components/account/GitHubSection";
 import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
 import { SeverityCounts } from "@/components/scan/SeverityCounts";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
-import type { Project } from "@/lib/types";
+import type { GitHubStatus, Project } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("account");
@@ -17,8 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AccountHomePage() {
-  const projects = await loadProtected(() => serverApiFetch<Project[]>("/projects"));
+  const [projects, github] = await loadProtected(() =>
+    Promise.all([serverApiFetch<Project[]>("/projects"), serverApiFetch<GitHubStatus>("/github")]),
+  );
   const t = await getTranslations("account");
+  const tGitHub = await getTranslations("github");
   const format = await getFormatter();
 
   return (
@@ -54,7 +59,10 @@ export default async function AccountHomePage() {
                     {project.verified ? t("verified") : t("notVerified")}
                   </span>
                 </div>
-                <p className="gh-muted mt-1 break-all text-sm">{project.target_url}</p>
+                <p className="gh-muted mt-1 break-all text-sm">
+                  {project.kind === "repo" ? `${tGitHub("repoLabel")}: ` : null}
+                  {project.target_url}
+                </p>
                 {project.last_scan ? (
                   <div className="mt-4 space-y-2 text-sm">
                     <p>
@@ -80,6 +88,15 @@ export default async function AccountHomePage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section id="github" aria-labelledby="github-heading" className="gh-card max-w-2xl p-6">
+        <h2 id="github-heading" className="text-xl font-semibold">
+          {tGitHub("heading")}
+        </h2>
+        <div className="mt-4">
+          <GitHubSection status={github} />
+        </div>
       </section>
 
       <section aria-labelledby="add-heading" className="gh-card max-w-2xl p-6">

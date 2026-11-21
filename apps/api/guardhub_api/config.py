@@ -70,6 +70,44 @@ class Settings(BaseSettings):
     smtp_insecure_hosts: str = ""
     smtp_timeout_seconds: float = Field(default=15.0, ge=1, le=60)
 
+    # GitHub App for repository scanning (ADR-0006). Repo scanning is "configured" only when all
+    # four are set. The private key can mint tokens for every installation: it lives in a file
+    # (mounted read-only into the API containers only), never in an env value or the database.
+    github_app_slug: str = ""
+    github_client_id: str = ""
+    github_client_secret: SecretStr = SecretStr("")
+    github_private_key_file: str = ""
+    github_api_url: str = "https://api.github.com"
+    github_web_url: str = "https://github.com"
+    # api/api-worker have no internet: GitHub is reached through the CONNECT-only egress proxy
+    # (`scanner egress-proxy`, allowlist api.github.com + github.com). Empty = direct (dev/tests).
+    github_egress_proxy: str = ""
+
+    @property
+    def github_configured(self) -> bool:
+        return bool(
+            self.github_app_slug
+            and self.github_client_id
+            and self.github_client_secret.get_secret_value()
+            and self.github_private_key_file
+        )
+
+    @field_validator("github_app_slug")
+    @classmethod
+    def _slug(cls, v: str) -> str:
+        v = v.strip()
+        if v and not all(c.isalnum() or c == "-" for c in v):
+            raise ValueError("GITHUB_APP_SLUG must be the app's URL slug (letters, digits, '-')")
+        return v
+
+    @field_validator("github_api_url", "github_web_url")
+    @classmethod
+    def _https_base(cls, v: str) -> str:
+        v = v.strip().rstrip("/")
+        if not v.startswith("https://") and not v.startswith("http://"):
+            raise ValueError("must be an http(s) base URL")
+        return v
+
     @property
     def private_host_allowlist(self) -> frozenset[str]:
         return frozenset(h.strip().lower() for h in self.scanner_allow_private_hosts.split(",") if h.strip())

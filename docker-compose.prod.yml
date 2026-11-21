@@ -51,7 +51,14 @@ services:
       SCANNER_WORKERS: "2"
       SCANNER_CHECK_CONCURRENCY: "2"
       SCANNER_ALLOW_PRIVATE_HOSTS: "" # never in production
-    deploy: { resources: { limits: { cpus: "0.75", memory: 256M, pids: 128 } } }
+      # Repo scans hold one in-memory snapshot (<= 48 MiB, one at a time): the GC works harder
+      # well before the container limit instead of the kernel killing the scanner.
+      GOMEMLIMIT: "300MiB"
+    deploy: { resources: { limits: { cpus: "0.75", memory: 384M, pids: 128 } } }
+
+  github-egress:
+    <<: *logging
+    deploy: { resources: { limits: { cpus: "0.25", memory: 64M, pids: 64 } } }
 
   web:
     <<: *logging

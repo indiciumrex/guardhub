@@ -50,6 +50,8 @@ def _view(project: Project, last_scan: ScanSummary | None) -> ProjectView:
     return ProjectView(
         id=project.id,
         name=project.name,
+        kind="repo" if project.kind == "repo" else "site",
+        repo_full_name=project.repo_full_name,
         target_url=project.target_url,
         verified=project.ownership_verified_at is not None,
         ownership_verified_at=project.ownership_verified_at,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from dataclasses import dataclass
 
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
@@ -38,6 +39,14 @@ log = logging.getLogger("guardhub.scans")
 _CHECK_STATUSES = {"queued", "running", "done", "failed"}
 
 
+@dataclass(frozen=True, slots=True)
+class RepoJob:
+    """A repository scan (ADR-0006): owner/name plus the token narrowed to that repository."""
+
+    full_name: str
+    token: str
+
+
 async def create_and_enqueue(
     redis: Redis,
     *,
@@ -48,10 +57,11 @@ async def create_and_enqueue(
     public_token_hash: str | None,
     ctx: DbContext,
     trigger: ScanTrigger = "manual",
+    repo: RepoJob | None = None,
 ) -> Scan:
     settings = get_settings()
     async with db_session(ctx) as session:
-        checks = await enabled_check_ids(session)
+        checks = await enabled_check_ids(session, "repo" if repo else "site")
         if not checks:
             raise UnprocessableError("no_checks_enabled", "All checks are currently disabled.")
         scan = await repository.add(
@@ -68,13 +78,23 @@ async def create_and_enqueue(
             ),
         )
     try:
-        await queue.enqueue_scan(
-            redis,
-            scan_id=scan.id,
-            target=target,
-            checks=checks,
-            deadline_seconds=settings.scan_deadline_seconds,
-        )
+        if repo is not None:
+            await queue.enqueue_repo_scan(
+                redis,
+                scan_id=scan.id,
+                repo=repo.full_name,
+                token=repo.token,
+                checks=checks,
+                deadline_seconds=settings.scan_deadline_seconds,
+            )
+        else:
+            await queue.enqueue_scan(
+                redis,
+                scan_id=scan.id,
+                target=target,
+                checks=checks,
+                deadline_seconds=settings.scan_deadline_seconds,
+            )
     except RedisError as exc:
         log.exception("enqueue_failed", extra={"scan_id": str(scan.id)})
         async with db_session(DbContext.system()) as session:

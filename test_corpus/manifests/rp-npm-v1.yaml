@@ -1,0 +1,10 @@
+target: rp-npm-v1
+repo: lab/rp-npm-v1
+description: >
+  npm lockfile v1 (nested dependencies, dev packages).
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dev_dependency, location: "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#debug", params: {fixed_version: "2.6.9"}, why: "osv-scanner v2.2.4: debug@2.6.8 has 2 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 2.6.9"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#handlebars", params: {fixed_version: "4.7.10"}, why: "osv-scanner v2.2.4: handlebars@4.5.2 has 15 advisory group(s), max rating CRITICAL; lowest version fixing all: 4.7.10"}
+  - {check: dependency_vulns, key: vulnerable_dependency_medium, location: "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#jquery", params: {fixed_version: "3.5.0"}, why: "osv-scanner v2.2.4: jquery@3.4.1 has 2 advisory group(s), max rating MODERATE; lowest version fixing all: 3.5.0"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#minimist", params: {fixed_version: "1.2.6"}, why: "osv-scanner v2.2.4: minimist@1.2.0 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 1.2.6"}

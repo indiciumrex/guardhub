@@ -1,0 +1,7 @@
+jobs:
+  test:
+    steps:
+      - run: npm test
+        env:
+          DB_PASSWORD: "${{ secrets.DB_PASSWORD }}"
+          API_SECRET: "${{ secrets.API_SECRET }}"

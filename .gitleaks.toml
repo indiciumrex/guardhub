@@ -14,6 +14,13 @@ paths = [
   '''apps/api/tests/.*''',
   '''ops/demo-target/site/.*''',
   '''\.env\.example''',
+  # Validation lab trap repository (ADR-0006 §10): look-alikes that repo_secrets must NOT
+  # report (digests, ids, placeholders). Real-format planted secrets are never committed:
+  # they are {{secret:...}} templates filled at lab time.
+  '''test_corpus/repos/rp-secrets-traps/.*''',
+  # Public OSV advisory records recorded for the lab (third-party text): their exploit examples
+  # contain illustrative values (e.g. GHSA-r4q5-vmmm-2653's "sk-live-secret123"), not credentials.
+  '''test_corpus/osv/vulns/.*\.json''',
 ]
 # Catalogue identifiers, not secrets: `"key": "weak_cipher_3des"` (check-ids.json, the
 # accuracy scorecards) trips generic-api-key. Only a "key" whose value is a snake_case

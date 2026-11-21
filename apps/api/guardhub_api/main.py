@@ -25,6 +25,7 @@ from guardhub_api.common.observability import init_observability
 from guardhub_api.common.redis import close_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
+from guardhub_api.github.router import router as github_router
 from guardhub_api.health.router import router as health_router
 from guardhub_api.jobs.client import close_arq
 from guardhub_api.projects.router import router as projects_router
@@ -104,6 +105,7 @@ def create_app() -> FastAPI:
         admin_router,
         trusted_domains_router,
         alerts_router,
+        github_router,
     ):
         api.include_router(r)
     app.include_router(api)

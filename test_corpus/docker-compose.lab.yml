@@ -215,6 +215,18 @@ services:
     image: webgoat/webgoat:v2023.8@sha256:01672eb9aeba60d042ae1131d6de683b98fa64e9da60fa5d3daad2642a6795dd
     networks: { lab: { aliases: [webgoat.lab.test] } }
 
+  # ---- repository targets (ADR-0006 §10): GitHub API + OSV stand-in ----
+  # Serves test_corpus/repos as lab/<dir> (planted secrets filled from {{secret:...}}
+  # templates at request time) and replays the OSV answers recorded in test_corpus/osv;
+  # an unrecorded OSV query is an error, never an empty answer.
+  repolab:
+    image: guardhub-lab-tools:local
+    depends_on: { pki: { condition: service_completed_successfully } }
+    command: ["labrepo", "serve", "--repos", "/corpus/repos", "--osv", "/corpus/osv", "--listen", ":80"]
+    read_only: true
+    volumes: [./repos:/corpus/repos:ro, ./osv:/corpus/osv:ro]
+    networks: { lab: { aliases: [github.lab.test, osv.lab.test] } }
+
   # ---- the measurement (docker compose --profile run run --rm runner) ----
   runner:
     image: guardhub-lab-tools:local
@@ -229,9 +241,12 @@ services:
         hh-cors-cred.lab.test,hh-cors-null.lab.test,hh-cors-public.lab.test,hh-csp-weak.lab.test,hh-csp-strict.lab.test,hh-meta-csp.lab.test,hh-xfo-allowfrom.lab.test,hh-referrer.lab.test,hh-csrf-cookie.lab.test,
         good.dns.lab.test,nospf.dns.lab.test,plusall.dns.lab.test,chunked.dns.lab.test,twospf.dns.lab.test,toomany.dns.lab.test,nodmarc.dns.lab.test,pnone.dns.lab.test,nullmx.dns.lab.test,nomail.dns.lab.test,axfr.dns.lab.test,openres.dns.lab.test,dkimonly.dns.lab.test,dkimreject.dns.lab.test,ns.dns.lab.test,ns-open.dns.lab.test,
         ct.lab.test,s3pos.st.lab.test,azpos.st.lab.test,bbpos.st.lab.test,surgepos.st.lab.test,dangpos.st.lab.test,chainpos.st.lab.test,claimed.st.lab.test,edgecase.st.lab.test,plain.st.lab.test,scope.st.lab.test,
-        assets.s3pos.st.lab.test,cdn.chainpos.st.lab.test,files.claimed.st.lab.test,docs.bbpos.st.lab.test,docs.claimed.st.lab.test,www.surgepos.st.lab.test,blog.edgecase.st.lab.test,help.edgecase.st.lab.test
+        assets.s3pos.st.lab.test,cdn.chainpos.st.lab.test,files.claimed.st.lab.test,docs.bbpos.st.lab.test,docs.claimed.st.lab.test,www.surgepos.st.lab.test,blog.edgecase.st.lab.test,help.edgecase.st.lab.test,
+        github.lab.test,osv.lab.test
       SCANNER_DNS_SERVER: dns-res.lab.test:53
       SCANNER_CT_URL: http://ct.lab.test/
+      SCANNER_GITHUB_API_URL: http://github.lab.test
+      SCANNER_OSV_URL: http://osv.lab.test
       LAB_SOURCE: ${LAB_SOURCE:-unknown}
     volumes:
       - ./manifests:/corpus/manifests:ro

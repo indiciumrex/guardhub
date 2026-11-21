@@ -90,7 +90,15 @@
     "trusted_domain_inactive": "The trusted domain for this site isn't active right now. Verify it again under Administration → Trusted domains, or prove ownership of the project directly.",
     "trusted_domain_not_found": "We couldn't find that trusted domain. It may have been removed.",
     "trusted_domain_exists": "This address is already in your trusted domains.",
-    "trusted_domain_limit_reached": "You've reached the maximum number of trusted domains. Remove one to add another."
+    "trusted_domain_limit_reached": "You've reached the maximum number of trusted domains. Remove one to add another.",
+    "github_not_configured": "Connecting GitHub is not available yet.",
+    "github_unavailable": "GitHub didn't answer. Please try again in a moment.",
+    "github_state_invalid": "This GitHub link expired or was already used. Please connect again from your account page.",
+    "github_installation_not_yours": "That GitHub installation doesn't belong to your GitHub account.",
+    "github_installation_taken": "This GitHub installation is already connected to another GuardHub account.",
+    "github_installation_not_found": "This GitHub connection was not found.",
+    "repo_not_found": "That repository isn't shared with GuardHub. Add it in the app's settings on GitHub first.",
+    "repo_access_lost": "GuardHub can no longer read this repository. Connect GitHub again and share it."
   },
   "severity": {
     "critical": "Critical",
@@ -176,7 +184,7 @@
       },
       "privacy": {
         "title": "Your data stays private",
-        "body": "Anything sensitive we find is masked before it's stored, so even the evidence never shows a full secret. We keep only what your report needs. To find the subdomains of your verified domain, GuardHub searches the public Certificate Transparency logs (crt.sh): your domain name, which is already public in those logs, is sent to that service, and no other data is shared."
+        "body": "Anything sensitive we find is masked before it's stored, so even the evidence never shows a full secret. We keep only what your report needs. To find the subdomains of your verified domain, GuardHub searches the public Certificate Transparency logs (crt.sh): your domain name, which is already public in those logs, is sent to that service, and no other data is shared. If you connect GitHub repositories, their dependencies and contents are read to find vulnerable packages and secrets committed to the code; your code is not stored. To look up known vulnerabilities, only package names and versions are sent to OSV (api.osv.dev)."
       }
     },
     "final": {
@@ -254,7 +262,9 @@
       "target_blocked": "We can't scan this address because it points to a private or internal network, or the site blocked our checks.",
       "timeout": "The scan took too long and was stopped. Your site may be slow right now. Please try again later.",
       "internal": "Something went wrong on our side while scanning. Please try again in a moment.",
-      "queue_unavailable": "Scanning was temporarily unavailable, so this scan didn't start. Please try again in a few minutes."
+      "queue_unavailable": "Scanning was temporarily unavailable, so this scan didn't start. Please try again in a few minutes.",
+      "repo_access_lost": "GuardHub can no longer read this repository: it was removed from the app's access, deleted, or the app was uninstalled. Connect GitHub again and share it.",
+      "repo_empty": "This repository has no commits yet, so there is nothing to scan."
     },
     "saveBody": "Want to keep this report, rescan later and see what changed? Save it to a free account.",
     "saveCta": "Save this scan & rescan later"
@@ -623,5 +633,32 @@
     "confirmRemove": "Remove {host} from your trusted domains? Its projects will need a fresh ownership proof before their next scan.",
     "confirmYes": "Yes, remove it",
     "cancel": "Cancel"
+  },
+  "github": {
+    "heading": "GitHub repositories",
+    "intro": "Connect your GitHub repositories to find vulnerable dependencies and secrets committed to the code. GuardHub gets read-only access to the repositories you choose, reads them in memory during a scan and never stores your code.",
+    "notConfigured": "Connecting GitHub is not available yet.",
+    "connect": "Connect GitHub",
+    "connectHint": "On GitHub, choose “Only select repositories” and pick the ones you want scanned. You can change the selection on GitHub at any time.",
+    "connectedAs": "GitHub account {account}",
+    "chooseRepos": "Choose repositories",
+    "hideRepos": "Hide repositories",
+    "noRepos": "No repositories are shared with GuardHub yet. Add some in the app's settings on GitHub.",
+    "private": "private",
+    "add": "Add",
+    "openProject": "Open project",
+    "disconnect": "Disconnect",
+    "disconnectConfirm": "Disconnect {account}? GuardHub will be uninstalled from this GitHub account and its repositories will no longer be scanned. Past reports stay in your account.",
+    "manageOnGitHub": "Change which repositories GuardHub can read (on GitHub)",
+    "repoLabel": "GitHub repository",
+    "repoConnected": "Connected through GitHub.",
+    "repoConnectedOn": "Connected through GitHub on {date}.",
+    "repoAccessLost": "GuardHub can no longer read this repository. Connect GitHub again on your account page and share this repository.",
+    "backToAccount": "Back to your account",
+    "callbackTitle": "Connecting GitHub",
+    "callbackWorking": "Checking the connection with GitHub…",
+    "callbackMissing": "This link is incomplete. Start again from your account page.",
+    "pendingLabel": "Waiting for approval",
+    "callbackPending": "An owner of the GitHub organization must approve GuardHub before its repositories can be added. Ask them to approve it on GitHub, then connect again."
   }
 }

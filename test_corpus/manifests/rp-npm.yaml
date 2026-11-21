@@ -1,0 +1,13 @@
+target: rp-npm
+repo: lab/rp-npm
+description: >
+  npm lockfile v3 (runtime and dev packages, one advisory with no fix). Dependency truth: osv-scanner v2.2.4 on the repository, rated per docs/checks/dependency_vulns.md.
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dependency_low, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#cookie", params: {fixed_version: "0.7.0"}, why: "osv-scanner v2.2.4: cookie@0.6.0 has 1 advisory group(s), max rating LOW; lowest version fixing all: 0.7.0"}
+  - {check: dependency_vulns, key: vulnerable_dependency_medium, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#follow-redirects", params: {fixed_version: "1.16.0"}, why: "osv-scanner v2.2.4: follow-redirects@1.15.5 has 2 advisory group(s), max rating MODERATE; lowest version fixing all: 1.16.0"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#lodash", params: {fixed_version: "4.18.0"}, why: "osv-scanner v2.2.4: lodash@4.17.15 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 4.18.0"}
+  - {check: dependency_vulns, key: vulnerable_dev_dependency, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#minimatch", params: {fixed_version: "3.1.4"}, why: "osv-scanner v2.2.4: minimatch@3.0.4 has 4 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 3.1.4"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#minimist", params: {fixed_version: "1.2.6"}, why: "osv-scanner v2.2.4: minimist@1.2.5 has 1 advisory group(s), max rating CRITICAL; lowest version fixing all: 1.2.6"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#node-fetch", params: {fixed_version: "2.6.7"}, why: "osv-scanner v2.2.4: node-fetch@2.6.0 has 2 advisory group(s), max rating HIGH; lowest version fixing all: 2.6.7"}
+  - {check: dependency_vulns, key: vulnerable_dependency_no_fix, location: "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#request", why: "osv-scanner v2.2.4: request@2.88.2 has 1 advisory group(s), max rating MODERATE (no fixed version)"}

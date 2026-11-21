@@ -1,0 +1,8 @@
+target: rp-poetry
+repo: lab/rp-poetry
+description: >
+  poetry.lock format 1.x (category main/dev).
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dev_dependency, location: "https://github.com/lab/rp-poetry/blob/HEAD/poetry.lock#ipython", params: {fixed_version: "8.10.0"}, why: "osv-scanner v2.2.4: ipython@8.0.0 has 2 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 8.10.0"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-poetry/blob/HEAD/poetry.lock#pillow", params: {fixed_version: "13.0.0"}, why: "osv-scanner v2.2.4: pillow@9.0.0 has 54 advisory group(s), max rating CRITICAL; lowest version fixing all: 13.0.0"}

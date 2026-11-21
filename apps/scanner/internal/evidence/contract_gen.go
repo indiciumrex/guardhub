@@ -21,6 +21,8 @@ const (
 	KindHttpHeader   Kind = "http_header"
 	KindTlsHandshake Kind = "tls_handshake"
 	KindDnsRecord    Kind = "dns_record"
+	KindRepoFile     Kind = "repo_file"
+	KindDependency   Kind = "dependency"
 )
 
 // Evidence: Masked proof that supports the finding (§6: never contains a raw secret).
@@ -52,6 +54,8 @@ const (
 	CheckHttpHardening     = "http_hardening"
 	CheckDnsEmail          = "dns_email"
 	CheckSubdomainTakeover = "subdomain_takeover"
+	CheckDependencyVulns   = "dependency_vulns"
+	CheckRepoSecrets       = "repo_secrets"
 )
 
 // FindingKeys maps check id -> finding key -> default severity (check-ids.json).
@@ -125,4 +129,22 @@ var FindingKeys = map[string]map[string]Severity{
 		"unclaimed_resource": SeverityHigh,
 		"dangling_cname":     SeverityLow,
 	},
+	"dependency_vulns": {
+		"vulnerable_dependency_high":   SeverityHigh,
+		"vulnerable_dependency_medium": SeverityMedium,
+		"vulnerable_dependency_low":    SeverityLow,
+		"vulnerable_dev_dependency":    SeverityLow,
+		"vulnerable_dependency_no_fix": SeverityMedium,
+	},
+	"repo_secrets": {
+		"hardcoded_secret": SeverityHigh,
+		"generic_secret":   SeverityMedium,
+		"test_mode_secret": SeverityLow,
+	},
+}
+
+// RepoChecks holds the ids of checks that scan a connected repository (check-ids.json "target": "repo").
+var RepoChecks = map[string]bool{
+	"dependency_vulns": true,
+	"repo_secrets":     true,
 }

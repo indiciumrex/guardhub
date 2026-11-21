@@ -41,6 +41,14 @@ x-api-env: &api-env
   SMTP_FROM: ${SMTP_FROM:-}
   SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
   SMTP_INSECURE_HOSTS: ${SMTP_INSECURE_HOSTS:-}
+  # GitHub App for repository scanning (ADR-0006). Unset = "not configured" (the UI says so).
+  # The private key is a FILE in GITHUB_APP_KEY_DIR, mounted read-only into api and api-jobs only;
+  # set GITHUB_PRIVATE_KEY_FILE=/run/github-app/app.pem once it is there.
+  GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+  GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+  GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+  GITHUB_PRIVATE_KEY_FILE: ${GITHUB_PRIVATE_KEY_FILE:-}
+  GITHUB_EGRESS_PROXY: ${GITHUB_EGRESS_PROXY:-http://github-egress:8888}
 
 services:
   postgres:
@@ -99,6 +107,8 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
+    volumes:
+      - ${GITHUB_APP_KEY_DIR:-./ops/github-app}:/run/github-app:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4).status in (200,) else 1)"]
       interval: 10s
@@ -134,6 +144,8 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SCHEDULER_BATCH: ${SCHEDULER_BATCH:-10}
       SCHEDULER_MAX_INFLIGHT: ${SCHEDULER_MAX_INFLIGHT:-2}
+    volumes:
+      - ${GITHUB_APP_KEY_DIR:-./ops/github-app}:/run/github-app:ro # scheduled repo scans mint tokens
     read_only: true
     tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
@@ -156,6 +168,9 @@ services:
       SCANNER_REQUEST_TIMEOUT: ${SCANNER_REQUEST_TIMEOUT:-10s}
       SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
       SCANNER_CT_URL: ${SCANNER_CT_URL:-}
+      # Repo scans (ADR-0006): empty = api.github.com / api.osv.dev.
+      SCANNER_GITHUB_API_URL: ${SCANNER_GITHUB_API_URL:-}
+      SCANNER_OSV_URL: ${SCANNER_OSV_URL:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SENTRY_DSN_SCANNER: ${SENTRY_DSN_SCANNER:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
@@ -195,6 +210,21 @@ services:
       # reverse proxy in front for public traffic (see docker-compose.prod.yml / the runbook).
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     networks: [backend, frontend]
+
+  # CONNECT-only egress proxy (ADR-0006): the ONLY way api/api-jobs reach GitHub. It tunnels TLS
+  # to exactly api.github.com:443 and github.com:443 (it never sees tokens or content) and
+  # refuses private addresses. Same image as the scanner (`scanner egress-proxy`).
+  github-egress:
+    image: guardhub-scanner:${GUARDHUB_VERSION:-local}
+    restart: unless-stopped
+    command: ["egress-proxy"]
+    environment:
+      EGRESS_PROXY_LISTEN: ":8888"
+      EGRESS_PROXY_ALLOW: "api.github.com,github.com"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    networks: [backend, egress]
 
   # Sentry Relay in proxy mode: the ONLY way api/api-worker reach the error-tracking server.
   # api and api-worker stay on the internal network; only the relay gets egress, and it only

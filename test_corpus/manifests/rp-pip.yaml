@@ -1,0 +1,13 @@
+target: rp-pip
+repo: lab/rp-pip
+description: >
+  requirements.txt exact pins and requirements-dev.txt (dev). osv-scanner also lists requirements.txt's packages under requirements-dev.txt (it follows -r); GuardHub reports each package once, under the file that pins it.
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dev_dependency, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements-dev.txt#pytest", params: {fixed_version: "9.0.3"}, why: "osv-scanner v2.2.4: pytest@8.3.3 has 1 advisory group(s), max rating MODERATE, development dependency; lowest version fixing all: 9.0.3"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#ecdsa", params: {fixed_version: "0.19.2"}, why: "osv-scanner v2.2.4: ecdsa@0.19.0 has 2 advisory group(s), max rating HIGH; lowest version fixing all: 0.19.2"}
+  - {check: dependency_vulns, key: vulnerable_dependency_medium, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#idna", params: {fixed_version: "3.15"}, why: "osv-scanner v2.2.4: idna@3.10 has 1 advisory group(s), max rating MODERATE; lowest version fixing all: 3.15"}
+  - {check: dependency_vulns, key: vulnerable_dependency_medium, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#jinja2", params: {fixed_version: "3.1.6"}, why: "osv-scanner v2.2.4: jinja2@2.11.2 has 5 advisory group(s), max rating MODERATE; lowest version fixing all: 3.1.6"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#pyyaml", params: {fixed_version: "5.4"}, why: "osv-scanner v2.2.4: pyyaml@5.3 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 5.4"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#requests", params: {fixed_version: "2.33.0"}, why: "osv-scanner v2.2.4: requests@2.19.0 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 2.33.0"}
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#urllib3", params: {fixed_version: "2.8.0"}, why: "osv-scanner v2.2.4: urllib3@1.26.4 has 11 advisory group(s), max rating HIGH; lowest version fixing all: 2.8.0"}

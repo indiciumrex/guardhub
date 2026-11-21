@@ -34,7 +34,14 @@ from guardhub_api.scans import repository
 log = logging.getLogger("guardhub.ingest")
 
 MAX_FINDINGS_PER_SCAN = 500
-SCAN_FAILURE_CODES = {"target_unreachable", "target_blocked", "timeout", "internal"}
+SCAN_FAILURE_CODES = {
+    "target_unreachable",
+    "target_blocked",
+    "timeout",
+    "internal",
+    "repo_access_lost",
+    "repo_empty",
+}
 
 
 def _parse_time(value: object) -> datetime:

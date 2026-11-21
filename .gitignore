@@ -38,3 +38,12 @@ ops/demo-target/site/.well-known/
 .claude/
 ops/demo-target/site/.env.parked
 docs/accuracy/raw-results.json
+
+# GitHub App private keys never enter the repository (ADR-0006)
+ops/github-app/*.pem
+
+# Validation lab repositories are fixtures and are committed whole (ADR-0006 §10): a committed
+# .env and node_modules are exactly what they test. Planted secrets in them are templates.
+!test_corpus/repos/*/.env
+!test_corpus/repos/**/node_modules/
+!test_corpus/repos/**/node_modules/**

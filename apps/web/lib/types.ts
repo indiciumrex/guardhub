@@ -136,9 +136,14 @@ export interface ProjectVerification extends OwnershipInstructions {
   token: string;
 }
 
+export type ProjectKind = "site" | "repo";
+
 export interface Project {
   id: string;
   name: string;
+  /** "repo": a GitHub repository connected through the GitHub App (ADR-0006). */
+  kind: ProjectKind;
+  repo_full_name: string | null;
   target_url: string;
   verified: boolean;
   ownership_verified_at: string | null;
@@ -284,4 +289,24 @@ export function listItems<T>(payload: ListPayload<T> | null | undefined): T[] {
 
 export function isScanActive(status: ScanStatus): boolean {
   return status === "queued" || status === "running";
+}
+
+// GitHub repository scanning (ADR-0006)
+export interface GitHubInstallation {
+  id: string;
+  account_login: string;
+  account_type: "User" | "Organization";
+  created_at: string;
+}
+
+export interface GitHubStatus {
+  configured: boolean;
+  installations: GitHubInstallation[];
+}
+
+export interface GitHubRepo {
+  repo_id: number;
+  full_name: string;
+  private: boolean;
+  project_id: string | null;
 }

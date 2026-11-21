@@ -351,3 +351,82 @@ validation lab (`bash test_corpus/run.sh`), says the check meets the gate.
     recovers.
 - **Updating the takeover provider list:** see docs/checks/subdomain_takeover.md ("The curated
   provider list"). It is embedded in the scanner image, so a list change ships as a release.
+
+## 9. GitHub repository scanning (ADR-0006)
+
+Repository scanning (`dependency_vulns`, `repo_secrets`) needs a **GitHub App** that the founder
+creates once. Until then the account page says "Connecting GitHub is not available yet" and
+nothing else changes. Both modules ship **disabled** (migration 0008) and are enabled in the
+admin panel like the Phase 2 modules (accuracy-gated).
+
+### 9.1 Create the GitHub App (once, on github.com)
+
+GitHub → Settings → Developer settings → GitHub Apps → **New GitHub App**:
+
+| Setting | Value |
+|---|---|
+| Name | GuardHub (the URL slug becomes `GITHUB_APP_SLUG`) |
+| Homepage URL | `https://guardhub.dev` |
+| Callback URL | `https://guardhub.dev/account/github/callback` |
+| Request user authorization (OAuth) during installation | **on** (this is how GuardHub proves an installation belongs to the user, ADR-0006 §3) |
+| Expire user authorization tokens | on |
+| Setup URL | empty ("Redirect on update" off) |
+| Webhook | **Active: off** (GuardHub needs no webhooks) |
+| Repository permissions | **Contents: Read-only**, Metadata: Read-only (automatic). Nothing else. |
+| Organization / account permissions | none |
+| Where can this app be installed | Any account |
+
+Then on the App's page:
+
+1. Note the **Client ID** (`Iv…`). GuardHub signs its App JWTs with it.
+2. **Generate a new client secret** and copy it once.
+3. **Generate a private key**. A `.pem` file downloads.
+
+### 9.2 Put the credentials on the server (never in the repository)
+
+```sh
+# on 49.13.95.138, as root
+install -d -m 0700 -o 10001 -g 10001 /opt/guardhub/shared/github-app
+install -m 0400 -o 10001 -g 10001 /path/to/downloaded.pem /opt/guardhub/shared/github-app/app.pem
+shred -u /path/to/downloaded.pem
+```
+
+Add to `/opt/guardhub/shared/.env` (mode 0600):
+
+```
+GITHUB_APP_SLUG=<slug>
+GITHUB_CLIENT_ID=<client id>
+GITHUB_CLIENT_SECRET=<client secret>
+GITHUB_APP_KEY_DIR=/opt/guardhub/shared/github-app
+GITHUB_PRIVATE_KEY_FILE=/run/github-app/app.pem
+```
+
+Then redeploy the current release (`guardhub-ctl.sh activate <current>`, or the next deploy).
+
+**Check that it works:**
+
+- `GET /api/v1/github` returns `"configured": true` for a signed-in user.
+- "Connect GitHub" opens GitHub's install screen.
+
+### 9.3 How it runs
+
+- **`github-egress`** (`scanner egress-proxy`) is the only way `api`/`api-jobs` reach GitHub:
+  - CONNECT-only, to `api.github.com:443` and `github.com:443`;
+  - its log line `egress refused` means something asked for another host;
+  - `api` and `api-worker` keep having no internet.
+- **The private key** is mounted read-only at `/run/github-app` in `api` and `api-jobs` only.
+  The scanner never has it.
+- **Each repo scan** mints a token for exactly one repository (contents:read, 1 hour). It
+  passes through a one-time Redis key (`gh:repo-token:<job>`, 10 minutes, read with GETDEL)
+  and is revoked when the scan ends.
+- **The scanner reads repositories** from `api.github.com` and `codeload.github.com` (tarball)
+  and asks `api.osv.dev` about package versions (`SCANNER_OSV_URL`). It holds at most one
+  48 MiB snapshot in memory at a time (scanner limit 384 MB, `GOMEMLIMIT=300MiB`).
+
+### 9.4 Rotating or revoking
+
+- **Private key:** generate a new key on the App page, replace `app.pem` (same mode and owner),
+  redeploy, then delete the old key on GitHub.
+- **Client secret:** generate a new one, update `.env`, redeploy, delete the old one.
+- **Emergency:** "Suspend" or delete the App on GitHub. Every installation token dies at once,
+  and repo scans fail with `repo_access_lost` until it is restored.

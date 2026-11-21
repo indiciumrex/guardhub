@@ -245,6 +245,11 @@ Module       (id, key, name, category, enabled_global, min_plan[free|pro|agency]
 AIConfig     (id, provider, api_key_ref, enabled, updated_by, updated_at)  # anahtar şifreli
 HealthCheck  (id, module_key, status[ok|degraded|down], error_rate, latency_ms, checked_at)
 AuditLog     (id, actor, action, target, at)                        # değişmez (append-only)
+
+# Repo bağlama (ADR-0006)
+GitHubInstallation (id, user_id, installation_id, account_login, account_type,
+                    created_at, revoked_at)   # token SAKLANMAZ; tarama başına daraltılmış token
+Project.kind [site|repo] + repo_id, repo_full_name, github_installation_id
 ```
 
 **Kurallar:**

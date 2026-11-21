@@ -1,0 +1,6 @@
+target: rp-clean
+repo: lab/rp-clean
+description: >
+  Clean repository: up-to-date pins (no OSV advisory on 2026-11-21) and secrets read from the environment.
+checks: [dependency_vulns, repo_secrets]
+expect: []

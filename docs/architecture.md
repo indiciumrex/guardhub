@@ -394,3 +394,35 @@ Clarifications (as built):
 - Rescans and (§8.2) scheduled scans of `trusted_domain` projects call
   `admin.trusted_domains.ownership.require_trusted_domain(user_id, origin)` (DB role re-checked);
   a revoked, suspended or stale domain gives 422 `trusted_domain_inactive` and nothing is queued.
+
+## 9. Repository scanning (Phase 3, ADR-0006)
+
+- **Connect:** `POST /github/connect` → GitHub's install screen (state in Redis, 10 minutes,
+  single use) → `/account/github/callback` → `POST /github/installations {code,
+  installation_id, state}`. The API exchanges the code, checks `GET /user/installations`
+  contains the installation, revokes the user token, and stores only the installation id
+  (`github_installations`, RLS like projects, one live owner per installation).
+- **Repositories:**
+  - `GET /github/installations/{id}/repositories` lists them through a metadata-only token,
+    revoked after.
+  - `POST …/repositories {repo_id}` creates a project with `kind = 'repo'`,
+    `ownership_method = 'github_app'`, `target_url = https://github.com/<owner>/<name>`.
+  - `DELETE /github/installations/{id}` uninstalls the App at GitHub, marks the row revoked
+    and stops its projects (history kept).
+- **Scan:**
+  - `start_project_scan` mints a token narrowed to `repository_ids: [repo_id]` with
+    `contents: read`. Failure means 422 `repo_access_lost`, and a scheduled project pauses like
+    a lost ownership proof.
+  - The API stores the token at `gh:repo-token:<job_id>` (10 minutes) and queues
+    `{"kind": "repo_scan", "repo", "token_key", "checks": [repo checks]}`.
+  - The scanner GETDELs the token, reads the default branch's tarball into memory
+    (`internal/repo`), runs the repo checks (`checks.RepoRegistry`) and publishes the usual
+    `scan.completed`. It revokes the token in every case.
+  - New `scan.failed` codes: `repo_access_lost`, `repo_empty`. Check-level codes:
+    `repo_too_large`, `manifest_unreadable`, `advisory_db_unavailable`.
+- **Egress:**
+  - `api`/`api-jobs` reach GitHub only through `github-egress` (CONNECT-only allowlist).
+  - The scanner reaches `api.github.com`, `codeload.github.com` and `api.osv.dev` through the
+    probe IP guard (`probe.NewEgressTransport`), outside the per-target request budget.
+- **Check selection:** `modules.enabled_check_ids(session, "repo"|"site")`. Repo checks
+  (check-ids.json `"target": "repo"`) never run on sites, and the reverse.

@@ -21,8 +21,10 @@ import (
 	"github.com/hksolutions/guardhub/apps/scanner/internal/accuracy"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/config"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/probe"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/queue"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/repo"
 )
 
 // runLab exit codes: 0 = scored (whatever the scores are), 1 = failure, 2 = usage.
@@ -68,8 +70,13 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 		InsecureSkipVerify: true, // same as production scans: tls_cert reports certificate problems
 		DNSServer:          cfg.DNSServer,
 	}
+	// Repo targets (ADR-0006): the lab's GitHub and OSV stand-ins, reached
+	// through the production egress transport (IP guard + allowlist).
+	egress := probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts)
 	svc := &queue.Service{
 		Registry:     checks.DefaultWith(opts),
+		RepoRegistry: checks.DefaultRepo(checks.RepoOptions{OSVURL: cfg.OSVURL, Transport: egress}),
+		Repo:         queue.RepoScanConfig{GitHubAPI: cfg.GitHubAPIURL, Transport: egress, Timeout: 60 * time.Second, Limits: repo.DefaultLimits()},
 		NewScanProbe: func() *probe.Client { return probe.New(scanOpts) },
 		Logger:       logger,
 		Now:          time.Now,
@@ -78,11 +85,23 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 	var runs []accuracy.TargetRun
 	for _, m := range ms {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		findings, checkResults, cost, err := svc.ScanLabOrigin(ctx, m.Origin, cfg.AllowPrivateHosts)
+		var (
+			findings     []evidence.Finding
+			checkResults []queue.CheckResult
+			cost         map[string]int
+			err          error
+		)
+		origin := m.Origin
+		if m.IsRepo() {
+			origin = "github:" + m.Repo
+			findings, checkResults, err = svc.ScanLabRepo(ctx, m.Repo, cfg.AllowPrivateHosts, cfg.OSVURL)
+		} else {
+			findings, checkResults, cost, err = svc.ScanLabOrigin(ctx, m.Origin, cfg.AllowPrivateHosts)
+		}
 		cancel()
-		run := accuracy.TargetRun{Target: m.Target, Origin: m.Origin, Findings: findings, Failed: map[string]string{}, Requests: cost}
+		run := accuracy.TargetRun{Target: m.Target, Origin: origin, Findings: findings, Failed: map[string]string{}, Requests: cost}
 		if errors.Is(err, queue.ErrNotALabTarget) {
-			logger.Error("refusing a non-lab target", "target", m.Target, "origin", m.Origin)
+			logger.Error("refusing a non-lab target", "target", m.Target, "origin", origin)
 			return 1
 		}
 		if err != nil {

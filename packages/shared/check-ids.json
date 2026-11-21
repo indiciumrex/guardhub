@@ -1,5 +1,5 @@
 {
-  "$comment": "Single catalog of check ids (GUARDHUB_STANDARDS §7.4). ids and finding_keys are permanent: never rename or reuse one. i18n keys: checks.<id>.<finding_key>.{title,summary,why,fix}.",
+  "$comment": "Single catalog of check ids (GUARDHUB_STANDARDS §7.4). ids and finding_keys are permanent: never rename or reuse one. i18n keys: checks.<id>.<finding_key>.{title,summary,why,fix}. \"target\": \"repo\" marks checks that scan a connected repository (ADR-0006); every other check scans a site.",
   "version": 1,
   "checks": [
     {
@@ -109,6 +109,28 @@
       "finding_keys": [
         { "key": "unclaimed_resource", "severity": "high", "params": ["subdomain", "provider"] },
         { "key": "dangling_cname", "severity": "low", "params": ["subdomain", "target"] }
+      ]
+    },
+    {
+      "id": "dependency_vulns",
+      "category": "repo",
+      "target": "repo",
+      "finding_keys": [
+        { "key": "vulnerable_dependency_high", "severity": "high", "params": ["package", "version", "ecosystem", "manifest", "advisories", "fixed_version"] },
+        { "key": "vulnerable_dependency_medium", "severity": "medium", "params": ["package", "version", "ecosystem", "manifest", "advisories", "fixed_version"] },
+        { "key": "vulnerable_dependency_low", "severity": "low", "params": ["package", "version", "ecosystem", "manifest", "advisories", "fixed_version"] },
+        { "key": "vulnerable_dev_dependency", "severity": "low", "params": ["package", "version", "ecosystem", "manifest", "advisories", "fixed_version"] },
+        { "key": "vulnerable_dependency_no_fix", "severity": "medium", "params": ["package", "version", "ecosystem", "manifest", "advisories"] }
+      ]
+    },
+    {
+      "id": "repo_secrets",
+      "category": "repo",
+      "target": "repo",
+      "finding_keys": [
+        { "key": "hardcoded_secret", "severity": "high", "params": ["secret_type", "file", "line", "count"] },
+        { "key": "generic_secret", "severity": "medium", "params": ["variable", "file", "line", "count"] },
+        { "key": "test_mode_secret", "severity": "low", "params": ["secret_type", "file", "line", "count"] }
       ]
     }
   ]

@@ -19,6 +19,17 @@
       "fn_outside": 2,
       "targets": 54
     },
+    "dependency_vulns": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.9259,
+      "tp": 25,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "targets": 11
+    },
     "dns_email": {
       "meets_gate": true,
       "precision": 1,
@@ -73,6 +84,17 @@
       "fn": 0,
       "fn_outside": 0,
       "targets": 54
+    },
+    "repo_secrets": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 18,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 11
     },
     "security_headers": {
       "meets_gate": true,

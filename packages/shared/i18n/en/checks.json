@@ -352,5 +352,65 @@
         "fix": "1. If you no longer use {subdomain}: delete its CNAME record at your DNS provider.\n2. If you still need it: point it at the service's current address.\n3. Run the scan again."
       }
     }
+  },
+  "dependency_vulns": {
+    "name": "Vulnerable dependencies",
+    "description": "Reads the exact package versions in your repository's lockfiles (npm and Python) and checks them against a public vulnerability database (OSV, which includes the GitHub Advisory Database). It tells you which packages have known security flaws and which version fixes them.",
+    "findings": {
+      "vulnerable_dependency_high": {
+        "title": "{package} {version} has serious known vulnerabilities",
+        "summary": "{package} {version} ({ecosystem}, in {manifest}) is affected by known vulnerabilities rated high or critical: {advisories}. Version {fixed_version} fixes them.",
+        "why": "These flaws are public and documented, and many have working exploits. Your application ships this package: if the vulnerable part is used, an attacker may be able to run code, read data or take the service down. GuardHub cannot see whether your code calls the vulnerable function, so treat it as exposed until you upgrade.",
+        "fix": "1. Upgrade {package} to {fixed_version} or later. With npm: `npm install {package}@{fixed_version}` (or update the package that pulls it in). With pip: pin `{package}=={fixed_version}` (or newer) and reinstall.\n2. Commit the updated lockfile ({manifest}).\n3. Run your tests, deploy, and scan again.\n4. If you cannot upgrade right away, read the advisories ({advisories}): many describe a workaround."
+      },
+      "vulnerable_dependency_medium": {
+        "title": "{package} {version} has known vulnerabilities",
+        "summary": "{package} {version} ({ecosystem}, in {manifest}) is affected by known vulnerabilities rated moderate (or not rated yet): {advisories}. Version {fixed_version} fixes them.",
+        "why": "Moderate flaws usually need specific conditions to be exploited, such as a certain configuration, user interaction or input. They are still public and easy to look for, so plan the upgrade instead of leaving it.",
+        "fix": "1. Upgrade {package} to {fixed_version} or later. With npm: `npm install {package}@{fixed_version}` (or update the package that pulls it in). With pip: pin `{package}=={fixed_version}` (or newer) and reinstall.\n2. Commit the updated lockfile ({manifest}).\n3. Run your tests, deploy, and scan again.\n4. If you cannot upgrade right away, read the advisories ({advisories}): many describe a workaround."
+      },
+      "vulnerable_dependency_low": {
+        "title": "{package} {version} has minor known vulnerabilities",
+        "summary": "{package} {version} ({ecosystem}, in {manifest}) is affected by known vulnerabilities rated low: {advisories}. Version {fixed_version} fixes them.",
+        "why": "Low-rated flaws have limited impact or are hard to exploit. Upgrading removes them for good and keeps your dependencies current, which makes the next serious fix easier to apply.",
+        "fix": "1. Upgrade {package} to {fixed_version} or later. With npm: `npm install {package}@{fixed_version}` (or update the package that pulls it in). With pip: pin `{package}=={fixed_version}` (or newer) and reinstall.\n2. Commit the updated lockfile ({manifest}).\n3. Run your tests, deploy, and scan again.\n4. If you cannot upgrade right away, read the advisories ({advisories}): many describe a workaround."
+      },
+      "vulnerable_dev_dependency": {
+        "title": "Development dependency {package} {version} has known vulnerabilities",
+        "summary": "{package} {version} ({ecosystem}, in {manifest}) is only used for development or tests, and is affected by known vulnerabilities: {advisories}. Fixed version: {fixed_version} (\"-\" means none has been released yet).",
+        "why": "Development tools are not shipped to your production servers, so the risk to your users is low. They still run on developers' machines and in your CI, where they can see your source code and secrets, so keep them up to date.",
+        "fix": "1. Upgrade {package} to {fixed_version} or later in your development dependencies. If the fixed version is \"-\", there is no fix yet: replace the tool, or remove it if you no longer need it.\n2. Commit the updated lockfile ({manifest}) and scan again."
+      },
+      "vulnerable_dependency_no_fix": {
+        "title": "{package} {version} has known vulnerabilities with no fix yet",
+        "summary": "{package} {version} ({ecosystem}, in {manifest}) is affected by known vulnerabilities that no released version fixes: {advisories}.",
+        "why": "There is no version to upgrade to, often because the package is no longer maintained. The flaws stay public, so the package stays exposed for as long as you use it.",
+        "fix": "1. Read the advisories ({advisories}): some describe a workaround, or the conditions under which the flaw applies.\n2. Replace {package} with a maintained alternative, or remove it if you can.\n3. If you must keep it, avoid the affected feature and watch the advisories for a fix.\n4. Scan again after the change."
+      }
+    }
+  },
+  "repo_secrets": {
+    "name": "Secrets in your code",
+    "description": "Looks through the current files of your repository for credentials written into the code: API keys, access tokens, private keys and database passwords. Fake keys in tests and examples are ignored, and so are placeholders. Only the last four characters of anything found are kept.",
+    "findings": {
+      "hardcoded_secret": {
+        "title": "A {secret_type} is written in {file}",
+        "summary": "{file} (line {line}) contains a {secret_type}. Values of this kind found in this file: {count}. GuardHub kept only the last four characters.",
+        "why": "Everyone who can read the repository can use this credential: current and former team members, contractors, CI services and any tool with access, and the whole internet if the repository is or becomes public. Deleting it from the code later does not help, because it stays in the git history. A leaked key is how many breaches start.",
+        "fix": "1. Revoke or rotate the {secret_type} now, at the service that issued it. Treat it as leaked, even if the repository is private.\n2. Remove it from {file} and read it from an environment variable or a secret manager instead.\n3. Check the service's logs for use you don't recognise.\n4. Consider removing it from the git history too (git filter-repo, or GitHub's guide on removing sensitive data). Rotating it is what makes it harmless.\n5. Scan again."
+      },
+      "generic_secret": {
+        "title": "{variable} in {file} looks like a hardcoded secret",
+        "summary": "{file} (line {line}) assigns a long random value to {variable}. Values like this found in this file: {count}. GuardHub kept only the last four characters.",
+        "why": "The name and the randomness of the value suggest a password, signing key or API secret. If it is one, everyone with access to the repository can use it, and it stays in the git history. GuardHub cannot tell which service it belongs to, so this is rated medium: check it.",
+        "fix": "1. Check what {variable} is. If it is a real secret, rotate it at the service or generate a new one (for a signing key, existing sessions will end).\n2. Move it out of {file}: read it from an environment variable or a secret manager.\n3. If it is not a secret (a test value or a public identifier), you can ignore this finding.\n4. Scan again."
+      },
+      "test_mode_secret": {
+        "title": "A {secret_type} is written in {file}",
+        "summary": "{file} (line {line}) contains a {secret_type}. Values of this kind found in this file: {count}. GuardHub kept only the last four characters.",
+        "why": "Test-mode keys cannot move real money or reach live customer data, so the risk is low. They still give access to your test account and its configuration, and a habit of committing test keys is how live keys end up in code too.",
+        "fix": "1. Roll the key in the provider's dashboard (test mode).\n2. Read it from an environment variable instead of {file}.\n3. Scan again."
+      }
+    }
   }
 }

@@ -1,0 +1,4 @@
+{
+  "channel": "#deploys",
+  "token": "{{secret:slack_token:inf8}}"
+}

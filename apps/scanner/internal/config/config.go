@@ -47,6 +47,11 @@ type Config struct {
 	// CTURL is the Certificate Transparency search endpoint of
 	// subdomain_takeover (SCANNER_CT_URL): empty = crt.sh, "off" = none.
 	CTURL string
+	// GitHubAPIURL and OSVURL are the repo-scan endpoints (ADR-0006;
+	// SCANNER_GITHUB_API_URL, SCANNER_OSV_URL). Empty = api.github.com and
+	// api.osv.dev; the validation lab points them at its stand-ins.
+	GitHubAPIURL string
+	OSVURL       string
 	// AllowPrivateHosts are exact hostnames that bypass the dial-time IP
 	// guard. It exists ONLY for the local e2e demo target.
 	AllowPrivateHosts []string
@@ -126,6 +131,14 @@ func FromLookup(lookup func(string) (string, bool)) (Config, error) {
 	if cfg.CTURL != "" && cfg.CTURL != "off" &&
 		!strings.HasPrefix(cfg.CTURL, "https://") && !strings.HasPrefix(cfg.CTURL, "http://") {
 		return Config{}, fmt.Errorf("SCANNER_CT_URL: must be an http(s) URL or \"off\", got %q", cfg.CTURL)
+	}
+
+	for name, dst := range map[string]*string{"SCANNER_GITHUB_API_URL": &cfg.GitHubAPIURL, "SCANNER_OSV_URL": &cfg.OSVURL} {
+		v := strings.TrimRight(strings.TrimSpace(get(name)), "/")
+		if v != "" && !strings.HasPrefix(v, "https://") && !strings.HasPrefix(v, "http://") {
+			return Config{}, fmt.Errorf("%s: must be an http(s) URL, got %q", name, v)
+		}
+		*dst = v
 	}
 
 	for _, h := range strings.Split(get("SCANNER_ALLOW_PRIVATE_HOSTS"), ",") {

@@ -90,7 +90,15 @@
     "trusted_domain_inactive": "Bu sitenin güvenilir alan adı şu anda etkin değil. Yönetim → Güvenilir alan adları bölümünden yeniden doğrulayın ya da projenin sahipliğini doğrudan kanıtlayın.",
     "trusted_domain_not_found": "Bu güvenilir alan adını bulamadık. Kaldırılmış olabilir.",
     "trusted_domain_exists": "Bu adres zaten güvenilir alan adlarınız arasında.",
-    "trusted_domain_limit_reached": "En fazla güvenilir alan adı sayısına ulaştınız. Yenisini eklemek için birini kaldırın."
+    "trusted_domain_limit_reached": "En fazla güvenilir alan adı sayısına ulaştınız. Yenisini eklemek için birini kaldırın.",
+    "github_not_configured": "GitHub bağlantısı henüz kullanılamıyor.",
+    "github_unavailable": "GitHub yanıt vermedi. Lütfen biraz sonra yeniden deneyin.",
+    "github_state_invalid": "Bu GitHub bağlantısının süresi doldu ya da zaten kullanıldı. Lütfen hesap sayfanızdan yeniden bağlayın.",
+    "github_installation_not_yours": "Bu GitHub kurulumu sizin GitHub hesabınıza ait değil.",
+    "github_installation_taken": "Bu GitHub kurulumu zaten başka bir GuardHub hesabına bağlı.",
+    "github_installation_not_found": "Bu GitHub bağlantısı bulunamadı.",
+    "repo_not_found": "Bu depo GuardHub ile paylaşılmamış. Önce GitHub'da uygulamanın ayarlarından ekleyin.",
+    "repo_access_lost": "GuardHub bu depoyu artık okuyamıyor. GitHub'ı yeniden bağlayın ve depoyu paylaşın."
   },
   "severity": {
     "critical": "Kritik",
@@ -176,7 +184,7 @@
       },
       "privacy": {
         "title": "Verileriniz gizli kalır",
-        "body": "Bulduğumuz hassas bilgiler saklanmadan önce maskelenir; kanıtlarda bile tam bir gizli bilgi görünmez. Yalnızca raporunuz için gerekeni saklarız. Doğrulanmış alan adınızın alt alanlarını bulmak için GuardHub, herkese açık Certificate Transparency loglarını (crt.sh) sorgular; bu loglarda zaten herkese açık olan alan adınız o servise gönderilir, başka veri paylaşılmaz."
+        "body": "Bulduğumuz hassas bilgiler saklanmadan önce maskelenir; kanıtlarda bile tam bir gizli bilgi görünmez. Yalnızca raporunuz için gerekeni saklarız. Doğrulanmış alan adınızın alt alanlarını bulmak için GuardHub, herkese açık Certificate Transparency loglarını (crt.sh) sorgular; bu loglarda zaten herkese açık olan alan adınız o servise gönderilir, başka veri paylaşılmaz. GitHub depolarınızı bağlarsanız, açıklı paketleri ve koda gömülü sırları bulmak için depolarınızın bağımlılıkları ve içeriği okunur; kodunuz saklanmaz. Bilinen açıkları sorgulamak için OSV'ye (api.osv.dev) yalnızca paket adları ve sürümleri gönderilir."
       }
     },
     "final": {
@@ -254,7 +262,9 @@
       "target_blocked": "Bu adresi tarayamıyoruz: ya özel/kurum içi bir ağa çıkıyor ya da site kontrollerimizi engelledi.",
       "timeout": "Tarama çok uzun sürdüğü için durduruldu. Siteniz şu an yavaş olabilir; lütfen daha sonra tekrar deneyin.",
       "internal": "Tarama sırasında bizim tarafımızda bir sorun oluştu. Lütfen biraz sonra tekrar deneyin.",
-      "queue_unavailable": "Tarama geçici olarak kullanılamadığı için bu tarama başlamadı. Lütfen birkaç dakika sonra tekrar deneyin."
+      "queue_unavailable": "Tarama geçici olarak kullanılamadığı için bu tarama başlamadı. Lütfen birkaç dakika sonra tekrar deneyin.",
+      "repo_access_lost": "GuardHub bu depoyu artık okuyamıyor: uygulamanın erişiminden çıkarılmış, silinmiş ya da uygulama kaldırılmış. GitHub'ı yeniden bağlayın ve depoyu paylaşın.",
+      "repo_empty": "Bu depoda henüz commit yok; taranacak bir şey bulunmuyor."
     },
     "saveBody": "Bu raporu saklamak, daha sonra yeniden taramak ve nelerin değiştiğini görmek ister misiniz? Ücretsiz bir hesaba kaydedin.",
     "saveCta": "Taramayı kaydet, sonra yeniden tara"
@@ -623,5 +633,32 @@
     "confirmRemove": "{host} güvenilir alan adlarınızdan kaldırılsın mı? Bu adrese ait projeler bir sonraki taramadan önce yeniden sahiplik kanıtı ister.",
     "confirmYes": "Evet, kaldır",
     "cancel": "Vazgeç"
+  },
+  "github": {
+    "heading": "GitHub depoları",
+    "intro": "Açıklı bağımlılıkları ve koda gömülü sırları bulmak için GitHub depolarınızı bağlayın. GuardHub yalnızca seçtiğiniz depolara salt okuma erişimi alır, tarama sırasında onları bellekte okur ve kodunuzu asla saklamaz.",
+    "notConfigured": "GitHub bağlantısı henüz kullanılamıyor.",
+    "connect": "GitHub'ı bağla",
+    "connectHint": "GitHub'da “Only select repositories” seçeneğini seçin ve taranmasını istediğiniz depoları işaretleyin. Seçimi GitHub'da istediğiniz zaman değiştirebilirsiniz.",
+    "connectedAs": "GitHub hesabı {account}",
+    "chooseRepos": "Depoları seç",
+    "hideRepos": "Depoları gizle",
+    "noRepos": "Henüz GuardHub ile paylaşılan bir depo yok. GitHub'da uygulamanın ayarlarından depo ekleyin.",
+    "private": "gizli",
+    "add": "Ekle",
+    "openProject": "Projeyi aç",
+    "disconnect": "Bağlantıyı kaldır",
+    "disconnectConfirm": "{account} bağlantısı kaldırılsın mı? GuardHub bu GitHub hesabından kaldırılır ve depoları artık taranmaz. Geçmiş raporlar hesabınızda kalır.",
+    "manageOnGitHub": "GuardHub'ın hangi depoları okuyabileceğini değiştirin (GitHub'da)",
+    "repoLabel": "GitHub deposu",
+    "repoConnected": "GitHub üzerinden bağlandı.",
+    "repoConnectedOn": "{date} tarihinde GitHub üzerinden bağlandı.",
+    "repoAccessLost": "GuardHub bu depoyu artık okuyamıyor. Hesap sayfanızdan GitHub'ı yeniden bağlayın ve bu depoyu paylaşın.",
+    "backToAccount": "Hesabınıza dönün",
+    "callbackTitle": "GitHub bağlanıyor",
+    "callbackWorking": "Bağlantı GitHub ile doğrulanıyor…",
+    "callbackMissing": "Bu bağlantı eksik. Hesap sayfanızdan yeniden başlayın.",
+    "pendingLabel": "Onay bekleniyor",
+    "callbackPending": "Depolarının eklenebilmesi için GitHub kuruluşunun bir sahibinin GuardHub'ı onaylaması gerekiyor. GitHub'da onaylamasını isteyin, ardından yeniden bağlayın."
   }
 }

@@ -30,6 +30,14 @@ def _load() -> tuple[dict, dict]:
     return schema, catalog
 
 
+def _repo_ids(catalog: dict) -> list[str]:
+    targets = {c["id"]: c.get("target", "site") for c in catalog["checks"]}
+    bad = {i: t for i, t in targets.items() if t not in ("site", "repo")}
+    if bad:
+        raise SystemExit(f"check-ids.json: unknown target {bad}")
+    return [i for i, t in targets.items() if t == "repo"]
+
+
 def _camel(name: str) -> str:
     return "".join(part.capitalize() for part in name.split("_"))
 
@@ -116,6 +124,10 @@ def gen_python(schema: dict, catalog: dict) -> str:
     lines.append("}")
     lines.append("")
     lines.append("CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)")
+    lines.append('# Checks that scan a connected repository (check-ids.json "target": "repo", ADR-0006).')
+    repo = _repo_ids(catalog)
+    lines.append("REPO_CHECK_IDS: tuple[str, ...] = (" + ", ".join(repr(i) for i in repo) + ("," if len(repo) == 1 else "") + ")")
+    lines.append("SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS)")
     lines.append("")
     return "\n".join(lines)
 
@@ -168,6 +180,11 @@ def gen_go(schema: dict, catalog: dict) -> str:
             lines.append(f'\t\t"{fk["key"]}": Severity{_camel(fk["severity"])},')
         lines.append("\t},")
     lines += ["}", ""]
+    lines.append('// RepoChecks holds the ids of checks that scan a connected repository (check-ids.json "target": "repo").')
+    lines.append("var RepoChecks = map[string]bool{")
+    for i in _repo_ids(catalog):
+        lines.append(f'\t"{i}": true,')
+    lines += ["}", ""]
     return "\n".join(lines)
 
 
@@ -202,6 +219,14 @@ def gen_ts(schema: dict, catalog: dict) -> str:
     ids = [c["id"] for c in catalog["checks"]]
     lines.append("export const CHECK_IDS = [" + ", ".join(f'"{i}"' for i in ids) + "] as const;")
     lines.append("export type CheckId = (typeof CHECK_IDS)[number];")
+    repo = _repo_ids(catalog)
+    lines.append('/** Checks that scan a connected repository (check-ids.json "target": "repo"). */')
+    lines.append("export const REPO_CHECK_IDS: readonly CheckId[] = [" + ", ".join(f'"{i}"' for i in repo) + "];")
+    lines.append(
+        "export const SITE_CHECK_IDS: readonly CheckId[] = ["
+        + ", ".join(f'"{i}"' for i in ids if i not in repo)
+        + "];"
+    )
     lines.append("")
     return "\n".join(lines)
 

@@ -25,7 +25,8 @@ import (
 // Manifest is the ground truth for one lab target.
 type Manifest struct {
 	Target      string        `yaml:"target"`
-	Origin      string        `yaml:"origin"`
+	Origin      string        `yaml:"origin"` // a site target (*.lab.test origin)
+	Repo        string        `yaml:"repo"`   // or a repository target ("lab/<dir>", test_corpus/repos)
 	Description string        `yaml:"description"`
 	Checks      []string      `yaml:"checks"` // check ids scored on this target
 	Expect      []Expectation `yaml:"expect"`
@@ -43,13 +44,23 @@ type Expectation struct {
 	Check    string `yaml:"check"`
 	Key      string `yaml:"key"`
 	Location string `yaml:"location,omitempty"`
-	Outside  bool   `yaml:"outside,omitempty"`
-	Why      string `yaml:"why"`
+	// Params, when set, must all equal the finding's params (e.g. the
+	// fixed version dependency_vulns recommends): wrong advice is a miss.
+	Params  map[string]string `yaml:"params,omitempty"`
+	Outside bool              `yaml:"outside,omitempty"`
+	Why     string            `yaml:"why"`
 }
 
 func (e Expectation) matches(f evidence.Finding) bool {
-	return f.CheckID == e.Check && f.FindingKey == e.Key &&
-		(e.Location == "" || f.Evidence.Location == e.Location)
+	if f.CheckID != e.Check || f.FindingKey != e.Key || (e.Location != "" && f.Evidence.Location != e.Location) {
+		return false
+	}
+	for k, v := range e.Params {
+		if f.Params[k] != v {
+			return false
+		}
+	}
+	return true
 }
 
 // LoadManifests reads every *.yaml in dir, validates them and returns them
@@ -88,11 +99,17 @@ func LoadManifests(dir string) ([]Manifest, error) {
 	return out, nil
 }
 
+// IsRepo reports a repository target.
+func (m Manifest) IsRepo() bool { return m.Repo != "" }
+
 // Validate rejects manifests that would make the score meaningless: unknown
 // ids/keys, expectations without a reason, expectations for unscored checks.
 func (m Manifest) Validate() error {
-	if m.Target == "" || m.Origin == "" {
-		return errors.New("target and origin are required")
+	if m.Target == "" || (m.Origin == "") == (m.Repo == "") {
+		return errors.New("target and exactly one of origin (site) or repo (repository) are required")
+	}
+	if m.Repo != "" && m.Repo != "lab/"+m.Target {
+		return fmt.Errorf("repo must be lab/%s (test_corpus/repos/%s)", m.Target, m.Target)
 	}
 	if len(m.Checks) == 0 {
 		return errors.New("checks: list the check ids scored on this target")
@@ -101,6 +118,9 @@ func (m Manifest) Validate() error {
 	for _, id := range m.Checks {
 		if _, ok := evidence.FindingKeys[id]; !ok {
 			return fmt.Errorf("checks: unknown check id %q", id)
+		}
+		if evidence.RepoChecks[id] != m.IsRepo() {
+			return fmt.Errorf("checks: %q cannot run on this kind of target", id)
 		}
 		scored[id] = true
 	}

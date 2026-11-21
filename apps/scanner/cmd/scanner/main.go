@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,10 +23,12 @@ import (
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/config"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/egressproxy"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/observability"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/probe"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/queue"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/repo"
 )
 
 func main() {
@@ -33,6 +36,11 @@ func main() {
 }
 
 func run() int {
+	// `scanner egress-proxy`: the API's CONNECT-only way out to GitHub (ADR-0006). It needs no
+	// scanner configuration (no Redis): EGRESS_PROXY_LISTEN and EGRESS_PROXY_ALLOW only.
+	if len(os.Args) > 1 && os.Args[1] == "egress-proxy" {
+		return runEgressProxy()
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("invalid configuration", "err", err)
@@ -96,11 +104,15 @@ func run() int {
 	scanOpts := base
 	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
 	scanOpts.DNSServer = cfg.DNSServer
+	// GitHub and OSV for repo scans: same IP guard, no target budget (ADR-0006).
+	egress := probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts)
 
 	svc := &queue.Service{
 		RDB:              rdb,
 		Consumer:         cfg.ConsumerName,
 		Registry:         checks.DefaultWith(checks.Options{CTURL: cfg.CTURL}),
+		RepoRegistry:     checks.DefaultRepo(checks.RepoOptions{OSVURL: cfg.OSVURL, Transport: egress}),
+		Repo:             queue.RepoScanConfig{GitHubAPI: cfg.GitHubAPIURL, Transport: egress, Timeout: 120 * time.Second, Limits: repo.DefaultLimits()},
 		NewScanProbe:     func() *probe.Client { return probe.New(scanOpts) },
 		NewVerifyProbe:   func() *probe.Client { return probe.New(base) },
 		Workers:          cfg.Workers,
@@ -177,6 +189,29 @@ func runSelfScan(cfg config.Config, logger *slog.Logger, args []string) int {
 		if f.Severity == evidence.SeverityCritical || f.Severity == evidence.SeverityHigh {
 			return 3
 		}
+	}
+	return 0
+}
+
+// runEgressProxy serves the CONNECT-only egress proxy until SIGTERM.
+func runEgressProxy() int {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", "egress-proxy")
+	allow := os.Getenv("EGRESS_PROXY_ALLOW")
+	listen := os.Getenv("EGRESS_PROXY_LISTEN")
+	if listen == "" {
+		listen = ":8888"
+	}
+	if strings.TrimSpace(allow) == "" {
+		logger.Error("EGRESS_PROXY_ALLOW is empty: refusing to start an open proxy")
+		return 2
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+	p := egressproxy.New(allow, probe.GuardedDialer(10*time.Second, nil), logger)
+	logger.Info("egress proxy starting", "listen", listen, "allow", allow)
+	if err := egressproxy.Serve(ctx, listen, p); err != nil {
+		logger.Error("egress proxy stopped with error", "err", err)
+		return 1
 	}
 	return 0
 }

@@ -50,7 +50,26 @@ class Project(Base):
     scan_frequency: Mapped[str] = mapped_column(String, default="off")  # off | daily | weekly
     next_scan_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     schedule_paused_reason: Mapped[str | None] = mapped_column(String)  # ownership_lost
+    # Repository projects (ADR-0006): kind "repo", ownership proven by a GitHub App installation.
+    kind: Mapped[str] = mapped_column(String, default="site")  # site | repo
+    github_installation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("github_installations.id"))
+    repo_id: Mapped[int | None] = mapped_column(BigInteger)  # GitHub's stable numeric repository id
+    repo_full_name: Mapped[str | None] = mapped_column(Text)  # owner/name, refreshed from GitHub
     created_at: Mapped[datetime] = _now()
+
+
+class GitHubInstallation(Base):
+    """A GitHub App installation bound to one GuardHub user (ADR-0006 §1-§4). No token is stored:
+    tokens are minted per scan from the App's private key, narrowed to one repository."""
+
+    __tablename__ = "github_installations"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    installation_id: Mapped[int] = mapped_column(BigInteger)
+    account_login: Mapped[str] = mapped_column(Text)
+    account_type: Mapped[str] = mapped_column(String)  # User | Organization
+    created_at: Mapped[datetime] = _now()
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TargetVerification(Base):

@@ -1,0 +1,8 @@
+target: rp-pipfile
+repo: lab/rp-pipfile
+description: >
+  Pipfile.lock (default and develop).
+checks: [dependency_vulns, repo_secrets]
+expect:
+  - {check: dependency_vulns, key: vulnerable_dependency_high, location: "https://github.com/lab/rp-pipfile/blob/HEAD/Pipfile.lock#flask", params: {fixed_version: "3.1.3"}, why: "osv-scanner v2.2.4: flask@0.12 has 4 advisory group(s), max rating HIGH; lowest version fixing all: 3.1.3"}
+  - {check: dependency_vulns, key: vulnerable_dev_dependency, location: "https://github.com/lab/rp-pipfile/blob/HEAD/Pipfile.lock#pytest", params: {fixed_version: "9.0.3"}, why: "osv-scanner v2.2.4: pytest@8.3.3 has 1 advisory group(s), max rating MODERATE, development dependency; lowest version fixing all: 9.0.3"}

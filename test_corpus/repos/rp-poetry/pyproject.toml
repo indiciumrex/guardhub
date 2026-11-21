@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "thumbs"
+version = "1.0.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pillow = "9.0.0"
+attrs = "*"
+
+[tool.poetry.dev-dependencies]
+ipython = "8.0.0"

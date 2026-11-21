@@ -1,0 +1,8 @@
+# production
+PyYAML==5.3
+requests==2.19.0
+urllib3==1.26.4
+Jinja2==2.11.2
+six==1.16.0
+idna==3.10
+ecdsa==0.19.0

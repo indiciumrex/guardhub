@@ -50,6 +50,7 @@ the gate uses. Every use names the declared scope.
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |
 | `webgoat` | OWASP WebGoat (empty 404 at `/`) | non-document trap |
 | `phpmyadmin`, `grafana`, `wordpress`, `drupal` | real products in default setups | `open_admin`, `default_creds` |
+| `rp-*` | GitHub repositories served by the GitHub/OSV stand-in (`labrepo`, `github.lab.test` + `osv.lab.test`) from `repos/<target>/`; OSV answers replayed from `osv/` | `dependency_vulns` (npm lockfile v1/v3, requirements, Pipfile.lock, poetry.lock, uv.lock; runtime and dev; a package with no fix; traps: ranges, committed node_modules, vendored and yarn.lock as "outside") and `repo_secrets` (18 planted secrets in `rp-secrets-app`/`-infra`, fakes in `rp-secrets-traps`, `rp-clean`) |
 | `st-*` | names in `dns/st.lab.test.db` whose subdomains point into stand-in provider zones (`dns/provider-*.db`), with the providers' web answers (`nginx/providers.conf`) and a crt.sh-format CT stand-in (`ct.lab.test`, `ct/`) | `subdomain_takeover`: 6 positives (S3 REST and website, Azure NXDOMAIN, Bitbucket, Surge, unlisted dangling) and 4 negatives (claimed resources, edge-case/unlisted providers with fingerprints, plain records, out-of-scope CT names) |
 
 ## Gate
@@ -57,3 +58,32 @@ the gate uses. Every use names the declared scope.
 `internal/accuracy/score.go`: precision >= 95%, recall >= 80%, at least 3 ground-truth findings,
 at least one clean target, no check errors. The API refuses to enable a module whose check
 does not meet it (`packages/shared/accuracy.json`).
+
+## Repository targets (ADR-0006 §10)
+
+- **Planted secrets are never committed.**
+  - Files in `repos/` carry templates such as `{{secret:github_pat:app4}}`.
+  - `labrepo` fills them from `internal/labfixture` (deterministic, seed-based, not real
+    credentials) when it serves the tarball.
+  - So GuardHub's own CI secret scan and GitHub's push protection stay meaningful.
+  - `rp-secrets-traps` holds look-alikes only and is allowlisted by path in `.gitleaks.toml`.
+- **OSV is replayed, not imitated.**
+  - `osv/index.json` maps every `ecosystem|name|version` the lab asks to the advisory ids the
+    real OSV API returned. `osv/vulns/<id>.json` are the records, byte for byte.
+  - A query that was never recorded is an HTTP 500 and shows up as a lab error, never as
+    "clean".
+  - Re-record after changing a lockfile:
+    `go run ./cmd/labrepo record --repos ../../test_corpus/repos --osv ../../test_corpus/osv`
+    (from `apps/scanner`; asks the real api.osv.dev once).
+- **Ground truth comes from independent tools**, on the materialized repositories
+  (`go run ./cmd/labrepo materialize --repos … --out DIR`):
+  - **Dependencies:** `ghcr.io/google/osv-scanner:v2.2.4 scan source -r DIR`. Its output is
+    rated per docs/checks/dependency_vulns.md by a separate script using `packaging` (PEP 440)
+    and `semver`: `rp-*.yaml` lists the key and the `fixed_version` (`params`) it gives.
+    osv-scanner also reads `yarn.lock` and vendored directories; those are `outside: true`.
+  - **Secrets:** each `rp-secrets-*` expectation names the planted secret, plus the gitleaks
+    v8.21.2 rule that also finds it (14 of 18; the other 4 are formats gitleaks has no rule
+    for).
+- **Recorded on 2026-11-21.** The recording freezes the advisory data, so the measurement is
+  stable. Re-recording (new advisories) means re-running osv-scanner and updating the
+  manifests in the same change.

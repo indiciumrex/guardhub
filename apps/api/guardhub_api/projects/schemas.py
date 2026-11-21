@@ -41,6 +41,8 @@ class ClaimScanRequest(BaseModel):
 class ProjectView(BaseModel):
     id: uuid.UUID
     name: str
+    kind: Literal["site", "repo"] = "site"
+    repo_full_name: str | None = None  # kind "repo": owner/name on GitHub (ADR-0006)
     target_url: str
     verified: bool
     ownership_verified_at: datetime | None

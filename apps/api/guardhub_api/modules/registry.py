@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from guardhub_api.common import audit
 from guardhub_api.common.errors import NotFoundError, UnprocessableError
 from guardhub_api.db.models import Module
-from guardhub_api.findings.contract_gen import CHECK_IDS
+from guardhub_api.findings.contract_gen import CHECK_IDS, REPO_CHECK_IDS, SITE_CHECK_IDS
 from guardhub_api.modules import accuracy
 from guardhub_api.modules.accuracy import CheckAccuracy
 
@@ -45,10 +45,12 @@ async def list_modules(session: AsyncSession) -> list[ModuleView]:
     return [_view(m) for m in rows]
 
 
-async def enabled_check_ids(session: AsyncSession) -> list[str]:
+async def enabled_check_ids(session: AsyncSession, target: str = "site") -> list[str]:
+    """Enabled checks for a site scan, or for a repository scan (target="repo", ADR-0006)."""
     rows = await session.execute(select(Module.key).where(Module.enabled_global.is_(True)))
     enabled = set(rows.scalars().all())
-    return [cid for cid in CHECK_IDS if cid in enabled]
+    ids = REPO_CHECK_IDS if target == "repo" else SITE_CHECK_IDS
+    return [cid for cid in ids if cid in enabled]
 
 
 async def set_enabled(session: AsyncSession, *, key: str, enabled: bool, actor: str) -> ModuleView:

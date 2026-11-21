@@ -1,0 +1,2 @@
+deploy_user: deploy
+gitlab_registry_token: {{secret:gitlab_pat:inf6}}

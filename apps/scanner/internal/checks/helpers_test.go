@@ -205,10 +205,21 @@ func validateFindings(t *testing.T, fs []evidence.Finding) {
 func TestRegistryMatchesCatalog(t *testing.T) {
 	cat := loadCatalog(t)
 	r := Default()
-	if len(r.IDs()) != len(cat) {
-		t.Fatalf("registry has %v, catalog has %d checks", r.IDs(), len(cat))
+	rr := DefaultRepo(RepoOptions{})
+	if len(r.IDs())+len(rr.IDs()) != len(cat) {
+		t.Fatalf("registries have %v + %v, catalog has %d checks", r.IDs(), rr.IDs(), len(cat))
 	}
 	for id := range cat {
+		if evidence.RepoChecks[id] {
+			c, ok := rr.Get(id)
+			if !ok || c.ID() != id {
+				t.Fatalf("repo check %s not registered", id)
+			}
+			if _, site := r.Get(id); site {
+				t.Fatalf("repo check %s must not be a site check", id)
+			}
+			continue
+		}
 		c, ok := r.Get(id)
 		if !ok || c.ID() != id {
 			t.Fatalf("check %s not registered", id)

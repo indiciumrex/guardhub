@@ -52,6 +52,38 @@ async def enqueue_scan(
     return str(msg_id)
 
 
+REPO_TOKEN_PREFIX = "gh:repo-token:"  # noqa: S105 (a Redis key prefix, not a secret)
+REPO_TOKEN_TTL_SECONDS = 600
+
+
+async def enqueue_repo_scan(
+    redis: Redis, *, scan_id: uuid.UUID, repo: str, token: str, checks: list[str], deadline_seconds: int
+) -> str:
+    """Queue a repository scan (ADR-0006). The narrowed installation token goes under a one-time
+    key the scanner reads with GETDEL (10-minute TTL); the job stream only names that key."""
+    job_id = str(uuid.uuid4())
+    token_key = REPO_TOKEN_PREFIX + job_id
+    await redis.set(token_key, token, ex=REPO_TOKEN_TTL_SECONDS)
+    payload = {
+        "v": 1,
+        "kind": "repo_scan",
+        "job_id": job_id,
+        "scan_id": str(scan_id),
+        "repo": repo,
+        "token_key": token_key,
+        "checks": checks,
+        "deadline_seconds": deadline_seconds,
+    }
+    try:
+        msg_id = await redis.xadd(
+            JOBS_STREAM, {"payload": json.dumps(payload)}, maxlen=STREAM_MAXLEN, approximate=True
+        )
+    except Exception:
+        await redis.delete(token_key)
+        raise
+    return str(msg_id)
+
+
 async def request_verification(redis: Redis, *, target: str, token: str, wait_seconds: float) -> VerifyResult:
     """Ask the scanner (the single hardened egress client) to check an ownership proof."""
     job_id = str(uuid.uuid4())
