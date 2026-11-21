@@ -1,0 +1,3 @@
+# Exact false positives already in git history (commit:file:rule:line). Each entry needs a reason.
+# Fake lab CSRF cookie value: base64 of {"iv":"lab"}, a made-up validation-lab fixture, never a secret.
+6bbfeee81f3cfe7d1f663854606c37f11f17acf8:test_corpus/nginx/hh.conf:generic-api-key:111
