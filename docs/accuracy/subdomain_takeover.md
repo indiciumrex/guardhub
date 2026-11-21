@@ -1,6 +1,6 @@
 # `subdomain_takeover` accuracy
 
-Lab source revision `wip`. Verdict: **meets the gate**.
+Lab source revision `5c983db5731c`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
