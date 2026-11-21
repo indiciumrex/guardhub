@@ -176,7 +176,7 @@
       },
       "privacy": {
         "title": "Verileriniz gizli kalır",
-        "body": "Bulduğumuz hassas bilgiler saklanmadan önce maskelenir; kanıtlarda bile tam bir gizli bilgi görünmez. Yalnızca raporunuz için gerekeni saklarız."
+        "body": "Bulduğumuz hassas bilgiler saklanmadan önce maskelenir; kanıtlarda bile tam bir gizli bilgi görünmez. Yalnızca raporunuz için gerekeni saklarız. Doğrulanmış alan adınızın alt alanlarını bulmak için GuardHub, herkese açık Certificate Transparency loglarını (crt.sh) sorgular; bu loglarda zaten herkese açık olan alan adınız o servise gönderilir, başka veri paylaşılmaz."
       }
     },
     "final": {

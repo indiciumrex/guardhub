@@ -35,8 +35,7 @@ dışarı çıkarılmaz"), and §9.3 says to collect the least data. Querying cr
    other domains that share a certificate are discarded unread and never queried.
 4. **A failing CT service never fails the check.** Discovery falls back to DNS.
 5. The module ships **disabled** like every Phase 2 module. Enabling it in the admin is the
-   founder's decision, and the privacy notice should name CT lookups as a subprocessor-like use
-   (see the open question below).
+   founder's decision, and the privacy text names the CT lookup (see Consequences).
 
 ## Consequences
 
@@ -45,9 +44,11 @@ dışarı çıkarılmaz"), and §9.3 says to collect the least data. Querying cr
 - crt.sh is often slow or overloaded. The 10 s probe timeout, bounded retries and the DNS fallback
   keep a scan from hanging on it, but on a bad day fewer names are checked. The finding set is
   then smaller, never wrong.
-- **Open question for the founder:** should the privacy notice name "Certificate Transparency
-  search (crt.sh)"? If not, set `SCANNER_CT_URL=off` before enabling the module, and recall drops
-  to names among the ten fixed ones.
+- **Founder decision (2026-11-21):** crt.sh stays on (`SCANNER_CT_URL` empty). The privacy text
+  on the landing page (`landing.promise.privacy.body` in `ui.json`, en + tr) now names it: GuardHub
+  searches the public CT logs (crt.sh) to find the verified domain's subdomains; only the domain
+  name, already public in those logs, is sent, and no other data is shared. GuardHub has no
+  separate privacy-policy page yet; when one is written, it must carry this disclosure.
 
 ## Alternatives considered
 

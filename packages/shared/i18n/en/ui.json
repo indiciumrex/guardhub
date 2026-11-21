@@ -176,7 +176,7 @@
       },
       "privacy": {
         "title": "Your data stays private",
-        "body": "Anything sensitive we find is masked before it's stored, so even the evidence never shows a full secret. We keep only what your report needs."
+        "body": "Anything sensitive we find is masked before it's stored, so even the evidence never shows a full secret. We keep only what your report needs. To find the subdomains of your verified domain, GuardHub searches the public Certificate Transparency logs (crt.sh): your domain name, which is already public in those logs, is sent to that service, and no other data is shared."
       }
     },
     "final": {
