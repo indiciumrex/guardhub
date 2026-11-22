@@ -15,3 +15,9 @@ expect:
       /metrics serves Grafana's Prometheus metrics (text/plain, "# HELP"/"# TYPE") without
       authentication, Grafana's default. Missing from this manifest at first; the lab run
       surfaced it and curl confirmed it (2026-11-21).
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://grafana.lab.test:3000/login without a Permissions-Policy header, as the app ships."
+  - check: header_quality
+    key: coop_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://grafana.lab.test:3000/login without a Cross-Origin-Opener-Policy header, as the app ships."

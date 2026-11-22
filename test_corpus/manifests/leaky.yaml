@@ -15,3 +15,9 @@ expect:
   - {check: security_headers, key: nosniff_missing, why: "No X-Content-Type-Options."}
   - {check: security_headers, key: clickjacking_unprotected, why: "Neither X-Frame-Options nor frame-ancestors."}
   - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://leaky.lab.test/ without a Permissions-Policy header, as the app ships."
+  - check: header_quality
+    key: coop_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://leaky.lab.test/ without a Cross-Origin-Opener-Policy header, as the app ships."

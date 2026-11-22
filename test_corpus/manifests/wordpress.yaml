@@ -13,3 +13,9 @@ expect:
   - {check: info_leak, key: server_version_disclosed, why: "'Server: Apache/2.4.65 (Debian)'."}
   - {check: info_leak, key: framework_version_disclosed, why: "'X-Powered-By: PHP/8.3.28'."}
   - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://wordpress.lab.test/wp-admin/install.php without a Permissions-Policy header, as the app ships."
+  - check: header_quality
+    key: coop_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://wordpress.lab.test/wp-admin/install.php without a Cross-Origin-Opener-Policy header, as the app ships."
