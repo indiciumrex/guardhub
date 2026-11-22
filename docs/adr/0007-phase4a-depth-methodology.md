@@ -41,7 +41,7 @@ check already reports; each check's doc lists the overlap it avoids (for example
 | Area (prompt) | Module | Independent truth |
 |---|---|---|
 | TLS / certificate depth | `tls_depth` | testssl.sh 3.2 |
-| Header quality | header-quality module (CSP parsing, Permissions-Policy, COOP/COEP/CORP, cache) | Observatory scoring logic re-implemented independently in the lab (Python), plus curated fixtures |
+| Header quality | `header_quality` | Mozilla HTTP Observatory scanner 1.4.8 and Google CSP Evaluator 1.1.8, run unmodified in the lab (`test_corpus/oracles/headers`) |
 | DNS & e-mail depth | e-mail transport / DNS hardening module (MTA-STS, TLS-RPT, DKIM, DNSSEC, CAA, DANE) | dig, plus independent parsers |
 | Technology + known CVEs | fingerprint module (CVE only when the version is certain) | curated version fixtures, plus OSV and retire.js |
 | Misconfiguration | exposed-files module (`.DS_Store`, backups, source maps, default pages) | curated fixtures, plus the request log |

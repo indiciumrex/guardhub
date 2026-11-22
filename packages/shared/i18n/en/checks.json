@@ -448,5 +448,47 @@
         "fix": "1. Check that every subdomain works over HTTPS: includeSubDomains forces HTTPS on all of them.\n2. Set the header to `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (nginx: `add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains; preload\" always;`).\n3. Submit the domain at hstspreload.org. If you do not want preloading, remove the word `preload` instead.\n4. Run the scan again."
       }
     }
+  },
+  "header_quality": {
+    "name": "Header quality",
+    "description": "Goes beyond \"is the header there\": reads your Content Security Policy for weak spots attackers use (eval, base tags, plugins), checks the newer browser isolation headers, and looks for pages that set a cookie while telling shared caches to store them.",
+    "findings": {
+      "csp_unsafe_eval": {
+        "title": "Your Content Security Policy allows eval()",
+        "summary": "Your CSP contains 'unsafe-eval', so scripts on your pages may turn text into code with eval(), new Function() or setTimeout with a string.",
+        "why": "If an attacker manages to get text into a place where your JavaScript evaluates it (a common bug in templates and older libraries), 'unsafe-eval' lets that text run as code. Without it, the browser blocks this whole class of attack even when the bug exists. Mozilla's Observatory lowers a site's grade for it.",
+        "fix": "1. Find what needs eval: open your site with the browser's developer tools and remove 'unsafe-eval' from a test copy of the policy; the console lists every blocked call.\n2. Replace string-to-code calls (eval, new Function, setTimeout(\"...\")) with normal functions, or update the library that uses them (many template engines have a CSP-safe build).\n3. If you only run WebAssembly, use 'wasm-unsafe-eval' instead, which allows WebAssembly but not eval.\n4. Remove 'unsafe-eval' from script-src (or default-src) and run the scan again."
+      },
+      "csp_base_uri_missing": {
+        "title": "Your nonce-based CSP has no base-uri",
+        "summary": "Your policy protects scripts with nonces but does not set base-uri, so an injected <base> tag can send your page's own script URLs to another site.",
+        "why": "A nonce tells the browser \"run only scripts carrying this token\". Your own script tags carry it, but if they load relative URLs (src=\"/app.js\"), an attacker who can inject one <base href=\"https://evil.example/\"> tag makes those trusted tags load the attacker's file instead, still with your nonce. base-uri closes that gap. Google's CSP Evaluator reports it as a high-severity gap.",
+        "fix": "1. Add `base-uri 'none'` to your Content-Security-Policy (or `base-uri 'self'` if your pages use a <base> tag).\n2. Example: `Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'`.\n3. Deploy and run the scan again."
+      },
+      "csp_object_src_unrestricted": {
+        "title": "Your CSP does not restrict plugins and embeds (object-src)",
+        "summary": "Neither object-src nor default-src in your policy limits <object> and <embed> content.",
+        "why": "Plugins such as Flash no longer run in current browsers, so this is a low-risk gap today. It still lets injected <object>/<embed> tags load content from anywhere, and it lowers your Mozilla Observatory grade. Setting it costs nothing.",
+        "fix": "1. Add `object-src 'none'` to your Content-Security-Policy (almost no site needs <object> or <embed>).\n2. If you do embed PDFs or similar with <object>, list only your own origin: `object-src 'self'`.\n3. Run the scan again."
+      },
+      "permissions_policy_missing": {
+        "title": "No Permissions-Policy header",
+        "summary": "Your pages do not say which powerful browser features (camera, microphone, location and others) they and embedded content may use.",
+        "why": "Without a Permissions-Policy, any third-party script or iframe on your page can ask visitors for the camera, microphone or location, and the prompt shows your site's name. Declaring the features you do not use turns those requests off. This is best practice, not a vulnerability.",
+        "fix": "1. List the features your site does not use and switch them off, for example: `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.\n2. nginx: `add_header Permissions-Policy \"camera=(), microphone=(), geolocation=()\" always;` Apache: `Header always set Permissions-Policy \"camera=(), microphone=(), geolocation=()\"`.\n3. If you do use a feature, allow only your own origin, e.g. `geolocation=(self)`.\n4. Run the scan again."
+      },
+      "coop_missing": {
+        "title": "No Cross-Origin-Opener-Policy header",
+        "summary": "Your pages do not set Cross-Origin-Opener-Policy, so a site that opens yours in a popup keeps a handle to your window.",
+        "why": "A malicious site that opens your page with window.open() can watch and steer that window (for example, count its frames or send it to another address later), and older side-channel attacks such as Spectre work best when pages share a process. `Cross-Origin-Opener-Policy: same-origin` cuts that link. This is best practice, not a vulnerability.",
+        "fix": "1. Add `Cross-Origin-Opener-Policy: same-origin` to your HTML responses.\n2. If your site relies on popups to other sites that must talk back (some payment or login flows), use `same-origin-allow-popups` instead.\n3. nginx: `add_header Cross-Origin-Opener-Policy \"same-origin\" always;`\n4. Run the scan again."
+      },
+      "cookie_response_cacheable": {
+        "title": "A page that sets the cookie \"{cookie_name}\" may be stored by shared caches",
+        "summary": "Your home page sets the cookie \"{cookie_name}\" and its Cache-Control header ({cache_control}) allows CDNs and proxies to store the response.",
+        "why": "If a CDN or proxy stores that response, the next visitors may receive the same Set-Cookie header, which can put one visitor's session or tracking cookie into other people's browsers. Whether it happens depends on your CDN settings, so the risk is conditional, but the header itself invites it.",
+        "fix": "1. Mark responses that set cookies as private: `Cache-Control: private, no-store` (or at least `private`).\n2. If the page itself should be cached, stop setting the cookie on it, or let your CDN strip Set-Cookie from cached responses.\n3. Check your CDN's rules for caching responses with cookies.\n4. Run the scan again."
+      }
+    }
   }
 }

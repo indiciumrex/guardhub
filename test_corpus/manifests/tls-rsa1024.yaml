@@ -2,6 +2,6 @@ target: tls-rsa1024
 origin: https://tls-rsa1024.lab.test
 description: >
   nginx (OpenSSL 3, SECLEVEL 0), 1024-bit RSA certificate under the lab CA, TLS 1.2+1.3.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: tls_config, key: cert_weak_key, why: "openssl x509: 'Public-Key: (1024 bit)'."}

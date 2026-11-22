@@ -123,6 +123,18 @@
       ]
     },
     {
+      "id": "header_quality",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "csp_unsafe_eval", "severity": "low", "params": [] },
+        { "key": "csp_base_uri_missing", "severity": "low", "params": [] },
+        { "key": "csp_object_src_unrestricted", "severity": "info", "params": [] },
+        { "key": "permissions_policy_missing", "severity": "info", "params": [] },
+        { "key": "coop_missing", "severity": "info", "params": [] },
+        { "key": "cookie_response_cacheable", "severity": "medium", "params": ["cookie_name", "cache_control"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

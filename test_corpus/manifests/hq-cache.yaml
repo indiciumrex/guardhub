@@ -1,0 +1,10 @@
+target: hq-cache
+origin: https://hq-cache.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/hq.conf); sets the session cookie on a 'public, max-age=600' response (positive: cookie_response_cacheable).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: header_quality
+    key: cookie_response_cacheable
+    location: "https://hq-cache.lab.test/#set-cookie=__Host-sid"
+    why: "Oracle fetch of / (lab run 2026-11-22): Set-Cookie __Host-sid with Cache-Control 'public, max-age=600' and no private/no-store/no-cache (RFC 9111 §5.2.2: shared caches may store it)."

@@ -4,7 +4,7 @@ description: >
   phpMyAdmin 5.2.2 (official image, pinned) in its default docker setup: the login is
   served at the ORIGIN ROOT, connected to a lab database. It sends CSP (weak, but
   present), X-Frame-Options and nosniff; its cookies carry HttpOnly and SameSite.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: open_admin, key: db_admin_exposed, why: "phpMyAdmin's login is reachable from the network at /."}
   - {check: info_leak, key: server_version_disclosed, why: "'Server: Apache/2.4.65 (Debian)'."}

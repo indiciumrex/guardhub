@@ -1,0 +1,10 @@
+{
+  "name": "guardhub-lab-oracle-headers",
+  "private": true,
+  "type": "module",
+  "description": "Independent ground truth for header_quality (lab only, not shipped)",
+  "dependencies": {
+    "@mdn/mdn-http-observatory": "1.4.8",
+    "csp_evaluator": "1.1.8"
+  }
+}

@@ -39,12 +39,21 @@ regression test) or the manifest is wrong (fix it and say so in the `why`).
 in its fixed catalogue). Missing it still counts: it lowers "Recall (all)", but not the recall
 the gate uses. Every use names the declared scope.
 
+**Header oracle (`oracles/headers/`).** `header_quality` truth comes from Mozilla's HTTP
+Observatory scanner and Google's CSP Evaluator, versions locked in `package-lock.json`, run
+unmodified inside the lab network (the Dockerfile has the command). It prints, per origin, the
+keys the tools find; the `hq-*` expectations cite that output. Its only change to the tools'
+setup: an empty HSTS preload list, which the Observatory loads at start-up but its CSP
+verdicts do not read.
+
 ## Targets
 
 | Target | What it is | Main use |
 |---|---|---|
 | `clean` | nginx, hardened (TLS 1.2+, full chain, strict headers, flagged cookie) | false positives: must find nothing |
 | `tls-*` | `clean`, wrong in exactly one TLS property each | `tls_cert` |
+| `td-*` | `clean`, wrong in one certificate property (no SCT, SHA-1, 825-day lifetime, OCSP stapled / not stapled, HSTS preload ineligible) | `tls_depth` (truth: testssl.sh 3.2) |
+| `hq-*` | `clean`, wrong in one browser-policy header (`nginx/hq.conf`); `hq-wasm` and `hq-private` are look-alike negatives | `header_quality` (truth: `oracles/headers`) |
 | `leaky` | a careless static deployment (.env, .git, .aws, autoindex) | `exposed_env`, `info_leak` |
 | `juice-shop` | OWASP Juice Shop (SPA: 200 for every path) | soft-404 trap, `info_leak`, `open_admin` |
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |

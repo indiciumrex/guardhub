@@ -1,0 +1,9 @@
+target: hq-nonce
+origin: https://hq-nonce.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/hq.conf); nonce + strict-dynamic policy without base-uri (positive: csp_base_uri_missing).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: header_quality
+    key: csp_base_uri_missing
+    why: "Google CSP Evaluator (csp_evaluator 1.1.8 checkMultipleMissingBaseUriDirective, lab run 2026-11-22): missing base-uri finding for the nonce policy (clean.lab.test: none)."

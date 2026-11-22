@@ -1,0 +1,9 @@
+target: hq-eval
+origin: https://hq-eval.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/hq.conf); CSP allows 'unsafe-eval' in script-src (positive: csp_unsafe_eval).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: header_quality
+    key: csp_unsafe_eval
+    why: "Mozilla HTTP Observatory (@mdn/mdn-http-observatory 1.4.8, lab run 2026-11-22): content-security-policy result csp-implemented-with-unsafe-eval, policy.unsafeEval=true (clean.lab.test: false)."

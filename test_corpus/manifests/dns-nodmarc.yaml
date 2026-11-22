@@ -2,7 +2,7 @@ target: dns-nodmarc
 origin: http://nodmarc.dns.lab.test
 description: >
   MX + SPF, but no DMARC at the host nor at the organisational domain (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_email, key: dmarc_missing, why: "dig: _dmarc.nodmarc.dns.lab.test has no TXT; _dmarc.lab.test is NXDOMAIN."}

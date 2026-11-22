@@ -112,6 +112,14 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'ocsp_stapling_missing': 'info',
         'hsts_preload_ineligible': 'low',
     },
+    'header_quality': {
+        'csp_unsafe_eval': 'low',
+        'csp_base_uri_missing': 'low',
+        'csp_object_src_unrestricted': 'info',
+        'permissions_policy_missing': 'info',
+        'coop_missing': 'info',
+        'cookie_response_cacheable': 'medium',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

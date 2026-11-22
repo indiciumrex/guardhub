@@ -448,5 +448,47 @@
         "fix": "1. Bütün alt alan adlarınızın HTTPS ile çalıştığını kontrol edin: includeSubDomains hepsinde HTTPS'i zorunlu kılar.\n2. Başlığı `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` olarak ayarlayın (nginx: `add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains; preload\" always;`).\n3. Alan adınızı hstspreload.org üzerinden gönderin. Preload istemiyorsanız bunun yerine `preload` kelimesini kaldırın.\n4. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "header_quality": {
+    "name": "Başlık kalitesi",
+    "description": "\"Başlık var mı\" sorusunun ötesine geçer: İçerik Güvenliği Politikanızı saldırganların kullandığı zayıf noktalar (eval, base etiketi, eklentiler) açısından okur, yeni tarayıcı yalıtım başlıklarını kontrol eder ve çerez ayarlayıp aynı anda paylaşılan önbelleklere saklanabileceğini söyleyen sayfaları bulur.",
+    "findings": {
+      "csp_unsafe_eval": {
+        "title": "İçerik Güvenliği Politikanız eval() kullanımına izin veriyor",
+        "summary": "CSP'niz 'unsafe-eval' içeriyor; bu yüzden sayfalarınızdaki betikler eval(), new Function() veya metinli setTimeout ile metni koda dönüştürebilir.",
+        "why": "Bir saldırgan JavaScript'inizin değerlendirdiği bir yere metin sokmayı başarırsa (şablonlarda ve eski kütüphanelerde sık görülen bir hata), 'unsafe-eval' bu metnin kod olarak çalışmasına izin verir. Bu ifade olmadan tarayıcı, hata var olsa bile bu tür saldırıların tamamını engeller. Mozilla Observatory bu yüzden sitenin notunu düşürür.",
+        "fix": "1. eval'e neyin ihtiyaç duyduğunu bulun: sitenizi tarayıcının geliştirici araçlarıyla açın ve politikanın bir test kopyasından 'unsafe-eval' ifadesini kaldırın; konsol engellenen her çağrıyı listeler.\n2. Metni koda çeviren çağrıları (eval, new Function, setTimeout(\"...\")) normal fonksiyonlarla değiştirin veya bunları kullanan kütüphaneyi güncelleyin (birçok şablon motorunun CSP uyumlu bir sürümü vardır).\n3. Yalnızca WebAssembly çalıştırıyorsanız, WebAssembly'ye izin verip eval'e izin vermeyen 'wasm-unsafe-eval' kullanın.\n4. script-src (veya default-src) içinden 'unsafe-eval' ifadesini kaldırın ve taramayı tekrar çalıştırın."
+      },
+      "csp_base_uri_missing": {
+        "title": "Nonce kullanan CSP'nizde base-uri yok",
+        "summary": "Politikanız betikleri nonce ile koruyor ama base-uri belirlemiyor; bu yüzden sayfaya sokulan bir <base> etiketi sayfanızın kendi betik adreslerini başka bir siteye yönlendirebilir.",
+        "why": "Nonce tarayıcıya \"yalnızca bu belirteci taşıyan betikleri çalıştır\" der. Kendi betik etiketleriniz bu belirteci taşır; ancak göreli adresler yüklüyorlarsa (src=\"/app.js\"), tek bir <base href=\"https://evil.example/\"> etiketi sokabilen bir saldırgan bu güvenilir etiketlerin, yine sizin nonce'unuzla, kendi dosyasını yüklemesini sağlar. base-uri bu açığı kapatır. Google'ın CSP Evaluator aracı bunu yüksek önemli bir eksik olarak raporlar.",
+        "fix": "1. Content-Security-Policy başlığınıza `base-uri 'none'` ekleyin (sayfalarınız <base> etiketi kullanıyorsa `base-uri 'self'`).\n2. Örnek: `Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; object-src 'none'; base-uri 'none'`.\n3. Yayına alın ve taramayı tekrar çalıştırın."
+      },
+      "csp_object_src_unrestricted": {
+        "title": "CSP'niz eklentileri ve gömülü içeriği (object-src) kısıtlamıyor",
+        "summary": "Politikanızda ne object-src ne de default-src, <object> ve <embed> içeriğini sınırlıyor.",
+        "why": "Flash gibi eklentiler güncel tarayıcılarda artık çalışmadığından bu bugün düşük riskli bir eksiktir. Yine de sayfaya sokulan <object>/<embed> etiketlerinin her yerden içerik yüklemesine izin verir ve Mozilla Observatory notunuzu düşürür. Ayarlamak hiçbir şeye mal olmaz.",
+        "fix": "1. Content-Security-Policy başlığınıza `object-src 'none'` ekleyin (neredeyse hiçbir sitenin <object> veya <embed> etiketine ihtiyacı yoktur).\n2. <object> ile PDF gibi içerik gömüyorsanız yalnızca kendi kaynağınıza izin verin: `object-src 'self'`.\n3. Taramayı tekrar çalıştırın."
+      },
+      "permissions_policy_missing": {
+        "title": "Permissions-Policy başlığı yok",
+        "summary": "Sayfalarınız, kendilerinin ve gömülü içeriklerin hangi güçlü tarayıcı özelliklerini (kamera, mikrofon, konum ve diğerleri) kullanabileceğini belirtmiyor.",
+        "why": "Permissions-Policy olmadan sayfanızdaki herhangi bir üçüncü taraf betik veya iframe ziyaretçilerden kamera, mikrofon ya da konum isteyebilir ve izin penceresinde sitenizin adı görünür. Kullanmadığınız özellikleri belirtmek bu istekleri kapatır. Bu bir açık değil, iyi bir uygulamadır.",
+        "fix": "1. Sitenizin kullanmadığı özellikleri listeleyip kapatın, örneğin: `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`.\n2. nginx: `add_header Permissions-Policy \"camera=(), microphone=(), geolocation=()\" always;` Apache: `Header always set Permissions-Policy \"camera=(), microphone=(), geolocation=()\"`.\n3. Bir özelliği kullanıyorsanız yalnızca kendi kaynağınıza izin verin, örneğin `geolocation=(self)`.\n4. Taramayı tekrar çalıştırın."
+      },
+      "coop_missing": {
+        "title": "Cross-Origin-Opener-Policy başlığı yok",
+        "summary": "Sayfalarınız Cross-Origin-Opener-Policy belirlemiyor; bu yüzden sitenizi açılır pencerede açan bir site pencerenizle bağını korur.",
+        "why": "Sayfanızı window.open() ile açan kötü niyetli bir site o pencereyi izleyebilir ve yönlendirebilir (örneğin çerçevelerini sayabilir veya daha sonra başka bir adrese gönderebilir); Spectre gibi eski yan kanal saldırıları da sayfalar aynı işlemi paylaştığında en iyi sonucu verir. `Cross-Origin-Opener-Policy: same-origin` bu bağı keser. Bu bir açık değil, iyi bir uygulamadır.",
+        "fix": "1. HTML yanıtlarınıza `Cross-Origin-Opener-Policy: same-origin` ekleyin.\n2. Siteniz, geri yanıt vermesi gereken başka sitelere açılır pencerelerle çalışıyorsa (bazı ödeme veya giriş akışları), bunun yerine `same-origin-allow-popups` kullanın.\n3. nginx: `add_header Cross-Origin-Opener-Policy \"same-origin\" always;`\n4. Taramayı tekrar çalıştırın."
+      },
+      "cookie_response_cacheable": {
+        "title": "\"{cookie_name}\" çerezini ayarlayan bir sayfa paylaşılan önbelleklerde saklanabilir",
+        "summary": "Ana sayfanız \"{cookie_name}\" çerezini ayarlıyor ve Cache-Control başlığı ({cache_control}) CDN'lerin ve proxy'lerin bu yanıtı saklamasına izin veriyor.",
+        "why": "Bir CDN veya proxy bu yanıtı saklarsa, sonraki ziyaretçiler aynı Set-Cookie başlığını alabilir; bu da bir ziyaretçinin oturum veya takip çerezinin başkalarının tarayıcısına girmesine yol açabilir. Bunun olup olmaması CDN ayarlarınıza bağlı olduğu için risk koşulludur, ancak başlığın kendisi buna davetiye çıkarır.",
+        "fix": "1. Çerez ayarlayan yanıtları özel olarak işaretleyin: `Cache-Control: private, no-store` (veya en azından `private`).\n2. Sayfanın kendisinin önbelleğe alınması gerekiyorsa, o sayfada çerez ayarlamayı bırakın veya CDN'inizin önbelleğe alınan yanıtlardan Set-Cookie başlığını çıkarmasını sağlayın.\n3. CDN'inizin çerezli yanıtları önbelleğe alma kurallarını kontrol edin.\n4. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

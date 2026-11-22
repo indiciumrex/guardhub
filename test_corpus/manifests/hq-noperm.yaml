@@ -1,0 +1,12 @@
+target: hq-noperm
+origin: https://hq-noperm.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/hq.conf); no Permissions-Policy and no Cross-Origin-Opener-Policy (positives).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Oracle fetch of / (guardhub-lab oracle, node fetch, lab run 2026-11-22): HTML 200 without a Permissions-Policy header (clean.lab.test sends one)."
+  - check: header_quality
+    key: coop_missing
+    why: "Oracle fetch of / (lab run 2026-11-22): HTML 200 without a Cross-Origin-Opener-Policy header (clean.lab.test sends one)."
