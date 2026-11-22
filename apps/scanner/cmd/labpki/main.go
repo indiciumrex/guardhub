@@ -47,6 +47,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -63,15 +64,24 @@ var oidSCTList = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 2}
 // lab "log id", the issuance time, no extensions, an ECDSA-SHA256 "signature"
 // of zeros. Shaped like a real SCT; signed by no log.
 func sctList(at time.Time) ([]byte, error) {
+	ms := at.UnixMilli()
+	if ms < 0 {
+		return nil, fmt.Errorf("sct time %v before 1970", at)
+	}
 	var sct []byte
 	sct = append(sct, 0)                                             // version v1
 	sct = append(sct, []byte("guardhub-lab-ct-log-id-0000000!!")...) // 32-byte log id
-	sct = binary.BigEndian.AppendUint64(sct, uint64(at.UnixMilli()))
+	sct = binary.BigEndian.AppendUint64(sct, uint64(ms))
 	sct = append(sct, 0, 0)       // no extensions
 	sct = append(sct, 4, 3, 0, 8) // sha256/ecdsa, 8-byte signature
 	sct = append(sct, make([]byte, 8)...)
-	list := binary.BigEndian.AppendUint16(nil, uint16(len(sct)+2))
-	list = binary.BigEndian.AppendUint16(list, uint16(len(sct)))
+	n := len(sct)
+	if n < 0 || n > math.MaxUint16-2 {
+		return nil, fmt.Errorf("sct of %d bytes too long", n)
+	}
+	n16 := uint16(n)
+	list := binary.BigEndian.AppendUint16(nil, n16+2)
+	list = binary.BigEndian.AppendUint16(list, n16)
 	list = append(list, sct...)
 	return asn1.Marshal(list)
 }

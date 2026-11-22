@@ -216,7 +216,7 @@ func cacheableCookie(h http.Header) (string, bool) {
 			private = true
 		}
 	}
-	if private || !(public || shared) {
+	if private || (!public && !shared) {
 		return "", false
 	}
 	return cookies[0].Name, true
