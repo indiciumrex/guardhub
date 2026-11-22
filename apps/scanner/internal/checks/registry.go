@@ -64,6 +64,8 @@ func DefaultWith(o Options) *Registry {
 		HTTPHardening{},
 		DNSEmail{RecursionProbe: o.DNSRecursionProbe},
 		SubdomainTakeover{CTURL: o.CTURL},
+		TLSDepth{Roots: o.Roots},
+		HeaderQuality{},
 	)
 }
 

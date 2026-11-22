@@ -4,10 +4,19 @@ description: >
   phpMyAdmin 5.2.2 (official image, pinned) in its default docker setup: the login is
   served at the ORIGIN ROOT, connected to a lab database. It sends CSP (weak, but
   present), X-Frame-Options and nosniff; its cookies carry HttpOnly and SameSite.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: open_admin, key: db_admin_exposed, why: "phpMyAdmin's login is reachable from the network at /."}
   - {check: info_leak, key: server_version_disclosed, why: "'Server: Apache/2.4.65 (Debian)'."}
   - {check: info_leak, key: framework_version_disclosed, why: "'X-Powered-By: PHP/8.2.29'."}
   - {check: tls_cert, key: https_unavailable, why: "Nothing listens on 443."}
   - {check: http_hardening, key: csp_ineffective, why: "Its CSP has script-src 'self' 'unsafe-inline' 'unsafe-eval' with no nonce or hash: injected inline scripts would run."}
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://phpmyadmin.lab.test/ without a Permissions-Policy header, as the app ships."
+  - check: header_quality
+    key: coop_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://phpmyadmin.lab.test/ without a Cross-Origin-Opener-Policy header, as the app ships."
+  - check: header_quality
+    key: csp_unsafe_eval
+    why: "Mozilla HTTP Observatory 1.4.8 (CI header-truth run 45052035543, 2026-11-22): policy.unsafeEval=true (script-src 'self' 'unsafe-inline' 'unsafe-eval')."

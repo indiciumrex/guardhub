@@ -1,0 +1,10 @@
+target: td-nosct
+origin: https://td-nosct.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
+  labpki 'nosct': trusted chain, no embedded SCT, no TLS SCT extension.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: tls_depth
+    key: cert_no_sct
+    why: "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): certificate_transparency '--' (clean.lab.test: 'yes (certificate extension)')."

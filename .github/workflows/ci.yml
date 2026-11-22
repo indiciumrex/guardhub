@@ -130,7 +130,31 @@ jobs:
             echo "packages/shared/accuracy.json is stale: run 'bash test_corpus/run.sh' and commit the result"; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: accuracy-scorecards, path: docs/accuracy, retention-days: 30 }
+        with:
+          name: accuracy-scorecards
+          path: |
+            docs/accuracy
+            packages/shared/accuracy.json
+          retention-days: 30
+
+  header-truth:
+    name: header-truth (independent oracle vs header_quality manifests)
+    runs-on: ubuntu-latest
+    needs: [scanner]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml==6.0.2
+      # Mozilla HTTP Observatory + Google CSP Evaluator on every site target; the heavy
+      # third-party apps one at a time (start, measure, remove). Fails when a manifest's
+      # header_quality expectations differ from the oracle, or a target cannot be read.
+      - name: oracle on every target, compared with the manifests
+        run: bash test_corpus/oracles/headers/run.sh oracle-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: header-truth, path: oracle-out, retention-days: 30 }
 
   e2e:
     name: e2e (real browser, full stack + demo target)

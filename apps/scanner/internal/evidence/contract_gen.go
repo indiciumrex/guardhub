@@ -54,6 +54,8 @@ const (
 	CheckHttpHardening     = "http_hardening"
 	CheckDnsEmail          = "dns_email"
 	CheckSubdomainTakeover = "subdomain_takeover"
+	CheckTlsDepth          = "tls_depth"
+	CheckHeaderQuality     = "header_quality"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -128,6 +130,21 @@ var FindingKeys = map[string]map[string]Severity{
 	"subdomain_takeover": {
 		"unclaimed_resource": SeverityHigh,
 		"dangling_cname":     SeverityLow,
+	},
+	"tls_depth": {
+		"cert_weak_signature":     SeverityMedium,
+		"cert_lifetime_too_long":  SeverityLow,
+		"cert_no_sct":             SeverityMedium,
+		"ocsp_stapling_missing":   SeverityInfo,
+		"hsts_preload_ineligible": SeverityLow,
+	},
+	"header_quality": {
+		"csp_unsafe_eval":             SeverityLow,
+		"csp_base_uri_missing":        SeverityLow,
+		"csp_object_src_unrestricted": SeverityInfo,
+		"permissions_policy_missing":  SeverityInfo,
+		"coop_missing":                SeverityInfo,
+		"cookie_response_cacheable":   SeverityMedium,
 	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,

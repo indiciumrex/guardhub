@@ -1,0 +1,14 @@
+target: td-sha1
+origin: https://td-sha1.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
+  labpki 'sha1': leaf signed with ECDSA-SHA1 (nginx ssl_ciphers @SECLEVEL=0 to serve it).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: tls_depth
+    key: cert_weak_signature
+    params: {algorithm: "ECDSA-SHA1", subject: "td-sha1.lab.test"}
+    why: "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): cert_signatureAlgorithm 'ECDSA with SHA1' (MEDIUM)."
+  - check: tls_cert
+    key: cert_untrusted
+    why: "Browsers (and Go's verifier, which tls_cert uses) reject SHA-1 signed certificates since 2017; OpenSSL/testssl still build the chain ('passed')."

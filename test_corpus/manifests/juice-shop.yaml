@@ -4,7 +4,7 @@ description: >
   OWASP Juice Shop v17.1.0 (pinned by digest). A single-page app that answers 200 with
   its shell for ANY path (/.env, /.git/HEAD, /admin ...), so status-code-only detection
   produces false positives here. Facts below were verified with curl inside the lab.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - check: security_headers
     key: csp_missing
@@ -25,3 +25,9 @@ expect:
   - check: open_admin
     key: server_status_exposed
     why: "/metrics serves Prometheus metrics without authentication (documented challenge)."
+  - check: header_quality
+    key: permissions_policy_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://juice-shop.lab.test:3000/ without a Permissions-Policy header, as the app ships."
+  - check: header_quality
+    key: coop_missing
+    why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://juice-shop.lab.test:3000/ without a Cross-Origin-Opener-Policy header, as the app ships."

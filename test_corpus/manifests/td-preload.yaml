@@ -1,0 +1,11 @@
+target: td-preload
+origin: https://td-preload.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
+  HSTS 'max-age=31536000; preload' without includeSubDomains.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+expect:
+  - check: tls_depth
+    key: hsts_preload_ineligible
+    params: {reason: "include_subdomains"}
+    why: "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): HSTS_time 365 days, HSTS_subdomains 'only for this domain', HSTS_preload 'domain IS marked for preloading'; hstspreload.org requires includeSubDomains."

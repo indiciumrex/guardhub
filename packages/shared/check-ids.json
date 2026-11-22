@@ -112,6 +112,29 @@
       ]
     },
     {
+      "id": "tls_depth",
+      "category": "transport",
+      "finding_keys": [
+        { "key": "cert_weak_signature", "severity": "medium", "params": ["algorithm", "subject"] },
+        { "key": "cert_lifetime_too_long", "severity": "low", "params": ["days"] },
+        { "key": "cert_no_sct", "severity": "medium", "params": [] },
+        { "key": "ocsp_stapling_missing", "severity": "info", "params": [] },
+        { "key": "hsts_preload_ineligible", "severity": "low", "params": ["reason"] }
+      ]
+    },
+    {
+      "id": "header_quality",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "csp_unsafe_eval", "severity": "low", "params": [] },
+        { "key": "csp_base_uri_missing", "severity": "low", "params": [] },
+        { "key": "csp_object_src_unrestricted", "severity": "info", "params": [] },
+        { "key": "permissions_policy_missing", "severity": "info", "params": [] },
+        { "key": "coop_missing", "severity": "info", "params": [] },
+        { "key": "cookie_response_cacheable", "severity": "medium", "params": ["cookie_name", "cache_control"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

@@ -2,6 +2,6 @@ target: hh-csrf-cookie
 origin: http://hh-csrf-cookie.lab.test
 description: >
   Hardened, sets a Laravel/Angular-style XSRF-TOKEN cookie without HttpOnly (JavaScript must read it) and with SameSite: a NEGATIVE for cookie_flags_missing (nginx/hh.conf; verified with curl incl. Origin headers).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only: nothing listens on 443."}

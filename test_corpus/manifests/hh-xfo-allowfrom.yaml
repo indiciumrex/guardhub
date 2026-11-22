@@ -2,7 +2,7 @@ target: hh-xfo-allowfrom
 origin: http://hh-xfo-allowfrom.lab.test
 description: >
   Hardened, but X-Frame-Options is ALLOW-FROM (ignored by browsers) and CSP has no frame-ancestors (nginx/hh.conf; verified with curl incl. Origin headers).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only: nothing listens on 443."}
   - {check: http_hardening, key: xfo_ineffective, why: "X-Frame-Options: ALLOW-FROM https://partner.lab.test, CSP default-src 'self' without frame-ancestors."}

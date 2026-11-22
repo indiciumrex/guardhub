@@ -1,10 +1,10 @@
 # `tls_cert` accuracy
 
-Lab source revision `f51517f73a24`. Verdict: **meets the gate**.
+Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 48 | 0 | 0 | 0 | 0 | 54 | 6 | 0 |
+| 100.0% | 100.0% | 100.0% | 49 | 0 | 0 | 0 | 0 | 67 | 18 | 0 |
 
 ## By finding
 
@@ -12,7 +12,7 @@ Lab source revision `f51517f73a24`. Verdict: **meets the gate**.
 |---|---|---|---|
 | `cert_expired` | 1 | 0 | 0 |
 | `cert_hostname_mismatch` | 1 | 0 | 0 |
-| `cert_untrusted` | 2 | 0 | 0 |
+| `cert_untrusted` | 3 | 0 | 0 |
 | `http_not_redirected` | 1 | 0 | 0 |
 | `https_unavailable` | 42 | 0 | 0 |
 | `legacy_tls_supported` | 1 | 0 | 0 |
@@ -25,7 +25,7 @@ None.
 
 None.
 
-## True positives (48)
+## True positives (49)
 
 - `dns-axfr` / `https_unavailable` at `axfr.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-chunked` / `https_unavailable` at `chunked.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
@@ -66,6 +66,7 @@ None.
 - `st-s3` / `https_unavailable` at `s3pos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `st-scope` / `https_unavailable` at `scope.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `st-surge` / `https_unavailable` at `surgepos.st.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `td-sha1` / `cert_untrusted` at `td-sha1.lab.test:443`: Browsers (and Go's verifier, which tls_cert uses) reject SHA-1 signed certificates since 2017; OpenSSL/testssl still build the chain ('passed').
 - `tls-expired` / `cert_expired` at `tls-expired.lab.test:443`: labpki 'expired': notAfter is 30 days in the past (chain otherwise valid).
 - `tls-httponly` / `https_unavailable` at `tls-httponly.lab.test:443`: Nothing listens on 443.
 - `tls-legacy` / `legacy_tls_supported` at `tls-legacy.lab.test:443`: nginx ssl_protocols includes TLSv1 (SECLEVEL=0).
