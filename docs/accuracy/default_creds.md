@@ -1,10 +1,10 @@
 # `default_creds` accuracy
 
-Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
+Lab source revision `c3afef35c824`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 60.0% | 3 | 0 | 0 | 2 | 0 | 67 | 63 | 0 |
+| 100.0% | 100.0% | 60.0% | 3 | 0 | 0 | 2 | 0 | 80 | 76 | 0 |
 
 ## By finding
 

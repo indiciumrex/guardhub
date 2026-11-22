@@ -1,10 +1,10 @@
 # `tls_cert` accuracy
 
-Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
+Lab source revision `c3afef35c824`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 49 | 0 | 0 | 0 | 0 | 67 | 18 | 0 |
+| 100.0% | 100.0% | 100.0% | 62 | 0 | 0 | 0 | 0 | 80 | 18 | 0 |
 
 ## By finding
 
@@ -14,7 +14,7 @@ Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
 | `cert_hostname_mismatch` | 1 | 0 | 0 |
 | `cert_untrusted` | 3 | 0 | 0 |
 | `http_not_redirected` | 1 | 0 | 0 |
-| `https_unavailable` | 42 | 0 | 0 |
+| `https_unavailable` | 55 | 0 | 0 |
 | `legacy_tls_supported` | 1 | 0 | 0 |
 
 ## False positives (0)
@@ -25,8 +25,21 @@ None.
 
 None.
 
-## True positives (49)
+## True positives (62)
 
+- `dd-broken` / `https_unavailable` at `broken.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-dkim1024` / `https_unavailable` at `dkim1024.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-dkim512` / `https_unavailable` at `dkim512.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-good` / `https_unavailable` at `good.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-nocaa` / `https_unavailable` at `nocaa.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-nomail` / `https_unavailable` at `nomail.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-nosts` / `https_unavailable` at `nosts.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-notlsrpt` / `https_unavailable` at `notlsrpt.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-stsbroken` / `https_unavailable` at `stsbroken.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-stsmismatch` / `https_unavailable` at `stsmismatch.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-ststesting` / `https_unavailable` at `ststesting.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-unsigned` / `https_unavailable` at `unsigned.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
+- `dd-www` / `https_unavailable` at `www.good.dd.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-axfr` / `https_unavailable` at `axfr.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-chunked` / `https_unavailable` at `chunked.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
 - `dns-dkimonly` / `https_unavailable` at `dkimonly.dns.lab.test:443`: Plain HTTP only (dns-web): nothing listens on 443.
