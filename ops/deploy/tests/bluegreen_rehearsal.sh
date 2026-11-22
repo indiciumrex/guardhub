@@ -100,6 +100,16 @@ log "1) cutover: legacy -> $NEW in blue";      "${CTL[@]}" activate "$NEW"
 log "2) second activate -> green";            "${CTL[@]}" activate "$NEW"
 log "3) rollback -> blue";                    "${CTL[@]}" rollback
 
+log "api has no internet (ADR-0006): the colour network is internal, api is on no other egress network"
+for c in blue green; do
+  [[ $(docker network inspect "guardhub-${c}_app" --format '{{.Internal}}') == true ]] ||
+    { echo "FAIL: guardhub-${c}_app is not internal" >&2; exit 1; }
+done
+if docker exec guardhub-blue-api-1 python -c "import socket; socket.create_connection(('1.1.1.1', 443), 4)" 2>/dev/null; then
+  echo "FAIL: api reached the internet" >&2; exit 1
+fi
+echo "api: no route to the internet"
+
 log "4) broken release must never get traffic"
 BROKEN=broken0000000
 cp -a "$RH/releases/$NEW" "$RH/releases/$BROKEN"

@@ -10,7 +10,10 @@ networks:
   backend: { name: guardhub_backend, external: true }
   egress: { name: guardhub_egress, external: true }
   frontend: { name: guardhub_frontend, external: true }
-  app: {} # per colour (project-scoped): web <-> its own api
+  # Per colour (project-scoped): web <-> its own api. internal: api has NO internet (ADR-0006: it
+  # reaches GitHub only through github-egress). web keeps its published port via `frontend`.
+  # Compose recreates the network when this flag differs (the colour being started is stopped).
+  app: { internal: true }
 
 services:
   api:
