@@ -490,5 +490,71 @@
         "fix": "1. Mark responses that set cookies as private: `Cache-Control: private, no-store` (or at least `private`).\n2. If the page itself should be cached, stop setting the cookie on it, or let your CDN strip Set-Cookie from cached responses.\n3. Check your CDN's rules for caching responses with cookies.\n4. Run the scan again."
       }
     }
+  },
+  "dns_depth": {
+    "name": "DNS & e-mail transport depth",
+    "description": "Looks past SPF and DMARC: whether your DNSSEC chain is intact, whether CAA limits who may issue your certificates, whether mail to you is protected by MTA-STS (with TLS reports) or DANE, and whether your DKIM keys are long enough.",
+    "findings": {
+      "dnssec_broken": {
+        "title": "DNSSEC for {domain} is broken",
+        "summary": "Your domain's parent zone says {domain} is signed with DNSSEC, but the keys or signatures in your zone do not match. Resolvers that check DNSSEC refuse to answer for your domain.",
+        "why": "DNSSEC links your zone to its parent through a DS record. When the DS record names a key your zone no longer uses, or the signature over your keys is invalid or expired, every validating resolver (Google Public DNS, Cloudflare 1.1.1.1, Quad9 and many internet providers) treats your domain as forged and returns an error. For those visitors your website and e-mail simply stop working. This usually happens after changing DNS host or rotating keys without updating the DS record.",
+        "fix": "1. Find where your domain is registered (the registrar) and where its DNS is hosted.\n2. If you no longer want DNSSEC (for example after moving DNS hosts), remove the DS record at the registrar. Wait for the old record's TTL to expire.\n3. If you want DNSSEC, enable it at your current DNS host, copy the DS record it shows you, and replace the old DS record at the registrar with it.\n4. Check the result at dnsviz.net, then run the scan again."
+      },
+      "caa_missing": {
+        "title": "No CAA record limits who may issue certificates for {domain}",
+        "summary": "Neither {domain} nor its parent domain publishes a CAA record, so every public certificate authority is allowed to issue certificates for it.",
+        "why": "A CAA record lists the certificate authorities you use (for example Let's Encrypt). All public CAs must check it and refuse to issue to anyone else. Without it, a mistake or a weak domain check at any of the hundreds of CAs could produce a valid certificate for your domain for someone else. This is defence in depth, not a vulnerability.",
+        "fix": "1. Find out which certificate authority issues your certificates (your host's automatic HTTPS usually uses Let's Encrypt; check the issuer of your current certificate).\n2. Add a CAA record at your domain's root, for example `example.com. CAA 0 issue \"letsencrypt.org\"` (one line per CA you use). Add `0 iodef \"mailto:security@example.com\"` to be told about refused requests.\n3. Subdomains inherit it, so one record usually covers everything.\n4. Run the scan again."
+      },
+      "mta_sts_missing": {
+        "title": "Mail to {domain} is not protected by MTA-STS",
+        "summary": "{domain} receives e-mail but publishes no MTA-STS policy, so mail servers sending to you fall back to an unencrypted connection whenever encryption is blocked.",
+        "why": "Mail servers encrypt mail to you only if both sides offer it, and an attacker on the network path can strip that offer. The sending server then delivers in plain text, where messages can be read or changed. MTA-STS publishes \"always use verified encryption to my mail servers\", and Gmail, Microsoft and other large providers honour it. The attack needs access to the network path between mail servers, so the risk is low but real.",
+        "fix": "1. Create a policy file at `https://mta-sts.{domain}/.well-known/mta-sts.txt` (served as text/plain with a valid certificate) containing:\n   `version: STSv1`\n   `mode: testing`\n   `mx: <each of your MX hosts, for example *.mail.protection.outlook.com>`\n   `max_age: 86400`\n2. Publish a TXT record `_mta-sts.{domain}` with the value `v=STSv1; id=20260101` (change the id whenever you change the policy).\n3. Add a TLS-RPT record so you receive reports, watch them for a week or two, then switch `mode` to `enforce` and raise `max_age` to 604800 or more.\n4. Run the scan again."
+      },
+      "mta_sts_policy_broken": {
+        "title": "The MTA-STS policy of {domain} cannot be used",
+        "summary": "{domain} announces an MTA-STS policy, but the policy file could not be read as mail servers require, so senders ignore it.",
+        "why": "Sending mail servers fetch the policy from https://mta-sts.{domain}/.well-known/mta-sts.txt. They require a valid certificate for that host, an HTTP 200 answer with no redirect, the text/plain type and a correct policy. If any of these fails, they act as if there were no policy, and your mail is unprotected even though your DNS says otherwise. The evidence shows which requirement failed.",
+        "fix": "1. Open https://mta-sts.{domain}/.well-known/mta-sts.txt in a browser: it must load without a certificate warning or redirect.\n2. Make sure the host mta-sts.{domain} exists in DNS and has a certificate that names it (most hosts can issue one automatically).\n3. Serve the file as text/plain with the lines `version: STSv1`, `mode`, one `mx` line per mail server and `max_age`.\n4. Change the id in the `_mta-sts.{domain}` TXT record so senders fetch the corrected policy, then run the scan again."
+      },
+      "mta_sts_mx_mismatch": {
+        "title": "The MTA-STS policy of {domain} does not cover its mail server {mx}",
+        "summary": "The enforced MTA-STS policy of {domain} does not list {mx}, one of the mail servers in your MX records. Senders that honour MTA-STS will refuse to deliver mail to it.",
+        "why": "In enforce mode, senders such as Gmail and Microsoft deliver only to mail servers named in your policy. A mail server in your MX records that the policy does not cover is treated as an attacker's server, so mail that would go there is held and then returned to the sender. This usually happens after moving to a new mail provider without updating the policy.",
+        "fix": "1. List your current MX records (for example with `dig MX {domain}`).\n2. Edit the policy at https://mta-sts.{domain}/.well-known/mta-sts.txt so it has one `mx:` line per mail server (wildcards such as `*.mail.protection.outlook.com` match one label).\n3. Change the id in the `_mta-sts.{domain}` TXT record so senders reload the policy.\n4. If you cannot fix it right away, set `mode: testing` until you can. Run the scan again."
+      },
+      "mta_sts_testing": {
+        "title": "The MTA-STS policy of {domain} is only in testing mode",
+        "summary": "{domain} has a working MTA-STS policy in testing mode: senders report problems but still deliver without encryption when it is blocked.",
+        "why": "Testing mode is the right first step: it lets you check, through TLS reports, that every mail server works with verified encryption. It does not protect mail yet. Only enforce mode stops senders from falling back to an unencrypted connection. This is advice, not a vulnerability.",
+        "fix": "1. Check your TLS-RPT reports (if you set them up) for failures over a week or two.\n2. Change `mode: testing` to `mode: enforce` in https://mta-sts.{domain}/.well-known/mta-sts.txt and raise `max_age` to at least 604800 (one week).\n3. Change the id in the `_mta-sts.{domain}` TXT record, then run the scan again."
+      },
+      "tlsrpt_missing": {
+        "title": "{domain} receives no reports about failed encrypted deliveries",
+        "summary": "{domain} uses MTA-STS but publishes no TLS-RPT address, so you are not told when mail servers fail to deliver to you securely.",
+        "why": "With TLS-RPT (RFC 8460), large senders such as Google and Microsoft send you a daily report of encrypted deliveries that failed, for example because of an expired certificate or an attack in progress. Without it, a broken setup or an attack goes unnoticed until mail goes missing. This is advice, not a vulnerability.",
+        "fix": "1. Choose a mailbox (or a report-processing service) for the reports.\n2. Publish a TXT record `_smtp._tls.{domain}` with the value `v=TLSRPTv1; rua=mailto:tls-reports@{domain}`.\n3. Run the scan again; reports start arriving within a day."
+      },
+      "dane_unsigned": {
+        "title": "The DANE records of mail server {mx} are ignored",
+        "summary": "Your mail server {mx} publishes TLSA (DANE) records, but its DNS zone is not signed with DNSSEC, so sending servers ignore them.",
+        "why": "DANE lets sending mail servers check your mail server's certificate against TLSA records in DNS. Senders trust those records only when DNSSEC proves they are genuine (RFC 7672). In an unsigned zone the records give no protection, and they suggest a protection that is not there. This is advice, not a vulnerability.",
+        "fix": "1. Enable DNSSEC for the zone that holds {mx} at its DNS host, and add the DS record it gives you at the registrar.\n2. Or, if you do not plan to use DNSSEC, remove the TLSA records and use MTA-STS instead.\n3. Run the scan again."
+      },
+      "dkim_weak_key": {
+        "title": "Your DKIM key under selector \"{selector}\" is only {bits} bits",
+        "summary": "The RSA key published for DKIM signing under the selector \"{selector}\" has {bits} bits. The current recommendation is at least 2048 bits.",
+        "why": "Receiving mail servers use this key to check that mail really comes from you. A 1024-bit RSA key is still accepted, but it is within reach of well-funded attackers, and RFC 8301 asks signers to use at least 2048 bits. Someone who recovers the private key can sign mail that passes as yours, including under DMARC enforcement.",
+        "fix": "1. In your mail provider's settings (for example Google Workspace: Apps > Gmail > Authenticate email; Microsoft 365: Defender > Email authentication > DKIM), generate a new 2048-bit key. Most providers let you choose a new selector.\n2. Publish the new key's TXT record, wait for it to be visible, then switch signing to it.\n3. After a few days, remove the old \"{selector}\" record (or empty its `p=` value) and run the scan again."
+      },
+      "dkim_key_too_short": {
+        "title": "Your DKIM key under selector \"{selector}\" is only {bits} bits and can be broken",
+        "summary": "The RSA key published for DKIM signing under the selector \"{selector}\" has {bits} bits, below the 1024-bit minimum. Keys this short can be broken with rented computing power.",
+        "why": "Keys under 1024 bits can be factored at modest cost: 512-bit keys have been broken in hours for about a hundred dollars of cloud computing. Whoever does so can sign mail that passes as yours with receivers that still accept such keys. RFC 8301 forbids verifiers from accepting them, so major providers already treat your signatures as invalid, which hurts your deliverability too.",
+        "fix": "1. Generate a new 2048-bit DKIM key in your mail provider's settings (under a new selector if possible) and publish its TXT record.\n2. Switch signing to the new key.\n3. Revoke the old key now: set the \"{selector}\" record to `v=DKIM1; p=` (empty key) so nobody can use it, then remove it later. Run the scan again."
+      }
+    }
   }
 }

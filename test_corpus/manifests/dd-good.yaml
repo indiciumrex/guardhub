@@ -1,0 +1,7 @@
+target: dd-good
+origin: http://good.dd.lab.test
+description: >
+  signed zone with CAA, MTA-STS enforce covering its MX, TLS-RPT, DANE (TLSA in the signed zone), 2048-bit RSA and Ed25519 DKIM keys: NOTHING to report (test_corpus/dns/dd/).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
+expect:
+  - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}

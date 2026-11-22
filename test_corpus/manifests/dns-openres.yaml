@@ -2,7 +2,8 @@ target: dns-openres
 origin: http://openres.dns.lab.test
 description: >
   its own zone (apex), well configured for mail, nameserver ns-open.dns.lab.test recurses for anyone (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_email, key: open_resolver, why: "dig A clean.lab.test @ns-open: NOERROR, RA set, 1 answer; @ns (the other nameserver): REFUSED."}
+  - {check: dns_depth, key: mta_sts_missing, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): MX: mx.openres.dns.lab.test; _mta-sts: no single valid v=STSv1 record"}

@@ -1,10 +1,10 @@
 # `tls_config` accuracy
 
-Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
+Lab source revision `c3afef35c824`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 9 | 0 | 0 | 0 | 0 | 67 | 61 | 0 |
+| 100.0% | 100.0% | 100.0% | 9 | 0 | 0 | 0 | 0 | 80 | 74 | 0 |
 
 ## By finding
 

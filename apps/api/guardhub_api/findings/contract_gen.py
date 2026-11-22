@@ -120,6 +120,18 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'coop_missing': 'info',
         'cookie_response_cacheable': 'medium',
     },
+    'dns_depth': {
+        'dnssec_broken': 'medium',
+        'caa_missing': 'info',
+        'mta_sts_missing': 'low',
+        'mta_sts_policy_broken': 'low',
+        'mta_sts_mx_mismatch': 'medium',
+        'mta_sts_testing': 'info',
+        'tlsrpt_missing': 'info',
+        'dane_unsigned': 'info',
+        'dkim_weak_key': 'low',
+        'dkim_key_too_short': 'medium',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

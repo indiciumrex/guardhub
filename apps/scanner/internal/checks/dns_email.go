@@ -220,6 +220,11 @@ type dnsLookups struct {
 func (d *dnsLookups) query(ctx context.Context, name string, qtype uint16) (*dns.Msg, lookupStatus, error) {
 	d.asked++
 	resp, err := d.t.Probe.DNSQuery(ctx, name, qtype)
+	return d.classify(ctx, resp, err)
+}
+
+// classify turns a resolver answer into a lookup status (counting answers).
+func (d *dnsLookups) classify(ctx context.Context, resp *dns.Msg, err error) (*dns.Msg, lookupStatus, error) {
 	if err != nil {
 		if isFatal(ctx, err) {
 			return nil, lookupUnknown, err

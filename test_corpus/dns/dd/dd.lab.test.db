@@ -1,0 +1,19 @@
+; dd.lab.test: parent of the dns_depth zones. No CAA here: a child without its own CAA
+; (nocaa) is covered by none (lab.test answers "no CAA" too, Corefile.res).
+; labdns appends one DS record per signed child at lab start (keys are never committed).
+$ORIGIN dd.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+good        IN NS  ns.dns.lab.test.
+broken      IN NS  ns.dns.lab.test.
+unsigned    IN NS  ns.dns.lab.test.
+nocaa       IN NS  ns.dns.lab.test.
+nosts       IN NS  ns.dns.lab.test.
+nomail      IN NS  ns.dns.lab.test.
+ststesting  IN NS  ns.dns.lab.test.
+stsbroken   IN NS  ns.dns.lab.test.
+stsmismatch IN NS  ns.dns.lab.test.
+notlsrpt    IN NS  ns.dns.lab.test.
+dkim1024    IN NS  ns.dns.lab.test.
+dkim512     IN NS  ns.dns.lab.test.

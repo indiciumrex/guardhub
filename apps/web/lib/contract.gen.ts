@@ -20,8 +20,8 @@ export interface RawFinding {
   fingerprint: string;
 }
 
-export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dependency_vulns", "repo_secrets"] as const;
+export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth", "dependency_vulns", "repo_secrets"] as const;
 export type CheckId = (typeof CHECK_IDS)[number];
 /** Checks that scan a connected repository (check-ids.json "target": "repo"). */
 export const REPO_CHECK_IDS: readonly CheckId[] = ["dependency_vulns", "repo_secrets"];
-export const SITE_CHECK_IDS: readonly CheckId[] = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality"];
+export const SITE_CHECK_IDS: readonly CheckId[] = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth"];

@@ -1,0 +1,4 @@
+version: STSv1
+mode: enforce
+mx: mx.dkim1024.dd.lab.test
+max_age: 86400

@@ -66,6 +66,7 @@ func DefaultWith(o Options) *Registry {
 		SubdomainTakeover{CTURL: o.CTURL},
 		TLSDepth{Roots: o.Roots},
 		HeaderQuality{},
+		DNSDepth{Roots: o.Roots},
 	)
 }
 

@@ -56,6 +56,7 @@ const (
 	CheckSubdomainTakeover = "subdomain_takeover"
 	CheckTlsDepth          = "tls_depth"
 	CheckHeaderQuality     = "header_quality"
+	CheckDnsDepth          = "dns_depth"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -145,6 +146,18 @@ var FindingKeys = map[string]map[string]Severity{
 		"permissions_policy_missing":  SeverityInfo,
 		"coop_missing":                SeverityInfo,
 		"cookie_response_cacheable":   SeverityMedium,
+	},
+	"dns_depth": {
+		"dnssec_broken":         SeverityMedium,
+		"caa_missing":           SeverityInfo,
+		"mta_sts_missing":       SeverityLow,
+		"mta_sts_policy_broken": SeverityLow,
+		"mta_sts_mx_mismatch":   SeverityMedium,
+		"mta_sts_testing":       SeverityInfo,
+		"tlsrpt_missing":        SeverityInfo,
+		"dane_unsigned":         SeverityInfo,
+		"dkim_weak_key":         SeverityLow,
+		"dkim_key_too_short":    SeverityMedium,
 	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,

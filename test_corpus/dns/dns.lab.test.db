@@ -4,6 +4,7 @@ $ORIGIN dns.lab.test.
 $TTL 300
 @        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 2 7200 3600 1209600 300
 @        IN NS  ns.dns.lab.test.
+@        IN CAA 0 issue "lab-ca.test" ; dns_depth: these targets are not about CAA
 ; --- good: MX + SPF (with an include) + DMARC reject: NOTHING to report
 good             IN MX  10 mx.good.dns.lab.test.
 good             IN TXT "v=spf1 mx include:_spf.mailer.dns.lab.test -all"

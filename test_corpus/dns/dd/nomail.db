@@ -1,0 +1,11 @@
+; nomail.dd.lab.test: receives no mail (null MX, SPF -all): no mail-transport rules apply (dns_depth, test_corpus/README.md).
+$ORIGIN nomail.dd.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+@        IN MX  0 .
+@        IN TXT "v=spf1 -all"
+_dmarc   IN TXT "v=DMARC1; p=reject"
+@        IN CAA 0 issue "lab-ca.test"
+default._domainkey IN TXT "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvzCjJtCxZ75dQgoI511Slq5f8TwWmBGxWHZSZlm+dQWUsIB2zxc1wVpERxVRrN+caie2o5uYVg+9LU1JaGRj71syFmzdo4BMiayYDQupz6VwLVpQtLONEMcj3n1z6gYP2bivr6r06vkfTxAptv55NYxXpr1Vc0jK/9fqbg1ZB5LMzXyRT/lEPiCgkPRz" "o6KAJD+YMnqP2cNGvou6PREdGWNOvPDofjHgrSbXwLkG1r4ELduz+4jJU0Xnk5rYXHYMZQY0Du5fxCx9iF4T8d/eeSXTWK4wJoSp+KAokHVewjxe5O5CYGUZV3ECktVWht/uLFEhlEPruN3qC6nkzFFwNQIDAQAB"
+selector2._domainkey IN TXT "v=DKIM1; k=ed25519; p=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo="

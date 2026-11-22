@@ -62,10 +62,10 @@
   reveal. Guessing about 75 selectors (as the engine this replaces did) marks almost every domain
   "DKIM missing". DMARC enforcement is what turns DKIM into protection, and that is reported.
 - **DNSSEC.** "Unsigned" is true of most domains and is not an actionable risk for a SaaS
-  founder. "Broken DNSSEC" (signed, but failing validation, which makes the domain unreachable for
-  validating resolvers) is worth reporting, but needs a validating-resolver setup in the lab to
-  be measured. It is a fast-follow.
-- **CAA, MTA-STS, TLS-RPT:** best practices, not vulnerabilities.
+  founder. A broken chain (signed, but failing validation) is reported by `dns_depth`
+  ([docs/checks/dns_depth.md](dns_depth.md)), a separate module with its own accuracy gate.
+- **CAA, MTA-STS, TLS-RPT, DANE, DKIM key size:** in `dns_depth` too, never here (ADR-0007 §1:
+  depth ships as a new module, not as new keys of this enabled one).
 
 ## Evidence
 
