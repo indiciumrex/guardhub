@@ -1,6 +1,6 @@
 # `info_leak` accuracy
 
-Lab source revision `5c983db5731c`. Verdict: **meets the gate**.
+Lab source revision `f51517f73a24`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|

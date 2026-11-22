@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "5c983db5731c",
+  "source": "f51517f73a24",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -38,6 +38,17 @@
     "juice-shop",
     "leaky",
     "phpmyadmin",
+    "rp-clean",
+    "rp-deps-traps",
+    "rp-npm",
+    "rp-npm-v1",
+    "rp-pip",
+    "rp-pipfile",
+    "rp-poetry",
+    "rp-secrets-app",
+    "rp-secrets-infra",
+    "rp-secrets-traps",
+    "rp-uv",
     "st-azure",
     "st-bitbucket",
     "st-chain",
@@ -124,6 +135,218 @@
           "key": "installer_exposed",
           "outside": true,
           "why": "/setup.php ('Database Setup', 'Create / Reset Database') is reachable without logging in."
+        }
+      ]
+    },
+    {
+      "check_id": "dependency_vulns",
+      "targets": 11,
+      "clean_runs": 4,
+      "tp": 25,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.9259259259259259,
+      "meets_gate": true,
+      "by_key": {
+        "vulnerable_dependency_high": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 2
+        },
+        "vulnerable_dependency_low": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "vulnerable_dependency_medium": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "vulnerable_dependency_no_fix": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "vulnerable_dev_dependency": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#lodash",
+          "why": "osv-scanner v2.2.4: lodash@4.17.15 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 4.18.0"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#minimist",
+          "why": "osv-scanner v2.2.4: minimist@1.2.5 has 1 advisory group(s), max rating CRITICAL; lowest version fixing all: 1.2.6"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#node-fetch",
+          "why": "osv-scanner v2.2.4: node-fetch@2.6.0 has 2 advisory group(s), max rating HIGH; lowest version fixing all: 2.6.7"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_low",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#cookie",
+          "why": "osv-scanner v2.2.4: cookie@0.6.0 has 1 advisory group(s), max rating LOW; lowest version fixing all: 0.7.0"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_medium",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#follow-redirects",
+          "why": "osv-scanner v2.2.4: follow-redirects@1.15.5 has 2 advisory group(s), max rating MODERATE; lowest version fixing all: 1.16.0"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dependency_no_fix",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#request",
+          "why": "osv-scanner v2.2.4: request@2.88.2 has 1 advisory group(s), max rating MODERATE (no fixed version)"
+        },
+        {
+          "target": "rp-npm",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-npm/blob/HEAD/package-lock.json#minimatch",
+          "why": "osv-scanner v2.2.4: minimatch@3.0.4 has 4 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 3.1.4"
+        },
+        {
+          "target": "rp-npm-v1",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#handlebars",
+          "why": "osv-scanner v2.2.4: handlebars@4.5.2 has 15 advisory group(s), max rating CRITICAL; lowest version fixing all: 4.7.10"
+        },
+        {
+          "target": "rp-npm-v1",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#minimist",
+          "why": "osv-scanner v2.2.4: minimist@1.2.0 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 1.2.6"
+        },
+        {
+          "target": "rp-npm-v1",
+          "key": "vulnerable_dependency_medium",
+          "location": "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#jquery",
+          "why": "osv-scanner v2.2.4: jquery@3.4.1 has 2 advisory group(s), max rating MODERATE; lowest version fixing all: 3.5.0"
+        },
+        {
+          "target": "rp-npm-v1",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-npm-v1/blob/HEAD/package-lock.json#debug",
+          "why": "osv-scanner v2.2.4: debug@2.6.8 has 2 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 2.6.9"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#ecdsa",
+          "why": "osv-scanner v2.2.4: ecdsa@0.19.0 has 2 advisory group(s), max rating HIGH; lowest version fixing all: 0.19.2"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#pyyaml",
+          "why": "osv-scanner v2.2.4: pyyaml@5.3 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 5.4"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#requests",
+          "why": "osv-scanner v2.2.4: requests@2.19.0 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 2.33.0"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#urllib3",
+          "why": "osv-scanner v2.2.4: urllib3@1.26.4 has 11 advisory group(s), max rating HIGH; lowest version fixing all: 2.8.0"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_medium",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#idna",
+          "why": "osv-scanner v2.2.4: idna@3.10 has 1 advisory group(s), max rating MODERATE; lowest version fixing all: 3.15"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dependency_medium",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements.txt#jinja2",
+          "why": "osv-scanner v2.2.4: jinja2@2.11.2 has 5 advisory group(s), max rating MODERATE; lowest version fixing all: 3.1.6"
+        },
+        {
+          "target": "rp-pip",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-pip/blob/HEAD/requirements-dev.txt#pytest",
+          "why": "osv-scanner v2.2.4: pytest@8.3.3 has 1 advisory group(s), max rating MODERATE, development dependency; lowest version fixing all: 9.0.3"
+        },
+        {
+          "target": "rp-pipfile",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-pipfile/blob/HEAD/Pipfile.lock#flask",
+          "why": "osv-scanner v2.2.4: flask@0.12 has 4 advisory group(s), max rating HIGH; lowest version fixing all: 3.1.3"
+        },
+        {
+          "target": "rp-pipfile",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-pipfile/blob/HEAD/Pipfile.lock#pytest",
+          "why": "osv-scanner v2.2.4: pytest@8.3.3 has 1 advisory group(s), max rating MODERATE, development dependency; lowest version fixing all: 9.0.3"
+        },
+        {
+          "target": "rp-poetry",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-poetry/blob/HEAD/poetry.lock#pillow",
+          "why": "osv-scanner v2.2.4: pillow@9.0.0 has 54 advisory group(s), max rating CRITICAL; lowest version fixing all: 13.0.0"
+        },
+        {
+          "target": "rp-poetry",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-poetry/blob/HEAD/poetry.lock#ipython",
+          "why": "osv-scanner v2.2.4: ipython@8.0.0 has 2 advisory group(s), max rating HIGH, development dependency; lowest version fixing all: 8.10.0"
+        },
+        {
+          "target": "rp-uv",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-uv/blob/HEAD/uv.lock#anyio",
+          "why": "osv-scanner v2.2.4: anyio@4.4.0 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 4.14.2"
+        },
+        {
+          "target": "rp-uv",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-uv/blob/HEAD/uv.lock#starlette",
+          "why": "osv-scanner v2.2.4: starlette@0.27.0 has 7 advisory group(s), max rating HIGH; lowest version fixing all: 1.3.1"
+        },
+        {
+          "target": "rp-uv",
+          "key": "vulnerable_dev_dependency",
+          "location": "https://github.com/lab/rp-uv/blob/HEAD/uv.lock#black",
+          "why": "osv-scanner v2.2.4: black@22.3.0 has 4 advisory group(s), max rating CRITICAL, development dependency; lowest version fixing all: 26.10.1"
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": [
+        {
+          "target": "rp-deps-traps",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-deps-traps/blob/HEAD/vendor/legacy/requirements.txt#pyyaml",
+          "outside": true,
+          "why": "osv-scanner v2.2.4: pyyaml@5.3 has 2 advisory group(s), max rating CRITICAL; lowest version fixing all: 5.4; outside the declared scope: vendored directories are skipped"
+        },
+        {
+          "target": "rp-deps-traps",
+          "key": "vulnerable_dependency_high",
+          "location": "https://github.com/lab/rp-deps-traps/blob/HEAD/yarn.lock#lodash",
+          "outside": true,
+          "why": "osv-scanner v2.2.4: lodash@4.17.15 has 5 advisory group(s), max rating HIGH; lowest version fixing all: 4.18.0; outside the declared scope: yarn.lock is not supported yet"
         }
       ]
     },
@@ -536,6 +759,151 @@
           "key": "db_admin_exposed",
           "location": "http://phpmyadmin.lab.test/",
           "why": "phpMyAdmin's login is reachable from the network at /."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "repo_secrets",
+      "targets": 11,
+      "clean_runs": 9,
+      "tp": 18,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "generic_secret": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "hardcoded_secret": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 0
+        },
+        "test_mode_secret": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "rp-secrets-app",
+          "key": "generic_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/src/config.ts#generic",
+          "why": "planted: jwtSecret assigned a 32-char random value; gitleaks v8.21.2: generic-api-key"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "generic_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/src/settings.py#generic",
+          "why": "planted: Django SECRET_KEY assigned a 32-char random value; gitleaks v8.21.2: generic-api-key"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/.env#sendgrid_key",
+          "why": "planted: committed .env with a SendGrid key; gitleaks v8.21.2: sendgrid-api-token"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/.env#stripe_live_secret",
+          "why": "planted: committed .env with a live Stripe secret key; gitleaks v8.21.2: stripe-access-token"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/config/database.js#database_url",
+          "why": "planted: postgres URL with a password to the remote host db.shop-prod.io (gitleaks has no URL-credential rule); verified by construction (labfixture generator)"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/deploy/server.key#private_key",
+          "why": "planted: PEM private key file; gitleaks v8.21.2: private-key"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/scripts/release.sh#github_pat",
+          "why": "planted: GitHub personal access token in a script; gitleaks v8.21.2: github-pat"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/src/ai/summarize.py#openai_key",
+          "why": "planted: OpenAI project key (T3BlbkFJ marker); gitleaks v8.21.2: generic-api-key"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/src/alerts.js#slack_webhook",
+          "why": "planted: Slack incoming webhook URL; gitleaks v8.21.2: slack-webhook-url"
+        },
+        {
+          "target": "rp-secrets-app",
+          "key": "test_mode_secret",
+          "location": "https://github.com/lab/rp-secrets-app/blob/HEAD/src/payments/checkout.ts#stripe_test_secret",
+          "why": "planted: Stripe TEST-mode secret key: low (no live money or data); gitleaks v8.21.2: stripe-access-token"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/.npmrc#npm_token",
+          "why": "planted: npm automation token in .npmrc; gitleaks v8.21.2: npm-access-token"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/ansible/group_vars/all.yml#gitlab_pat",
+          "why": "planted: GitLab personal access token; gitleaks v8.21.2: gitlab-pat"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/bot/config.json#slack_token",
+          "why": "planted: Slack bot token; gitleaks v8.21.2: slack-legacy-bot-token"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/ci/notify.py#telegram_bot_token",
+          "why": "planted: Telegram bot token \u003cid\u003e:AA\u003c33\u003e (gitleaks' rule needs the keyword on the same line); verified by construction (labfixture generator)"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/docker-compose.prod.yml#database_url",
+          "why": "planted: rediss URL with a password to cache.infra-prod.net (no gitleaks rule); verified by construction (labfixture generator)"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/k8s/do-secret.yaml#digitalocean_token",
+          "why": "planted: DigitalOcean token in a committed Kubernetes Secret; gitleaks v8.21.2: digitalocean-pat"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/notebooks/explore.ipynb#huggingface_token",
+          "why": "planted: Hugging Face token in a notebook cell; gitleaks v8.21.2: huggingface-access-token"
+        },
+        {
+          "target": "rp-secrets-infra",
+          "key": "hardcoded_secret",
+          "location": "https://github.com/lab/rp-secrets-infra/blob/HEAD/terraform/prod.tfvars#aws_secret_access_key",
+          "why": "planted: aws_secret_access_key = 40-char key (gitleaks keys on the AKIA id, here AWS's documented EXAMPLE id, which it allowlists); verified by construction (labfixture generator)"
         }
       ],
       "false_positives": null,
