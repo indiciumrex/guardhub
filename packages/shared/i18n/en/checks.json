@@ -412,5 +412,41 @@
         "fix": "1. Roll the key in the provider's dashboard (test mode).\n2. Read it from an environment variable instead of {file}.\n3. Scan again."
       }
     }
+  },
+  "tls_depth": {
+    "name": "TLS & certificate depth",
+    "description": "Looks at what browsers demand from a certificate beyond being valid: a modern signature, a lifetime browsers accept, Certificate Transparency, OCSP stapling and, if you asked for it, HSTS preloading.",
+    "findings": {
+      "cert_weak_signature": {
+        "title": "A certificate in your chain is signed with {algorithm}",
+        "summary": "The certificate \"{subject}\" that your server sends is signed with {algorithm}, a signature method browsers no longer accept.",
+        "why": "SHA-1 and MD5 signatures can be forged: researchers have produced two different documents with the same SHA-1 fingerprint. Because a forged certificate could then carry a real signature, Chrome, Firefox, Safari and Edge reject SHA-1 and MD5 signed certificates. Visitors see a security error instead of your site.",
+        "fix": "1. Ask your certificate provider for a new certificate (and intermediate) signed with SHA-256 or better. Every public certificate authority issues these, including Let's Encrypt.\n2. If the weak certificate is an old intermediate, download the current intermediate from your provider and replace the chain file your server sends.\n3. Install the new files, reload the server and run the scan again."
+      },
+      "cert_lifetime_too_long": {
+        "title": "Your certificate is valid for {days} days, longer than browsers accept",
+        "summary": "Your certificate was issued for {days} days. Since September 2020 browsers only accept certificates valid for at most 398 days.",
+        "why": "Long-lived certificates keep old keys and old domain checks in use for years. Since 1 September 2020 public certificates may be valid for at most 398 days; Safari and Chrome treat longer ones as invalid, so some visitors see an error.",
+        "fix": "1. Replace the certificate with one valid for 398 days or less (most providers now issue 90 days or one year).\n2. Automate renewal (for example with Let's Encrypt and certbot, or your host's automatic HTTPS) so short lifetimes cause no work.\n3. Reload the server and run the scan again."
+      },
+      "cert_no_sct": {
+        "title": "Your certificate has no Certificate Transparency proof",
+        "summary": "Your certificate carries no Signed Certificate Timestamp, the proof that it was published in a public Certificate Transparency log.",
+        "why": "Certificate Transparency lets anyone spot certificates issued for your domain without your knowledge. Chrome and Safari require this proof for publicly trusted certificates and reject certificates without it, so visitors using them see an error. GuardHub checks that the proof is present; it does not contact the logs.",
+        "fix": "1. Certificates from public certificate authorities include this proof automatically. If yours does not, it was probably issued by an internal or unusual CA, or the timestamps were removed: reissue it with a public CA (for example Let's Encrypt).\n2. If your server or load balancer sends the timestamps itself (TLS extension), make sure that feature is enabled.\n3. Install the new certificate and run the scan again."
+      },
+      "ocsp_stapling_missing": {
+        "title": "OCSP stapling is not enabled",
+        "summary": "Your certificate names a revocation (OCSP) server, but your server does not attach (\"staple\") a revocation answer to the connection.",
+        "why": "Without stapling, some browsers ask the certificate authority about your certificate on every new visit. That slows the first page load and tells the CA which sites your visitors open. If the CA's server is slow or down, browsers usually skip the check, so a revoked certificate might still be accepted. Stapling fixes all three. This is advice, not a vulnerability.",
+        "fix": "1. On nginx, add `ssl_stapling on;` and `ssl_stapling_verify on;` with a `resolver` line (for example `resolver 1.1.1.1;`) to your HTTPS server block, and make sure `ssl_trusted_certificate` points to your full chain.\n2. On Apache, add `SSLUseStapling on` and, outside the virtual host, `SSLStaplingCache shmcb:/var/run/ocsp(128000)`.\n3. Reload the server and run the scan again."
+      },
+      "hsts_preload_ineligible": {
+        "title": "Your HSTS header asks for preloading but does not qualify",
+        "summary": "Your Strict-Transport-Security header contains \"preload\", but the browsers' preload list also requires a max-age of at least one year and includeSubDomains.",
+        "why": "\"preload\" tells browsers you want your domain built into their list of HTTPS-only sites, which protects even a visitor's very first visit. The list (hstspreload.org) only accepts domains whose header has a max-age of at least 31536000 seconds and includeSubDomains. As it stands, your domain will be refused, and your header promises protection it does not get.",
+        "fix": "1. Check that every subdomain works over HTTPS: includeSubDomains forces HTTPS on all of them.\n2. Set the header to `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (nginx: `add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains; preload\" always;`).\n3. Submit the domain at hstspreload.org. If you do not want preloading, remove the word `preload` instead.\n4. Run the scan again."
+      }
+    }
   }
 }

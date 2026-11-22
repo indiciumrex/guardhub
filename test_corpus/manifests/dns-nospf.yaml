@@ -2,7 +2,7 @@ target: dns-nospf
 origin: http://nospf.dns.lab.test
 description: >
   MX and DMARC p=reject but no SPF record (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_email, key: spf_missing, why: "dig: MX 10 mx.nospf..., no TXT starting with v=spf1."}

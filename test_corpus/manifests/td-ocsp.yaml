@@ -1,0 +1,6 @@
+target: td-ocsp
+origin: https://td-ocsp.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
+  labpki 'ocsp': names an OCSP responder; nginx staples a valid 'good' response (ssl_stapling_file). Negative for ocsp_stapling_missing.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]

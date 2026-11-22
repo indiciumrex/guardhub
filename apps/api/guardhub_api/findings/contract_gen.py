@@ -105,6 +105,13 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'unclaimed_resource': 'high',
         'dangling_cname': 'low',
     },
+    'tls_depth': {
+        'cert_weak_signature': 'medium',
+        'cert_lifetime_too_long': 'low',
+        'cert_no_sct': 'medium',
+        'ocsp_stapling_missing': 'info',
+        'hsts_preload_ineligible': 'low',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

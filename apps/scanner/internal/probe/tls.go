@@ -15,6 +15,11 @@ type TLSResult struct {
 	Version          uint16
 	CipherSuite      uint16
 	PeerCertificates []*x509.Certificate
+	// OCSPResponse is the stapled OCSP response (nil when none was stapled).
+	OCSPResponse []byte
+	// SCTs are Signed Certificate Timestamps sent in the TLS extension (SCTs
+	// embedded in the certificate are in PeerCertificates[0]'s extensions).
+	SCTs [][]byte
 }
 
 // VersionName returns e.g. "TLS 1.2".
@@ -86,5 +91,7 @@ func (c *Client) InspectTLS(ctx context.Context, host, port string, o TLSOptions
 		Version:          st.Version,
 		CipherSuite:      st.CipherSuite,
 		PeerCertificates: st.PeerCertificates,
+		OCSPResponse:     st.OCSPResponse,
+		SCTs:             st.SignedCertificateTimestamps,
 	}, nil
 }

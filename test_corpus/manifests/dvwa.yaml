@@ -3,7 +3,7 @@ origin: http://dvwa.lab.test
 description: >
   DVWA (pinned by digest) with its MariaDB. / redirects to /login.php. Facts verified
   with curl inside the lab.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
 expect:
   - check: security_headers
     key: csp_missing

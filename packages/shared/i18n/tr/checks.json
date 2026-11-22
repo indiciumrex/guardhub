@@ -412,5 +412,41 @@
         "fix": "1. Anahtarı sağlayıcının panelinde (test modunda) yenileyin.\n2. Değeri {file} yerine bir ortam değişkeninden okuyun.\n3. Yeniden tarayın."
       }
     }
+  },
+  "tls_depth": {
+    "name": "TLS ve sertifika derinliği",
+    "description": "Tarayıcıların bir sertifikadan geçerli olmanın ötesinde beklediklerine bakar: modern bir imza, tarayıcıların kabul ettiği bir geçerlilik süresi, Certificate Transparency, OCSP stapling ve istediyseniz HSTS preload.",
+    "findings": {
+      "cert_weak_signature": {
+        "title": "Zincirinizdeki bir sertifika {algorithm} ile imzalanmış",
+        "summary": "Sunucunuzun gönderdiği \"{subject}\" sertifikası {algorithm} ile imzalanmış; tarayıcılar bu imza yöntemini artık kabul etmiyor.",
+        "why": "SHA-1 ve MD5 imzaları taklit edilebilir: araştırmacılar aynı SHA-1 parmak izine sahip iki farklı belge üretti. Taklit bir sertifika böylece gerçek bir imza taşıyabileceği için Chrome, Firefox, Safari ve Edge SHA-1 ve MD5 ile imzalanmış sertifikaları reddeder. Ziyaretçiler sitenizin yerine bir güvenlik hatası görür.",
+        "fix": "1. Sertifika sağlayıcınızdan SHA-256 veya daha güçlü bir yöntemle imzalanmış yeni bir sertifika (ve ara sertifika) isteyin. Let's Encrypt dahil bütün genel sertifika otoriteleri bunu verir.\n2. Zayıf olan eski bir ara sertifikaysa, sağlayıcınızdan güncel ara sertifikayı indirip sunucunuzun gönderdiği zincir dosyasını değiştirin.\n3. Yeni dosyaları kurun, sunucuyu yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "cert_lifetime_too_long": {
+        "title": "Sertifikanız {days} gün geçerli; tarayıcıların kabul ettiğinden uzun",
+        "summary": "Sertifikanız {days} günlüğüne verilmiş. Eylül 2020'den beri tarayıcılar en fazla 398 gün geçerli sertifikaları kabul ediyor.",
+        "why": "Uzun ömürlü sertifikalar eski anahtarların ve eski alan adı doğrulamalarının yıllarca kullanılmasına yol açar. 1 Eylül 2020'den beri genel sertifikalar en fazla 398 gün geçerli olabilir; Safari ve Chrome daha uzun olanları geçersiz sayar, bu yüzden bazı ziyaretçiler hata görür.",
+        "fix": "1. Sertifikayı en fazla 398 gün geçerli bir sertifikayla değiştirin (sağlayıcıların çoğu artık 90 gün veya bir yıl veriyor).\n2. Yenilemeyi otomatikleştirin (örneğin Let's Encrypt ve certbot ya da barındırma sağlayıcınızın otomatik HTTPS özelliği); böylece kısa süreler size iş çıkarmaz.\n3. Sunucuyu yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "cert_no_sct": {
+        "title": "Sertifikanızda Certificate Transparency kanıtı yok",
+        "summary": "Sertifikanız, herkese açık bir Certificate Transparency kaydında yayımlandığının kanıtı olan Signed Certificate Timestamp'i taşımıyor.",
+        "why": "Certificate Transparency, alan adınız için haberiniz olmadan verilen sertifikaları herkesin görebilmesini sağlar. Chrome ve Safari genel olarak güvenilen sertifikalar için bu kanıtı ister ve kanıtı olmayanları reddeder; bu tarayıcıları kullanan ziyaretçiler hata görür. GuardHub kanıtın varlığını kontrol eder; kayıtlara bağlanmaz.",
+        "fix": "1. Genel sertifika otoritelerinin verdiği sertifikalar bu kanıtı kendiliğinden içerir. Sizinkinde yoksa büyük olasılıkla kurum içi veya alışılmadık bir CA tarafından verilmiş ya da zaman damgaları çıkarılmıştır: sertifikayı genel bir CA ile (örneğin Let's Encrypt) yeniden alın.\n2. Sunucunuz veya yük dengeleyiciniz zaman damgalarını kendisi gönderiyorsa (TLS uzantısı), bu özelliğin açık olduğundan emin olun.\n3. Yeni sertifikayı kurun ve taramayı tekrar çalıştırın."
+      },
+      "ocsp_stapling_missing": {
+        "title": "OCSP stapling açık değil",
+        "summary": "Sertifikanız bir iptal (OCSP) sunucusu belirtiyor, ancak sunucunuz bağlantıya bir iptal yanıtı eklemiyor (\"staple\").",
+        "why": "Stapling olmadan bazı tarayıcılar her yeni ziyarette sertifikanızı sertifika otoritesine sorar. Bu, ilk sayfa yüklemesini yavaşlatır ve CA'ya ziyaretçilerinizin hangi siteleri açtığını söyler. CA'nın sunucusu yavaşsa veya kapalıysa tarayıcılar genellikle kontrolü atlar; bu yüzden iptal edilmiş bir sertifika yine de kabul edilebilir. Stapling bu üç sorunu da çözer. Bu bir açık değil, bir öneridir.",
+        "fix": "1. nginx'te HTTPS server bloğunuza `ssl_stapling on;` ve `ssl_stapling_verify on;` ile bir `resolver` satırı (örneğin `resolver 1.1.1.1;`) ekleyin ve `ssl_trusted_certificate` ayarının tam zinciri gösterdiğinden emin olun.\n2. Apache'de `SSLUseStapling on` ekleyin ve virtual host dışında `SSLStaplingCache shmcb:/var/run/ocsp(128000)` tanımlayın.\n3. Sunucuyu yeniden yükleyin ve taramayı tekrar çalıştırın."
+      },
+      "hsts_preload_ineligible": {
+        "title": "HSTS başlığınız preload istiyor ama şartları karşılamıyor",
+        "summary": "Strict-Transport-Security başlığınız \"preload\" içeriyor, ancak tarayıcıların preload listesi ayrıca en az bir yıllık max-age ve includeSubDomains istiyor.",
+        "why": "\"preload\", tarayıcılara alan adınızın yalnızca HTTPS kullanan siteler listesine gömülmesini istediğinizi söyler; bu, bir ziyaretçinin ilk ziyaretini bile korur. Liste (hstspreload.org) yalnızca başlığında en az 31536000 saniyelik max-age ve includeSubDomains bulunan alan adlarını kabul eder. Bu haliyle alan adınız reddedilir ve başlığınız almadığı bir korumayı vaat eder.",
+        "fix": "1. Bütün alt alan adlarınızın HTTPS ile çalıştığını kontrol edin: includeSubDomains hepsinde HTTPS'i zorunlu kılar.\n2. Başlığı `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` olarak ayarlayın (nginx: `add_header Strict-Transport-Security \"max-age=63072000; includeSubDomains; preload\" always;`).\n3. Alan adınızı hstspreload.org üzerinden gönderin. Preload istemiyorsanız bunun yerine `preload` kelimesini kaldırın.\n4. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

@@ -1,0 +1,11 @@
+target: td-longlife
+origin: https://td-longlife.lab.test
+description: >
+  Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
+  labpki 'longlife': trusted leaf valid 825 days, issued now.
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth]
+expect:
+  - check: tls_depth
+    key: cert_lifetime_too_long
+    params: {days: "825"}
+    why: "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): cert_extlifeSpan '825 > 398 days' (MEDIUM)."
