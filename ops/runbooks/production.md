@@ -413,7 +413,9 @@ Then redeploy the current release (`guardhub-ctl.sh activate <current>`, or the 
 - **`github-egress`** (`scanner egress-proxy`) is the only way `api`/`api-jobs` reach GitHub:
   - CONNECT-only, to `api.github.com:443` and `github.com:443`;
   - its log line `egress refused` means something asked for another host;
-  - `api` and `api-worker` keep having no internet.
+  - `api` and `api-worker` keep having no internet. The per-colour `app` network (web ↔ api)
+    is `internal` too. Before ed779c7 it was not, so `api` could reach the internet directly.
+    Check: `docker network inspect guardhub-<colour>_app --format '{{.Internal}}'` → `true`.
 - **The private key** is mounted read-only at `/run/github-app` in `api` and `api-jobs` only.
   The scanner never has it.
 - **Each repo scan** mints a token for exactly one repository (contents:read, 1 hour). It
