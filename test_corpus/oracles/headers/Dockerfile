@@ -13,5 +13,5 @@ RUN npm ci --no-audit --no-fund --ignore-scripts
 # Observatory loads the Chromium HSTS preload list at start-up (normally downloaded by an
 # install script). Only its CSP verdicts are used here, and they do not read that list.
 RUN echo '{}' > node_modules/@mdn/mdn-http-observatory/conf/hsts-preload.json
-COPY oracle_headers.mjs ./
+COPY oracle_headers.mjs wait.mjs ./
 ENTRYPOINT ["node", "/o/oracle_headers.mjs"]

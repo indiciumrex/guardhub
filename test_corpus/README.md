@@ -44,7 +44,10 @@ Observatory scanner and Google's CSP Evaluator, versions locked in `package-lock
 unmodified inside the lab network (the Dockerfile has the command). It prints, per origin, the
 keys the tools find; the `hq-*` expectations cite that output. Its only change to the tools'
 setup: an empty HSTS preload list, which the Observatory loads at start-up but its CSP
-verdicts do not read.
+verdicts do not read. CI's `header-truth` job runs `oracles/headers/run.sh` on every
+push: light targets together, then each third-party app alone (start, wait, measure,
+remove), and `compare.py` fails the job when any manifest disagrees with the oracle or a
+target could not be read.
 
 ## Targets
 

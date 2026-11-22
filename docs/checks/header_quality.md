@@ -73,6 +73,7 @@ COOP. The third-party apps (Juice Shop, DVWA, WordPress, …) are scored as they
 **Measured 2026-11-22** on the 47 site targets served by `clean`, `hq`, `hh`, `td` and
 `dns-web`: 6 TP, 0 FP, 0 FN, 0 errors (scorecard in `docs/accuracy/header_quality.md`). The
 oracle agreed with the lab design on every target. `td-sha1` (SHA-1 certificate, refused by
-Node) was read with certificate checks relaxed: no keys. The third-party apps have no
-`header_quality` expectations yet: they are measured one at a time before the module is
-pushed (each needs its own oracle run).
+Node) was read with certificate checks relaxed: no keys. CI's `header-truth` job
+(`test_corpus/oracles/headers/run.sh`) re-runs the oracle on every site target on each push,
+the third-party apps one at a time, and fails when a manifest disagrees with it or a target
+cannot be read (`compare.py`).
