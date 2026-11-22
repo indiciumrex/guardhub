@@ -156,6 +156,21 @@ jobs:
         if: always()
         with: { name: header-truth, path: oracle-out, retention-days: 30 }
 
+  dns-truth:
+    name: dns-truth (independent oracle vs dns_depth manifests)
+    runs-on: ubuntu-latest
+    needs: [scanner]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      # BIND dig/delv, OpenSSL and curl on every site target's DNS (test_corpus/oracles/dns).
+      # Fails when a manifest's dns_depth expectations differ from the oracle.
+      - name: oracle on every target, compared with the manifests
+        run: bash test_corpus/oracles/dns/run.sh dns-oracle-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: dns-truth, path: dns-oracle-out, retention-days: 30 }
+
   e2e:
     name: e2e (real browser, full stack + demo target)
     runs-on: ubuntu-latest

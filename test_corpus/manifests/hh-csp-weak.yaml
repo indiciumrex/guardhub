@@ -2,7 +2,7 @@ target: hh-csp-weak
 origin: http://hh-csp-weak.lab.test
 description: >
   Hardened, but script-src allows 'unsafe-inline' and any https: host (nginx/hh.conf; verified with curl incl. Origin headers).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only: nothing listens on 443."}
   - {check: http_hardening, key: csp_ineffective, why: "script-src 'self' 'unsafe-inline' https: with no nonce/hash and no strict-dynamic."}

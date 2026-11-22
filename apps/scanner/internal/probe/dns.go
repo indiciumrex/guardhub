@@ -36,6 +36,17 @@ func (c *Client) resolverAddr() (string, error) {
 // over TCP. A non-NOERROR rcode is returned as a message, not an error:
 // callers tell "does not exist" (NXDOMAIN) from "could not tell" (SERVFAIL).
 func (c *Client) DNSQuery(ctx context.Context, name string, qtype uint16) (*dns.Msg, error) {
+	return c.dnsQuery(ctx, name, qtype, false)
+}
+
+// DNSQueryCD is DNSQuery with the CD ("checking disabled") bit: a validating
+// resolver returns the records of a zone whose DNSSEC is broken instead of
+// SERVFAIL, so the break itself can be examined (dns_depth).
+func (c *Client) DNSQueryCD(ctx context.Context, name string, qtype uint16) (*dns.Msg, error) {
+	return c.dnsQuery(ctx, name, qtype, true)
+}
+
+func (c *Client) dnsQuery(ctx context.Context, name string, qtype uint16, cd bool) (*dns.Msg, error) {
 	name = dns.Fqdn(strings.ToLower(name))
 	if err := c.reserve(ctx, "dns:"+name); err != nil {
 		return nil, err
@@ -47,6 +58,7 @@ func (c *Client) DNSQuery(ctx context.Context, name string, qtype uint16) (*dns.
 	m := new(dns.Msg)
 	m.SetQuestion(name, qtype)
 	m.RecursionDesired = true
+	m.CheckingDisabled = cd
 	m.SetEdns0(1232, true)
 	qctx, cancel := context.WithTimeout(ctx, c.opts.Timeout)
 	defer cancel()

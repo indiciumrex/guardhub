@@ -16,6 +16,7 @@ x-nginx: &nginx
 
 volumes:
   pki: {}
+  ddkeys: {}
   leak: {}
 
 networks:
@@ -56,6 +57,16 @@ services:
       - hq-noperm.lab.test:valid
       - hq-cache.lab.test:valid
       - hq-private.lab.test:valid
+      - mta-sts.good.dd.lab.test:valid
+      - mta-sts.broken.dd.lab.test:valid
+      - mta-sts.unsigned.dd.lab.test:valid
+      - mta-sts.nocaa.dd.lab.test:valid
+      - mta-sts.ststesting.dd.lab.test:valid
+      - mta-sts.stsbroken.dd.lab.test:valid
+      - mta-sts.stsmismatch.dd.lab.test:valid
+      - mta-sts.notlsrpt.dd.lab.test:valid
+      - mta-sts.dkim1024.dd.lab.test:valid
+      - mta-sts.dkim512.dd.lab.test:valid
     volumes: [pki:/pki]
     network_mode: none
 
@@ -139,7 +150,8 @@ services:
   dns-res: # the scanner's resolver (SCANNER_DNS_SERVER): lab zones + Docker DNS for the rest
     image: coredns/coredns:1.12.1@sha256:e8c262566636e6bc340ece6473b0eed193cad045384401529721ddbe6463d31c
     command: ["-conf", "/zones/Corefile.res"]
-    volumes: [./dns:/zones:ro]
+    depends_on: { ddkeys: { condition: service_completed_successfully } }
+    volumes: [./dns:/zones:ro, ddkeys:/ddkeys:ro]
     networks: { lab: { aliases: [dns-res.lab.test] } }
   dns-ns: # ns.dns.lab.test: authoritative only, AXFR open for axfr.dns.lab.test only
     image: coredns/coredns:1.12.1@sha256:e8c262566636e6bc340ece6473b0eed193cad045384401529721ddbe6463d31c
@@ -155,7 +167,23 @@ services:
     <<: *nginx
     volumes: [./nginx/dns-web.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro]
     networks: { lab: { aliases: [good.dns.lab.test, nospf.dns.lab.test, plusall.dns.lab.test, chunked.dns.lab.test, twospf.dns.lab.test, toomany.dns.lab.test, nodmarc.dns.lab.test, pnone.dns.lab.test, nullmx.dns.lab.test, nomail.dns.lab.test, axfr.dns.lab.test, openres.dns.lab.test, dkimonly.dns.lab.test, dkimreject.dns.lab.test,
+                                    good.dd.lab.test, broken.dd.lab.test, unsigned.dd.lab.test, nocaa.dd.lab.test, nosts.dd.lab.test, nomail.dd.lab.test, ststesting.dd.lab.test, stsbroken.dd.lab.test, stsmismatch.dd.lab.test, notlsrpt.dd.lab.test, dkim1024.dd.lab.test, dkim512.dd.lab.test, www.good.dd.lab.test,
                                     s3pos.st.lab.test, azpos.st.lab.test, bbpos.st.lab.test, surgepos.st.lab.test, dangpos.st.lab.test, chainpos.st.lab.test, claimed.st.lab.test, edgecase.st.lab.test, plain.st.lab.test, scope.st.lab.test] } }
+  # ---- dns_depth: throwaway DNSSEC keys + the parent zone's DS records (dns/dd/), and the
+  # MTA-STS policy host of the dd targets (https://mta-sts.<target>/.well-known/mta-sts.txt) ----
+  ddkeys:
+    image: guardhub-lab-tools:local
+    depends_on: { pki: { condition: service_completed_successfully } }
+    command: [labdns, -out, /ddkeys, -parent, /zones/dd/dd.lab.test.db,
+              good.dd.lab.test:signed, broken.dd.lab.test:broken, nocaa.dd.lab.test:signed, nosts.dd.lab.test:signed,
+              nomail.dd.lab.test:signed, ststesting.dd.lab.test:signed, stsbroken.dd.lab.test:signed,
+              stsmismatch.dd.lab.test:signed, notlsrpt.dd.lab.test:signed, dkim1024.dd.lab.test:signed, dkim512.dd.lab.test:signed]
+    volumes: [./dns:/zones:ro, ddkeys:/ddkeys]
+    network_mode: none
+  dd-sts:
+    <<: *nginx
+    volumes: [./nginx/dd-sts.conf:/etc/nginx/conf.d/default.conf:ro, ./dns/dd-sts:/sts:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [mta-sts.good.dd.lab.test, mta-sts.broken.dd.lab.test, mta-sts.unsigned.dd.lab.test, mta-sts.nocaa.dd.lab.test, mta-sts.ststesting.dd.lab.test, mta-sts.stsbroken.dd.lab.test, mta-sts.stsmismatch.dd.lab.test, mta-sts.notlsrpt.dd.lab.test, mta-sts.dkim1024.dd.lab.test, mta-sts.dkim512.dd.lab.test] } }
   # ---- subdomain_takeover: the CT search stand-in and the providers' web fronts (dns/st.lab.test.db) ----
   ct:
     <<: *nginx
@@ -267,6 +295,8 @@ services:
         good.dns.lab.test,nospf.dns.lab.test,plusall.dns.lab.test,chunked.dns.lab.test,twospf.dns.lab.test,toomany.dns.lab.test,nodmarc.dns.lab.test,pnone.dns.lab.test,nullmx.dns.lab.test,nomail.dns.lab.test,axfr.dns.lab.test,openres.dns.lab.test,dkimonly.dns.lab.test,dkimreject.dns.lab.test,ns.dns.lab.test,ns-open.dns.lab.test,
         ct.lab.test,s3pos.st.lab.test,azpos.st.lab.test,bbpos.st.lab.test,surgepos.st.lab.test,dangpos.st.lab.test,chainpos.st.lab.test,claimed.st.lab.test,edgecase.st.lab.test,plain.st.lab.test,scope.st.lab.test,
         assets.s3pos.st.lab.test,cdn.chainpos.st.lab.test,files.claimed.st.lab.test,docs.bbpos.st.lab.test,docs.claimed.st.lab.test,www.surgepos.st.lab.test,blog.edgecase.st.lab.test,help.edgecase.st.lab.test,
+        good.dd.lab.test,broken.dd.lab.test,unsigned.dd.lab.test,nocaa.dd.lab.test,nosts.dd.lab.test,nomail.dd.lab.test,ststesting.dd.lab.test,stsbroken.dd.lab.test,stsmismatch.dd.lab.test,notlsrpt.dd.lab.test,dkim1024.dd.lab.test,dkim512.dd.lab.test,www.good.dd.lab.test,
+        mta-sts.good.dd.lab.test,mta-sts.broken.dd.lab.test,mta-sts.unsigned.dd.lab.test,mta-sts.nocaa.dd.lab.test,mta-sts.ststesting.dd.lab.test,mta-sts.stsbroken.dd.lab.test,mta-sts.stsmismatch.dd.lab.test,mta-sts.notlsrpt.dd.lab.test,mta-sts.dkim1024.dd.lab.test,mta-sts.dkim512.dd.lab.test,
         github.lab.test,osv.lab.test
       SCANNER_DNS_SERVER: dns-res.lab.test:53
       SCANNER_CT_URL: http://ct.lab.test/

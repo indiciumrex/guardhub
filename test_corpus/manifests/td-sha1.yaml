@@ -3,7 +3,7 @@ origin: https://td-sha1.lab.test
 description: >
   Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
   labpki 'sha1': leaf signed with ECDSA-SHA1 (nginx ssl_ciphers @SECLEVEL=0 to serve it).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - check: tls_depth
     key: cert_weak_signature

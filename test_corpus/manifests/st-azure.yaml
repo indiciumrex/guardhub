@@ -2,7 +2,7 @@ target: st-azure
 origin: http://azpos.st.lab.test
 description: >
   CT lists app.azpos, a CNAME to a deleted Azure App Service name (test_corpus/dns/st.lab.test.db, ct/, nginx/providers.conf; verified with dig against dns-res and curl inside the lab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: subdomain_takeover, key: unclaimed_resource, location: "CNAME app.azpos.st.lab.test", why: "dig CNAME app.azpos.st.lab.test -> azpos-app.azurewebsites.net; dig A azpos-app.azurewebsites.net -> NXDOMAIN."}

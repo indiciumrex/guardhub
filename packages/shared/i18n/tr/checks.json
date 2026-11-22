@@ -490,5 +490,71 @@
         "fix": "1. Çerez ayarlayan yanıtları özel olarak işaretleyin: `Cache-Control: private, no-store` (veya en azından `private`).\n2. Sayfanın kendisinin önbelleğe alınması gerekiyorsa, o sayfada çerez ayarlamayı bırakın veya CDN'inizin önbelleğe alınan yanıtlardan Set-Cookie başlığını çıkarmasını sağlayın.\n3. CDN'inizin çerezli yanıtları önbelleğe alma kurallarını kontrol edin.\n4. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "dns_depth": {
+    "name": "DNS ve e-posta iletim derinliği",
+    "description": "SPF ve DMARC'ın ötesine bakar: DNSSEC zincirinizin sağlam olup olmadığına, CAA'nın sertifikanızı kimin verebileceğini sınırlayıp sınırlamadığına, size gelen e-postanın MTA-STS (TLS raporlarıyla) veya DANE ile korunup korunmadığına ve DKIM anahtarlarınızın yeterince uzun olup olmadığına.",
+    "findings": {
+      "dnssec_broken": {
+        "title": "{domain} için DNSSEC bozuk",
+        "summary": "Alan adınızın üst bölgesi {domain} alanının DNSSEC ile imzalı olduğunu söylüyor, ancak bölgenizdeki anahtarlar ya da imzalar bununla eşleşmiyor. DNSSEC denetimi yapan çözümleyiciler alan adınız için yanıt vermeyi reddeder.",
+        "why": "DNSSEC, bölgenizi bir DS kaydıyla üst bölgeye bağlar. DS kaydı bölgenizin artık kullanmadığı bir anahtarı gösteriyorsa ya da anahtarlarınızın üzerindeki imza geçersizse veya süresi dolmuşsa, doğrulama yapan her çözümleyici (Google Public DNS, Cloudflare 1.1.1.1, Quad9 ve birçok internet sağlayıcısı) alan adınızı sahte sayar ve hata döndürür. Bu ziyaretçiler için web siteniz ve e-postanız düpedüz çalışmaz. Genellikle DS kaydı güncellenmeden DNS sağlayıcısı değiştirildiğinde ya da anahtarlar yenilendiğinde olur.",
+        "fix": "1. Alan adınızın nerede kayıtlı olduğunu (kayıt şirketi) ve DNS'inin nerede barındırıldığını bulun.\n2. DNSSEC'i artık istemiyorsanız (örneğin DNS sağlayıcısını değiştirdiyseniz) kayıt şirketindeki DS kaydını silin. Eski kaydın TTL süresinin dolmasını bekleyin.\n3. DNSSEC istiyorsanız, şu anki DNS sağlayıcınızda etkinleştirin, size gösterdiği DS kaydını kopyalayın ve kayıt şirketindeki eski DS kaydını bununla değiştirin.\n4. Sonucu dnsviz.net üzerinden kontrol edin, sonra taramayı tekrar çalıştırın."
+      },
+      "caa_missing": {
+        "title": "{domain} için sertifikayı kimin verebileceğini sınırlayan bir CAA kaydı yok",
+        "summary": "Ne {domain} ne de üst alan adı bir CAA kaydı yayımlıyor; bu yüzden her genel sertifika otoritesi bu alan adı için sertifika verebilir.",
+        "why": "CAA kaydı kullandığınız sertifika otoritelerini (örneğin Let's Encrypt) listeler. Bütün genel sertifika otoriteleri bu kaydı kontrol etmek ve başkalarına sertifika vermeyi reddetmek zorundadır. Kayıt yoksa, yüzlerce sertifika otoritesinden herhangi birindeki bir hata ya da zayıf bir alan adı doğrulaması, alan adınız için başka birine geçerli bir sertifika verilmesine yol açabilir. Bu bir zafiyet değil, ek bir savunma katmanıdır.",
+        "fix": "1. Sertifikalarınızı hangi sertifika otoritesinin verdiğini öğrenin (barındırma sağlayıcınızın otomatik HTTPS'i genellikle Let's Encrypt kullanır; mevcut sertifikanızın düzenleyicisine bakın).\n2. Alan adınızın köküne bir CAA kaydı ekleyin, örneğin `example.com. CAA 0 issue \"letsencrypt.org\"` (kullandığınız her sertifika otoritesi için bir satır). Reddedilen talepler size bildirilsin diye `0 iodef \"mailto:security@example.com\"` ekleyin.\n3. Alt alan adları kaydı devralır; genellikle tek kayıt hepsini kapsar.\n4. Taramayı tekrar çalıştırın."
+      },
+      "mta_sts_missing": {
+        "title": "{domain} adresine gelen e-posta MTA-STS ile korunmuyor",
+        "summary": "{domain} e-posta alıyor ama bir MTA-STS politikası yayımlamıyor; bu yüzden size posta gönderen sunucular, şifreleme engellendiğinde şifresiz bağlantıya geri döner.",
+        "why": "Posta sunucuları size gelen postayı yalnızca iki taraf da sunarsa şifreler; ağ yolundaki bir saldırgan bu teklifi silebilir. Gönderen sunucu da postayı düz metin olarak teslim eder; iletiler okunabilir ya da değiştirilebilir. MTA-STS \"posta sunucularıma her zaman doğrulanmış şifreleme kullan\" bilgisini yayımlar; Gmail, Microsoft ve diğer büyük sağlayıcılar buna uyar. Saldırı, posta sunucuları arasındaki ağ yoluna erişim gerektirir; risk düşük ama gerçektir.",
+        "fix": "1. `https://mta-sts.{domain}/.well-known/mta-sts.txt` adresinde (text/plain olarak ve geçerli bir sertifikayla sunulan) şu içerikte bir politika dosyası oluşturun:\n   `version: STSv1`\n   `mode: testing`\n   `mx: <MX sunucularınızın her biri, örneğin *.mail.protection.outlook.com>`\n   `max_age: 86400`\n2. `_mta-sts.{domain}` için değeri `v=STSv1; id=20260101` olan bir TXT kaydı yayımlayın (politikayı her değiştirdiğinizde id'yi değiştirin).\n3. Rapor almak için bir TLS-RPT kaydı ekleyin, raporları bir iki hafta izleyin, sonra `mode` değerini `enforce` yapın ve `max_age` değerini 604800 veya üzerine çıkarın.\n4. Taramayı tekrar çalıştırın."
+      },
+      "mta_sts_policy_broken": {
+        "title": "{domain} alan adının MTA-STS politikası kullanılamıyor",
+        "summary": "{domain} bir MTA-STS politikası duyuruyor, ancak politika dosyası posta sunucularının istediği şekilde okunamadı; bu yüzden gönderenler onu yok sayıyor.",
+        "why": "Posta gönderen sunucular politikayı https://mta-sts.{domain}/.well-known/mta-sts.txt adresinden alır. O sunucu için geçerli bir sertifika, yönlendirmesiz bir HTTP 200 yanıtı, text/plain türü ve doğru bir politika ararlar. Bunlardan biri tutmazsa politika yokmuş gibi davranırlar; DNS'iniz aksini söylese de postanız korumasız kalır. Kanıt, hangi koşulun sağlanmadığını gösterir.",
+        "fix": "1. https://mta-sts.{domain}/.well-known/mta-sts.txt adresini tarayıcıda açın: sertifika uyarısı ya da yönlendirme olmadan yüklenmeli.\n2. mta-sts.{domain} adının DNS'te var olduğundan ve onu içeren bir sertifikası olduğundan emin olun (çoğu barındırma sağlayıcısı bunu otomatik verebilir).\n3. Dosyayı text/plain olarak, `version: STSv1`, `mode`, her posta sunucusu için bir `mx` satırı ve `max_age` satırlarıyla sunun.\n4. Gönderenler düzeltilmiş politikayı alsın diye `_mta-sts.{domain}` TXT kaydındaki id'yi değiştirin, sonra taramayı tekrar çalıştırın."
+      },
+      "mta_sts_mx_mismatch": {
+        "title": "{domain} alan adının MTA-STS politikası {mx} posta sunucusunu kapsamıyor",
+        "summary": "{domain} alan adının zorunlu (enforce) MTA-STS politikası, MX kayıtlarınızdaki posta sunucularından biri olan {mx} sunucusunu listelemiyor. MTA-STS'e uyan gönderenler bu sunucuya posta teslim etmeyi reddeder.",
+        "why": "Enforce modunda Gmail ve Microsoft gibi gönderenler yalnızca politikanızda adı geçen posta sunucularına teslim eder. MX kayıtlarınızda olup politikanın kapsamadığı bir posta sunucusu saldırgan sunucusu sayılır; oraya gidecek posta bekletilir, sonra gönderene geri döner. Genellikle politika güncellenmeden yeni bir e-posta sağlayıcısına geçildiğinde olur.",
+        "fix": "1. Güncel MX kayıtlarınızı listeleyin (örneğin `dig MX {domain}` ile).\n2. https://mta-sts.{domain}/.well-known/mta-sts.txt adresindeki politikayı her posta sunucusu için bir `mx:` satırı olacak şekilde düzenleyin (`*.mail.protection.outlook.com` gibi joker karakterler tek bir etiketle eşleşir).\n3. Gönderenler politikayı yeniden yüklesin diye `_mta-sts.{domain}` TXT kaydındaki id'yi değiştirin.\n4. Hemen düzeltemiyorsanız, düzeltene kadar `mode: testing` yapın. Taramayı tekrar çalıştırın."
+      },
+      "mta_sts_testing": {
+        "title": "{domain} alan adının MTA-STS politikası yalnızca test modunda",
+        "summary": "{domain} test modunda çalışan bir MTA-STS politikasına sahip: gönderenler sorunları raporluyor, ancak şifreleme engellendiğinde postayı yine şifresiz teslim ediyor.",
+        "why": "Test modu doğru ilk adımdır: TLS raporları sayesinde her posta sunucusunun doğrulanmış şifrelemeyle çalıştığını kontrol etmenizi sağlar. Ancak postayı henüz korumaz. Gönderenlerin şifresiz bağlantıya geri dönmesini yalnızca enforce modu durdurur. Bu bir zafiyet değil, tavsiyedir.",
+        "fix": "1. TLS-RPT raporlarınızı (kurduysanız) bir iki hafta boyunca hata için kontrol edin.\n2. https://mta-sts.{domain}/.well-known/mta-sts.txt içinde `mode: testing` değerini `mode: enforce` yapın ve `max_age` değerini en az 604800'e (bir hafta) çıkarın.\n3. `_mta-sts.{domain}` TXT kaydındaki id'yi değiştirin, sonra taramayı tekrar çalıştırın."
+      },
+      "tlsrpt_missing": {
+        "title": "{domain} başarısız şifreli teslimatlar hakkında rapor almıyor",
+        "summary": "{domain} MTA-STS kullanıyor ama bir TLS-RPT adresi yayımlamıyor; bu yüzden posta sunucuları size güvenli teslimat yapamadığında haberiniz olmuyor.",
+        "why": "TLS-RPT (RFC 8460) ile Google ve Microsoft gibi büyük gönderenler, örneğin süresi dolmuş bir sertifika ya da süren bir saldırı yüzünden başarısız olan şifreli teslimatları size günlük olarak raporlar. TLS-RPT olmadan, bozuk bir kurulum ya da bir saldırı posta kaybolana kadar fark edilmez. Bu bir zafiyet değil, tavsiyedir.",
+        "fix": "1. Raporlar için bir posta kutusu (ya da rapor işleyen bir hizmet) seçin.\n2. `_smtp._tls.{domain}` için değeri `v=TLSRPTv1; rua=mailto:tls-reports@{domain}` olan bir TXT kaydı yayımlayın.\n3. Taramayı tekrar çalıştırın; raporlar bir gün içinde gelmeye başlar."
+      },
+      "dane_unsigned": {
+        "title": "{mx} posta sunucusunun DANE kayıtları yok sayılıyor",
+        "summary": "{mx} posta sunucunuz TLSA (DANE) kayıtları yayımlıyor, ancak DNS bölgesi DNSSEC ile imzalı değil; bu yüzden gönderen sunucular bu kayıtları yok sayıyor.",
+        "why": "DANE, gönderen posta sunucularının sizin posta sunucunuzun sertifikasını DNS'teki TLSA kayıtlarıyla karşılaştırmasını sağlar. Gönderenler bu kayıtlara yalnızca DNSSEC onların gerçek olduğunu kanıtladığında güvenir (RFC 7672). İmzasız bir bölgede bu kayıtlar koruma sağlamaz; olmayan bir korumanın varmış gibi görünmesine yol açar. Bu bir zafiyet değil, tavsiyedir.",
+        "fix": "1. {mx} adını barındıran bölge için DNS sağlayıcısında DNSSEC'i etkinleştirin ve size verdiği DS kaydını kayıt şirketine ekleyin.\n2. Ya da DNSSEC kullanmayı düşünmüyorsanız TLSA kayıtlarını silin ve onun yerine MTA-STS kullanın.\n3. Taramayı tekrar çalıştırın."
+      },
+      "dkim_weak_key": {
+        "title": "\"{selector}\" seçicisindeki DKIM anahtarınız yalnızca {bits} bit",
+        "summary": "\"{selector}\" seçicisi altında DKIM imzası için yayımlanan RSA anahtarı {bits} bit. Güncel öneri en az 2048 bit.",
+        "why": "Posta alan sunucular, postanın gerçekten sizden geldiğini bu anahtarla doğrular. 1024 bitlik bir RSA anahtarı hâlâ kabul edilir, ancak kaynağı bol saldırganların erişebileceği bir düzeydedir; RFC 8301 de imzalayanlardan en az 2048 bit kullanmalarını ister. Özel anahtarı ele geçiren biri, DMARC zorunlu olsa bile sizin adınıza geçen posta imzalayabilir.",
+        "fix": "1. E-posta sağlayıcınızın ayarlarında (örneğin Google Workspace: Uygulamalar > Gmail > E-postanın kimliğini doğrula; Microsoft 365: Defender > E-posta kimlik doğrulaması > DKIM) 2048 bitlik yeni bir anahtar oluşturun. Çoğu sağlayıcı yeni bir seçici seçmenize izin verir.\n2. Yeni anahtarın TXT kaydını yayımlayın, görünür olmasını bekleyin, sonra imzalamayı yeni anahtara geçirin.\n3. Birkaç gün sonra eski \"{selector}\" kaydını silin (ya da `p=` değerini boşaltın) ve taramayı tekrar çalıştırın."
+      },
+      "dkim_key_too_short": {
+        "title": "\"{selector}\" seçicisindeki DKIM anahtarınız yalnızca {bits} bit ve kırılabilir",
+        "summary": "\"{selector}\" seçicisi altında DKIM imzası için yayımlanan RSA anahtarı {bits} bit; 1024 bitlik alt sınırın altında. Bu kadar kısa anahtarlar kiralık işlem gücüyle kırılabilir.",
+        "why": "1024 bitin altındaki anahtarlar düşük maliyetle çarpanlarına ayrılabilir: 512 bitlik anahtarlar yaklaşık yüz dolarlık bulut işlem gücüyle saatler içinde kırıldı. Bunu yapan biri, bu tür anahtarları hâlâ kabul eden alıcılarda sizin adınıza geçen posta imzalayabilir. RFC 8301 doğrulayıcıların bu anahtarları kabul etmesini yasaklar; büyük sağlayıcılar imzalarınızı zaten geçersiz sayar ve bu da postalarınızın teslim edilmesini zorlaştırır.",
+        "fix": "1. E-posta sağlayıcınızın ayarlarında (mümkünse yeni bir seçiciyle) 2048 bitlik yeni bir DKIM anahtarı oluşturun ve TXT kaydını yayımlayın.\n2. İmzalamayı yeni anahtara geçirin.\n3. Eski anahtarı hemen iptal edin: kimse kullanamasın diye \"{selector}\" kaydını `v=DKIM1; p=` (boş anahtar) yapın, daha sonra silin. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@ target: dns-good
 origin: http://good.dns.lab.test
 description: >
   MX, SPF with a valid include, DMARC p=reject: a well-configured mail domain, NOTHING to report (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
+  - {check: dns_depth, key: mta_sts_missing, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): MX: mx.good.dns.lab.test; _mta-sts: no single valid v=STSv1 record"}

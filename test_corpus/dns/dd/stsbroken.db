@@ -1,0 +1,15 @@
+; stsbroken.dd.lab.test: as good, but the policy URL answers 404 (dns_depth, test_corpus/README.md).
+$ORIGIN stsbroken.dd.lab.test.
+$TTL 300
+@        IN SOA ns.dns.lab.test. hostmaster.dns.lab.test. 1 7200 3600 1209600 300
+@        IN NS  ns.dns.lab.test.
+@        IN MX  10 mx.stsbroken.dd.lab.test.
+mx       IN A   192.0.2.25
+@        IN TXT "v=spf1 mx -all"
+_dmarc   IN TXT "v=DMARC1; p=reject"
+@        IN CAA 0 issue "lab-ca.test"
+_mta-sts IN TXT "v=STSv1; id=20261123"
+_smtp._tls IN TXT "v=TLSRPTv1; rua=mailto:tls-reports@stsbroken.dd.lab.test"
+_25._tcp.mx IN TLSA 3 1 1 6c3f1c0d9b2a8e5f4d7c6b5a49382716f5e4d3c2b1a09f8e7d6c5b4a39281706
+default._domainkey IN TXT "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvzCjJtCxZ75dQgoI511Slq5f8TwWmBGxWHZSZlm+dQWUsIB2zxc1wVpERxVRrN+caie2o5uYVg+9LU1JaGRj71syFmzdo4BMiayYDQupz6VwLVpQtLONEMcj3n1z6gYP2bivr6r06vkfTxAptv55NYxXpr1Vc0jK/9fqbg1ZB5LMzXyRT/lEPiCgkPRz" "o6KAJD+YMnqP2cNGvou6PREdGWNOvPDofjHgrSbXwLkG1r4ELduz+4jJU0Xnk5rYXHYMZQY0Du5fxCx9iF4T8d/eeSXTWK4wJoSp+KAokHVewjxe5O5CYGUZV3ECktVWht/uLFEhlEPruN3qC6nkzFFwNQIDAQAB"
+selector2._domainkey IN TXT "v=DKIM1; k=ed25519; p=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo="

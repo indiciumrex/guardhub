@@ -135,6 +135,22 @@
       ]
     },
     {
+      "id": "dns_depth",
+      "category": "dns",
+      "finding_keys": [
+        { "key": "dnssec_broken", "severity": "medium", "params": ["domain", "reason"] },
+        { "key": "caa_missing", "severity": "info", "params": ["domain"] },
+        { "key": "mta_sts_missing", "severity": "low", "params": ["domain"] },
+        { "key": "mta_sts_policy_broken", "severity": "low", "params": ["domain", "reason"] },
+        { "key": "mta_sts_mx_mismatch", "severity": "medium", "params": ["domain", "mx"] },
+        { "key": "mta_sts_testing", "severity": "info", "params": ["domain"] },
+        { "key": "tlsrpt_missing", "severity": "info", "params": ["domain"] },
+        { "key": "dane_unsigned", "severity": "info", "params": ["mx"] },
+        { "key": "dkim_weak_key", "severity": "low", "params": ["selector", "bits"] },
+        { "key": "dkim_key_too_short", "severity": "medium", "params": ["selector", "bits"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

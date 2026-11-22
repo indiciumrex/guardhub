@@ -3,7 +3,7 @@ origin: https://tls-nochain.lab.test
 description: >
   Hardened like clean.lab.test (nginx/good_headers.inc) and wrong in exactly one TLS
   property (see nginx/tls-nochain.conf and the labpki kind in docker-compose.lab.yml).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - check: tls_cert
     key: cert_untrusted

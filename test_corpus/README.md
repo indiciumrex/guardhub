@@ -49,6 +49,15 @@ push: light targets together, then each third-party app alone (start, wait, meas
 remove), and `compare.py` fails the job when any manifest disagrees with the oracle or a
 target could not be read.
 
+**DNS oracle (`oracles/dns/`).** `dns_depth` truth comes from BIND's `dig` and `delv` (DNSSEC
+validated with the parent's DS records as the only trust anchor), OpenSSL (DKIM key sizes) and
+curl (the MTA-STS policy, lab CA, no redirects), run unmodified in the lab network;
+`oracle_dns.py` applies the RFC rules to their output and compares the result with every
+manifest. CI's `dns-truth` job runs `oracles/dns/run.sh` (DNS stand-ins and light fronts only)
+and fails on any disagreement. Names served by Docker's resolver rather than a lab zone answer
+SERVFAIL for most record types: the oracle lists them as "no DNS data", where neither it nor the
+check may derive a finding.
+
 ## Targets
 
 | Target | What it is | Main use |
@@ -57,6 +66,7 @@ target could not be read.
 | `tls-*` | `clean`, wrong in exactly one TLS property each | `tls_cert` |
 | `td-*` | `clean`, wrong in one certificate property (no SCT, SHA-1, 825-day lifetime, OCSP stapled / not stapled, HSTS preload ineligible) | `tls_depth` (truth: testssl.sh 3.2) |
 | `hq-*` | `clean`, wrong in one browser-policy header (`nginx/hq.conf`); `hq-wasm` and `hq-private` are look-alike negatives | `header_quality` (truth: `oracles/headers`) |
+| `dd-*` | own zones under `dd.lab.test` (`dns/dd/`), signed at lab start by `labdns`; `dd-good` with one DNS or e-mail transport difference each; `dd-good`, `dd-www`, `dd-nomail` are negatives | `dns_depth` (truth: `oracles/dns`) |
 | `leaky` | a careless static deployment (.env, .git, .aws, autoindex) | `exposed_env`, `info_leak` |
 | `juice-shop` | OWASP Juice Shop (SPA: 200 for every path) | soft-404 trap, `info_leak`, `open_admin` |
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |

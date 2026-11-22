@@ -1,0 +1,8 @@
+target: dd-dkim1024
+origin: http://dkim1024.dd.lab.test
+description: >
+  as dd-good, but the default selector's RSA key has 1024 bits (test_corpus/dns/dd/).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
+expect:
+  - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
+  - {check: dns_depth, key: dkim_weak_key, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): DKIM default._domainkey.dkim1024.dd.lab.test: RSA 1024 bits (OpenSSL)"}

@@ -6,6 +6,7 @@ $ORIGIN st.lab.test.
 $TTL 300
 @        IN SOA ns.dns.lab.test. hostmaster.st.lab.test. 1 7200 3600 1209600 300
 @        IN NS  ns.dns.lab.test.
+@        IN CAA 0 issue "lab-ca.test" ; dns_depth: these targets are not about CAA
 ; every target itself: an ordinary A record (no CNAME)
 s3pos      IN A 192.0.2.80
 azpos      IN A 192.0.2.80

@@ -2,7 +2,7 @@ target: hq-nonce
 origin: https://hq-nonce.lab.test
 description: >
   Hardened like clean.lab.test (nginx/hq.conf); nonce + strict-dynamic policy without base-uri (positive: csp_base_uri_missing).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
 expect:
   - check: header_quality
     key: csp_base_uri_missing
