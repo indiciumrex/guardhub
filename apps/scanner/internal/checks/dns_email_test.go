@@ -24,13 +24,14 @@ type fakeDNS struct {
 	servfail  map[string]bool     // "name.|TYPE" answered with SERVFAIL
 	recursive bool                // answers out-of-zone RD queries (open resolver)
 	axfr      map[string]bool     // zones that allow AXFR
+	drop      map[string]int      // "name.|TYPE" -> how many queries to leave unanswered (-1: all)
 	asked     []string
 	addr      string
 }
 
 func newFakeDNS(t *testing.T) *fakeDNS {
 	t.Helper()
-	f := &fakeDNS{records: map[string][]dns.RR{}, soaOwner: map[string]string{}, servfail: map[string]bool{}, axfr: map[string]bool{}}
+	f := &fakeDNS{records: map[string][]dns.RR{}, soaOwner: map[string]string{}, servfail: map[string]bool{}, axfr: map[string]bool{}, drop: map[string]int{}}
 	// The same port for UDP and TCP. On Windows, Hyper-V reserves port ranges, so a free
 	// TCP port may be unusable for UDP (or the reverse): try a few.
 	var ln net.Listener
@@ -86,6 +87,12 @@ func (f *fakeDNS) serve(w dns.ResponseWriter, r *dns.Msg) {
 	name := strings.ToLower(q.Name)
 	k := name + "|" + dns.TypeToString[q.Qtype]
 	f.asked = append(f.asked, k)
+	if n := f.drop[k]; n != 0 { // a lost datagram: no answer at all
+		if n > 0 {
+			f.drop[k] = n - 1
+		}
+		return
+	}
 	m := new(dns.Msg)
 	m.SetReply(r)
 	m.RecursionAvailable = f.recursive

@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/probe"
 )
 
 // DNSEmail implements the dns_email check.
@@ -226,7 +227,12 @@ func (d *dnsLookups) query(ctx context.Context, name string, qtype uint16) (*dns
 // classify turns a resolver answer into a lookup status (counting answers).
 func (d *dnsLookups) classify(ctx context.Context, resp *dns.Msg, err error) (*dns.Msg, lookupStatus, error) {
 	if err != nil {
-		if isFatal(ctx, err) {
+		// Only the scan's own end (its context, the request budget, a blocked
+		// address) stops the check. A lookup that timed out on its own (lost UDP
+		// datagrams, a slow resolver) is just unknown, like SERVFAIL: isFatal
+		// would also treat that per-query deadline as fatal and fail the whole
+		// check (validation lab, CI run 45082744082).
+		if ctx.Err() != nil || errors.Is(err, probe.ErrBudgetExceeded) || errors.Is(err, probe.ErrBlockedAddress) {
 			return nil, lookupUnknown, err
 		}
 		return nil, lookupUnknown, nil
