@@ -17,7 +17,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 54
+      "targets": 67
     },
     "dependency_vulns": {
       "meets_gate": true,
@@ -39,7 +39,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "exposed_env": {
       "meets_gate": true,
@@ -50,7 +50,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
+    },
+    "header_quality": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 67
     },
     "http_hardening": {
       "meets_gate": true,
@@ -61,7 +72,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "info_leak": {
       "meets_gate": true,
@@ -72,7 +83,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 54
+      "targets": 67
     },
     "open_admin": {
       "meets_gate": true,
@@ -83,7 +94,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "repo_secrets": {
       "meets_gate": true,
@@ -105,7 +116,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "subdomain_takeover": {
       "meets_gate": true,
@@ -116,18 +127,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "tls_cert": {
       "meets_gate": true,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "tp": 48,
+      "tp": 49,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
     },
     "tls_config": {
       "meets_gate": true,
@@ -138,7 +149,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 54
+      "targets": 67
+    },
+    "tls_depth": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 67
     }
   }
 }

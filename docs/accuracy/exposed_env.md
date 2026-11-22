@@ -1,10 +1,10 @@
 # `exposed_env` accuracy
 
-Lab source revision `f51517f73a24`. Verdict: **meets the gate**.
+Lab source revision `d37b6a296298`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 3 | 0 | 0 | 0 | 0 | 54 | 53 | 0 |
+| 100.0% | 100.0% | 100.0% | 3 | 0 | 0 | 0 | 0 | 67 | 66 | 0 |
 
 ## By finding
 

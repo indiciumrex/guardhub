@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "f51517f73a24",
+  "source": "d37b6a296298",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -35,6 +35,13 @@
     "hh-meta-csp",
     "hh-referrer",
     "hh-xfo-allowfrom",
+    "hq-cache",
+    "hq-eval",
+    "hq-nonce",
+    "hq-noperm",
+    "hq-object",
+    "hq-private",
+    "hq-wasm",
     "juice-shop",
     "leaky",
     "phpmyadmin",
@@ -59,6 +66,12 @@
     "st-s3",
     "st-scope",
     "st-surge",
+    "td-longlife",
+    "td-nosct",
+    "td-ocsp",
+    "td-ocspmiss",
+    "td-preload",
+    "td-sha1",
     "tls-3des",
     "tls-expired",
     "tls-httponly",
@@ -77,8 +90,8 @@
   "checks": [
     {
       "check_id": "default_creds",
-      "targets": 54,
-      "clean_runs": 50,
+      "targets": 67,
+      "clean_runs": 63,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -352,8 +365,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 54,
-      "clean_runs": 45,
+      "targets": 67,
+      "clean_runs": 58,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -463,8 +476,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 54,
-      "clean_runs": 53,
+      "targets": 67,
+      "clean_runs": 66,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -517,9 +530,187 @@
       "false_negatives": null
     },
     {
+      "check_id": "header_quality",
+      "targets": 67,
+      "clean_runs": 55,
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cookie_response_cacheable": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "coop_missing": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 0
+        },
+        "csp_base_uri_missing": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "csp_object_src_unrestricted": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "csp_unsafe_eval": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "permissions_policy_missing": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "drupal",
+          "key": "coop_missing",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://drupal.lab.test/core/install.php without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "drupal",
+          "key": "permissions_policy_missing",
+          "location": "http://drupal.lab.test/core/install.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://drupal.lab.test/core/install.php without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "dvwa",
+          "key": "coop_missing",
+          "location": "http://dvwa.lab.test/login.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://dvwa.lab.test/login.php without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "dvwa",
+          "key": "permissions_policy_missing",
+          "location": "http://dvwa.lab.test/login.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://dvwa.lab.test/login.php without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "grafana",
+          "key": "coop_missing",
+          "location": "http://grafana.lab.test:3000/login",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://grafana.lab.test:3000/login without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "grafana",
+          "key": "permissions_policy_missing",
+          "location": "http://grafana.lab.test:3000/login",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://grafana.lab.test:3000/login without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "hq-cache",
+          "key": "cookie_response_cacheable",
+          "location": "https://hq-cache.lab.test/#set-cookie=__Host-sid",
+          "why": "Oracle fetch of / (lab run 2026-11-22): Set-Cookie __Host-sid with Cache-Control 'public, max-age=600' and no private/no-store/no-cache (RFC 9111 §5.2.2: shared caches may store it)."
+        },
+        {
+          "target": "hq-eval",
+          "key": "csp_unsafe_eval",
+          "location": "https://hq-eval.lab.test/",
+          "why": "Mozilla HTTP Observatory (@mdn/mdn-http-observatory 1.4.8, lab run 2026-11-22): content-security-policy result csp-implemented-with-unsafe-eval, policy.unsafeEval=true (clean.lab.test: false)."
+        },
+        {
+          "target": "hq-nonce",
+          "key": "csp_base_uri_missing",
+          "location": "https://hq-nonce.lab.test/",
+          "why": "Google CSP Evaluator (csp_evaluator 1.1.8 checkMultipleMissingBaseUriDirective, lab run 2026-11-22): missing base-uri finding for the nonce policy (clean.lab.test: none)."
+        },
+        {
+          "target": "hq-noperm",
+          "key": "coop_missing",
+          "location": "https://hq-noperm.lab.test/",
+          "why": "Oracle fetch of / (lab run 2026-11-22): HTML 200 without a Cross-Origin-Opener-Policy header (clean.lab.test sends one)."
+        },
+        {
+          "target": "hq-noperm",
+          "key": "permissions_policy_missing",
+          "location": "https://hq-noperm.lab.test/",
+          "why": "Oracle fetch of / (guardhub-lab oracle, node fetch, lab run 2026-11-22): HTML 200 without a Permissions-Policy header (clean.lab.test sends one)."
+        },
+        {
+          "target": "hq-object",
+          "key": "csp_object_src_unrestricted",
+          "location": "https://hq-object.lab.test/",
+          "why": "Mozilla HTTP Observatory (@mdn/mdn-http-observatory 1.4.8, lab run 2026-11-22): policy.unsafeObjects=true (clean.lab.test: false)."
+        },
+        {
+          "target": "juice-shop",
+          "key": "coop_missing",
+          "location": "http://juice-shop.lab.test:3000/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://juice-shop.lab.test:3000/ without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "juice-shop",
+          "key": "permissions_policy_missing",
+          "location": "http://juice-shop.lab.test:3000/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://juice-shop.lab.test:3000/ without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "leaky",
+          "key": "coop_missing",
+          "location": "http://leaky.lab.test/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://leaky.lab.test/ without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "leaky",
+          "key": "permissions_policy_missing",
+          "location": "http://leaky.lab.test/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://leaky.lab.test/ without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "coop_missing",
+          "location": "http://phpmyadmin.lab.test/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://phpmyadmin.lab.test/ without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "csp_unsafe_eval",
+          "location": "http://phpmyadmin.lab.test/",
+          "why": "Mozilla HTTP Observatory 1.4.8 (CI header-truth run 45052035543, 2026-11-22): policy.unsafeEval=true (script-src 'self' 'unsafe-inline' 'unsafe-eval')."
+        },
+        {
+          "target": "phpmyadmin",
+          "key": "permissions_policy_missing",
+          "location": "http://phpmyadmin.lab.test/",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://phpmyadmin.lab.test/ without a Permissions-Policy header, as the app ships."
+        },
+        {
+          "target": "wordpress",
+          "key": "coop_missing",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://wordpress.lab.test/wp-admin/install.php without a Cross-Origin-Opener-Policy header, as the app ships."
+        },
+        {
+          "target": "wordpress",
+          "key": "permissions_policy_missing",
+          "location": "http://wordpress.lab.test/wp-admin/install.php",
+          "why": "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://wordpress.lab.test/wp-admin/install.php without a Permissions-Policy header, as the app ships."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "http_hardening",
-      "targets": 54,
-      "clean_runs": 48,
+      "targets": 67,
+      "clean_runs": 61,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -601,8 +792,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 54,
-      "clean_runs": 48,
+      "targets": 67,
+      "clean_runs": 61,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -716,8 +907,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 54,
-      "clean_runs": 51,
+      "targets": 67,
+      "clean_runs": 64,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -911,8 +1102,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 54,
-      "clean_runs": 48,
+      "targets": 67,
+      "clean_runs": 61,
       "tp": 15,
       "fp": 0,
       "fn": 0,
@@ -1043,8 +1234,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 54,
-      "clean_runs": 48,
+      "targets": 67,
+      "clean_runs": 61,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1111,9 +1302,9 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 54,
-      "clean_runs": 6,
-      "tp": 48,
+      "targets": 67,
+      "clean_runs": 18,
+      "tp": 49,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -1136,7 +1327,7 @@
           "fn": 0
         },
         "cert_untrusted": {
-          "tp": 2,
+          "tp": 3,
           "fp": 0,
           "fn": 0
         },
@@ -1392,6 +1583,12 @@
           "why": "Plain HTTP only (dns-web): nothing listens on 443."
         },
         {
+          "target": "td-sha1",
+          "key": "cert_untrusted",
+          "location": "td-sha1.lab.test:443",
+          "why": "Browsers (and Go's verifier, which tls_cert uses) reject SHA-1 signed certificates since 2017; OpenSSL/testssl still build the chain ('passed')."
+        },
+        {
           "target": "tls-expired",
           "key": "cert_expired",
           "location": "tls-expired.lab.test:443",
@@ -1451,8 +1648,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 54,
-      "clean_runs": 48,
+      "targets": 67,
+      "clean_runs": 61,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -1550,6 +1747,83 @@
           "key": "weak_cipher_insecure",
           "location": "tls-weak.lab.test:443",
           "why": "openssl -cipher eNULL:aNULL: accepted ECDHE-ECDSA-NULL-SHA (no encryption)."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "tls_depth",
+      "targets": 67,
+      "clean_runs": 62,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 1,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cert_lifetime_too_long": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "cert_no_sct": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "cert_weak_signature": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "hsts_preload_ineligible": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "ocsp_stapling_missing": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "td-longlife",
+          "key": "cert_lifetime_too_long",
+          "location": "td-longlife.lab.test:443",
+          "why": "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): cert_extlifeSpan '825 \u003e 398 days' (MEDIUM)."
+        },
+        {
+          "target": "td-nosct",
+          "key": "cert_no_sct",
+          "location": "td-nosct.lab.test:443",
+          "why": "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): certificate_transparency '--' (clean.lab.test: 'yes (certificate extension)')."
+        },
+        {
+          "target": "td-ocspmiss",
+          "key": "ocsp_stapling_missing",
+          "location": "td-ocspmiss.lab.test:443",
+          "why": "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): cert_ocspURL 'http://ocsp.lab.test/', OCSP_stapling 'not offered' (LOW)."
+        },
+        {
+          "target": "td-preload",
+          "key": "hsts_preload_ineligible",
+          "location": "https://td-preload.lab.test/",
+          "why": "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): HSTS_time 365 days, HSTS_subdomains 'only for this domain', HSTS_preload 'domain IS marked for preloading'; hstspreload.org requires includeSubDomains."
+        },
+        {
+          "target": "td-sha1",
+          "key": "cert_weak_signature",
+          "location": "td-sha1.lab.test:443",
+          "why": "testssl.sh 3.2 (drwetter/testssl.sh@sha256:64bab3c1…, --add-ca lab root, run 2026-11-22): cert_signatureAlgorithm 'ECDSA with SHA1' (MEDIUM)."
         }
       ],
       "false_positives": null,
