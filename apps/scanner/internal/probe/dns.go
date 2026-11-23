@@ -60,15 +60,34 @@ func (c *Client) dnsQuery(ctx context.Context, name string, qtype uint16, cd boo
 	m.RecursionDesired = true
 	m.CheckingDisabled = cd
 	m.SetEdns0(1232, true)
-	qctx, cancel := context.WithTimeout(ctx, c.opts.Timeout)
-	defer cancel()
-	cl := &dns.Client{Net: "udp", Timeout: c.opts.Timeout}
-	resp, _, err := cl.ExchangeContext(qctx, m, addr)
+	// Two UDP attempts of half the timeout each: a single lost datagram (UDP has no
+	// retransmission) must not cost the whole answer, as stub resolvers retry too.
+	// The total stays within the client's timeout.
+	half := c.opts.Timeout / 2
+	var resp *dns.Msg
+	for attempt := 0; attempt < 2; attempt++ {
+		resp, err = exchange(ctx, m, addr, "udp", half)
+		if err == nil || ctx.Err() != nil || !isTimeout(err) {
+			break
+		}
+	}
 	if err == nil && resp.Truncated {
-		cl.Net = "tcp"
-		resp, _, err = cl.ExchangeContext(qctx, m, addr)
+		resp, err = exchange(ctx, m, addr, "tcp", c.opts.Timeout)
 	}
 	return resp, err
+}
+
+func exchange(ctx context.Context, m *dns.Msg, addr, network string, timeout time.Duration) (*dns.Msg, error) {
+	qctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	cl := &dns.Client{Net: network, Timeout: timeout}
+	resp, _, err := cl.ExchangeContext(qctx, m, addr)
+	return resp, err
+}
+
+func isTimeout(err error) bool {
+	var ne net.Error
+	return errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout())
 }
 
 // DNSAsk sends m to nameserver nsHost on port 53 (Options.DNSPort; UDP, or TCP when tcp is

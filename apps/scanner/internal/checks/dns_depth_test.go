@@ -307,3 +307,29 @@ func TestMTASTSRecord(t *testing.T) {
 		t.Error("valid record among other TXT rejected")
 	}
 }
+
+// A lost UDP answer is retried once; a lookup that never answers is unknown
+// (no finding derived from it) and never fails the whole check.
+func TestDNSDepthLostDatagrams(t *testing.T) {
+	f := newFakeDNS(t)
+	f.configure(func(f *fakeDNS) {
+		apex(f, "lossy.test")
+		f.add("lossy.test. 300 IN MX 10 mx.lossy.test.")
+		f.drop["lossy.test.|CAA"] = 1 // first CAA answer lost, the retry gets NODATA
+	})
+	ks, err := runDepth(t, f, "lossy.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(ks, ",") != "caa_missing,mta_sts_missing" {
+		t.Fatalf("one lost answer: %v", ks)
+	}
+	f.configure(func(f *fakeDNS) { f.drop["lossy.test.|CAA"] = -1 })
+	ks, err = runDepth(t, f, "lossy.test")
+	if err != nil {
+		t.Fatalf("a lookup that never answers failed the check: %v", err)
+	}
+	if strings.Join(ks, ",") != "mta_sts_missing" {
+		t.Fatalf("unanswered CAA must stay unknown: %v", ks)
+	}
+}
