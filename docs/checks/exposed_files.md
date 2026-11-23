@@ -86,7 +86,7 @@ start by `test_corpus/ef-init.sh`.
 **Independent truth:** `test_corpus/oracles/files/oracle_files.py`, run by `oracles/headers/run.sh`
 in CI's `header-truth` job on every site target (third-party apps one at a time):
 
-- **Fetching:** curl.
+- **Fetching:** curl, following at most 3 same-host redirects (the documented rule; never a cross-host one).
 - **File types:** libmagic (`file`): "PHP script", "gzip compressed data", "Zip archive data",
   "Apple Desktop Services Store".
 - **Dumps:** a dump header plus data rows, after zcat.

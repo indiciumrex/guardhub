@@ -4,7 +4,8 @@
 
 Nothing here shares code with the scanner:
   - each path of the documented list (docs/checks/exposed_files.md) is fetched with curl
-    (certificate checks off: content, not TLS, is judged here);
+    (certificate checks off: content, not TLS, is judged here), following at most 3 same-host
+    redirects as the documented rule says (a cross-host redirect is never followed);
   - file types come from libmagic (`file`): "PHP script", "gzip compressed data", "Zip archive
     data", "Apple Desktop Services Store";
   - a dump counts only with data rows (INSERT INTO / COPY ... FROM stdin), after zcat for .gz;
@@ -39,16 +40,39 @@ DEFAULT_TITLES = {
 CAP = 256 * 1024
 
 
-def fetch(url: str) -> tuple[int, str, bytes]:
-    """(status, content type, body up to CAP) without following redirects; status 0 on failure."""
-    out = subprocess.run(["curl", "-sS", "-k", "--max-time", "15", "-o", "/tmp/body", "-w", "%{http_code} %{content_type}", url],
-                         capture_output=True, text=True)
-    if out.returncode not in (0, 23, 63):
-        return 0, "", b""
-    code, _, ctype = out.stdout.partition(" ")
-    with open("/tmp/body", "rb") as f:
-        body = f.read(CAP)
-    return int(code or 0), ctype, body
+def same_host_hop(src: str, dst: str) -> bool:
+    """The documented redirect rule (docs/checks/exposed_files.md: never a cross-host redirect):
+    same hostname; same scheme and port, or an http->https upgrade; never a downgrade."""
+    a, b = urlparse(src), urlparse(dst)
+    if b.scheme not in ("http", "https") or (a.hostname or "").lower() != (b.hostname or "").lower():
+        return False
+    if a.scheme == "https" and b.scheme == "http":
+        return False
+    port = lambda u: u.port or (443 if u.scheme == "https" else 80)  # noqa: E731
+    if a.scheme == b.scheme:
+        return port(a) == port(b)
+    return b.port in (None, 443) or b.port == a.port
+
+
+def fetch(url: str) -> tuple[int, str, bytes, str]:
+    """(status, content type, body up to CAP, final URL), following at most 3 same-host
+    redirects; a cross-host redirect is returned as is. Status 0 on failure."""
+    for _ in range(4):
+        out = subprocess.run(["curl", "-sS", "-k", "--max-time", "15", "-o", "/tmp/body",
+                              "-w", "%{http_code} %{redirect_url} %{content_type}", url],
+                             capture_output=True, text=True)
+        if out.returncode not in (0, 23, 63):
+            return 0, "", b"", url
+        code, _, rest = out.stdout.partition(" ")
+        loc, _, ctype = rest.partition(" ")
+        with open("/tmp/body", "rb") as f:
+            body = f.read(CAP)
+        st = int(code or 0)
+        if st in (301, 302, 303, 307, 308) and loc and same_host_hop(url, loc):
+            url = loc
+            continue
+        return st, ctype, body, url
+    return 0, "", b"", url
 
 
 def magic(body: bytes) -> str:
@@ -85,19 +109,19 @@ def same_origin(base: str, ref: str) -> str | None:
 
 def truth(origin: str) -> dict:
     keys, notes = [], []
-    st, _, base = fetch(origin + "/guardhub-oracle-404-probe-31b7")
+    st, _, base, _ = fetch(origin + "/guardhub-oracle-404-probe-31b7")
     base_sig = (st, hashlib.sha256(base).hexdigest()) if base else None
 
     def hit(path: str):
-        code, ctype, body = fetch(origin + path)
+        code, ctype, body, _ = fetch(origin + path)
         if code != 200 or not body or (code, hashlib.sha256(body).hexdigest()) == base_sig:
             return None
         return ctype, body
 
-    root_code, _, root = fetch(origin + "/")
+    root_code, _, root, root_url = fetch(origin + "/")
     if root_code == 0:
         return {"file_keys": [], "notes": [f"fetch failed: {origin}/"]}
-    notes.append(f"GET / -> {root_code}")
+    notes.append(f"GET / -> {root_code}" + (f" (after same-host redirects: {urlparse(root_url).path})" if root_url != origin + "/" else ""))
     for p in DUMPS:
         r = hit(p)
         if not r:
@@ -146,8 +170,8 @@ def truth(origin: str) -> dict:
         if title in DEFAULT_TITLES:
             keys.append("default_page_exposed:/")
             notes.append(f"home page title '{title}' ({DEFAULT_TITLES[title]} stock page)")
-        for src in [s for s in (same_origin(origin + "/", s) for s in page.src) if s][:3]:
-            code, _, js = fetch(src)
+        for src in [s for s in (same_origin(root_url, s) for s in page.src) if s][:3]:
+            code, _, js, _ = fetch(src)
             if code != 200:
                 continue
             refs = re.findall(r"(?m)^[ \t]*//[#@] sourceMappingURL=(\S+)\s*$", js[-4096:].decode("utf-8", "replace"))
@@ -156,7 +180,7 @@ def truth(origin: str) -> dict:
             mp = same_origin(src, refs[-1])
             if not mp:
                 continue
-            code, _, raw = fetch(mp)
+            code, _, raw, _ = fetch(mp)
             try:
                 sm = json.loads(raw)
             except ValueError:
