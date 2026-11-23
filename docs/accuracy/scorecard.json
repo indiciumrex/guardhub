@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "925c3461ae43",
+  "source": "2f16aaca7c6a",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -72,6 +72,13 @@
     "hq-object",
     "hq-private",
     "hq-wasm",
+    "js-bootstrap",
+    "js-cdn",
+    "js-current",
+    "js-jquery",
+    "js-mention",
+    "js-moment",
+    "js-renamed",
     "juice-shop",
     "leaky",
     "phpmyadmin",
@@ -120,8 +127,8 @@
   "checks": [
     {
       "check_id": "cookie_depth",
-      "targets": 97,
-      "clean_runs": 92,
+      "targets": 104,
+      "clean_runs": 99,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -182,8 +189,8 @@
     },
     {
       "check_id": "default_creds",
-      "targets": 97,
-      "clean_runs": 93,
+      "targets": 104,
+      "clean_runs": 100,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -457,8 +464,8 @@
     },
     {
       "check_id": "dns_depth",
-      "targets": 97,
-      "clean_runs": 77,
+      "targets": 104,
+      "clean_runs": 84,
       "tp": 20,
       "fp": 0,
       "fn": 0,
@@ -649,8 +656,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 97,
-      "clean_runs": 88,
+      "targets": 104,
+      "clean_runs": 95,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -760,8 +767,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 97,
-      "clean_runs": 96,
+      "targets": 104,
+      "clean_runs": 103,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -815,8 +822,8 @@
     },
     {
       "check_id": "exposed_files",
-      "targets": 97,
-      "clean_runs": 89,
+      "targets": 104,
+      "clean_runs": 96,
       "tp": 8,
       "fp": 0,
       "fn": 0,
@@ -915,8 +922,8 @@
     },
     {
       "check_id": "header_quality",
-      "targets": 97,
-      "clean_runs": 85,
+      "targets": 104,
+      "clean_runs": 92,
       "tp": 21,
       "fp": 0,
       "fn": 0,
@@ -1093,8 +1100,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 97,
-      "clean_runs": 91,
+      "targets": 104,
+      "clean_runs": 98,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1176,8 +1183,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 97,
-      "clean_runs": 91,
+      "targets": 104,
+      "clean_runs": 98,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -1290,9 +1297,81 @@
       ]
     },
     {
+      "check_id": "js_libraries",
+      "targets": 104,
+      "clean_runs": 98,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 3,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.7142857142857143,
+      "meets_gate": true,
+      "by_key": {
+        "vulnerable_js_library": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 2
+        }
+      },
+      "true_positives": [
+        {
+          "target": "js-bootstrap",
+          "key": "vulnerable_js_library",
+          "location": "https://js-bootstrap.lab.test/static/bootstrap.min.js",
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): /static/bootstrap.min.js is bootstrap 3.3.7 by its content, 8 vulnerabilities incl. CVE-2018-14040, CVE-2018-14042, CVE-2019-8331. OSV (recorded 2026-11-23, test_corpus/osv): npm bootstrap@3.3.7 has 7 advisories."
+        },
+        {
+          "target": "js-cdn",
+          "key": "vulnerable_js_library",
+          "location": "https://code.jquery.com/ui/1.12.1/jquery-ui.min.js",
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the script URL is jquery-ui 1.12.1 (uri), 4 vulnerabilities: CVE-2021-41182, CVE-2021-41183, CVE-2021-41184, CVE-2022-31160. OSV (recorded 2026-11-23, test_corpus/osv): npm jquery-ui@1.12.1 has 4 advisories."
+        },
+        {
+          "target": "js-jquery",
+          "key": "vulnerable_js_library",
+          "location": "https://js-jquery.lab.test/static/jquery.min.js",
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): /static/jquery.min.js is jquery 1.12.4 by its content (filecontent), 6 vulnerabilities incl. CVE-2015-9251, CVE-2019-11358, CVE-2020-11022, CVE-2020-11023. OSV (recorded 2026-11-23, test_corpus/osv): npm jquery@1.12.4 has 4 advisories."
+        },
+        {
+          "target": "js-moment",
+          "key": "vulnerable_js_library",
+          "location": "https://js-moment.lab.test/static/moment.js",
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): /static/moment.js is moment.js 2.18.1 by its content, 3 vulnerabilities: CVE-2017-18214, CVE-2022-24785, CVE-2022-31129. OSV (recorded 2026-11-23, test_corpus/osv): npm moment@2.18.1 has 3 advisories."
+        },
+        {
+          "target": "juice-shop",
+          "key": "vulnerable_js_library",
+          "location": "http://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js",
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the home page loads //cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js, jquery 2.2.4 by its URL, 6 vulnerabilities incl. CVE-2015-9251, CVE-2019-11358, CVE-2020-11022, CVE-2020-11023. OSV (recorded 2026-11-23, test_corpus/osv): npm jquery@2.2.4 has 4 advisories."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": [
+        {
+          "target": "grafana",
+          "key": "vulnerable_js_library",
+          "location": "http://grafana.lab.test:3000/public/build/4315.04038860e30ccfb6f1fb.js",
+          "outside": true,
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the bundle (909850 bytes) contains DOMPurify 3.2.4 (22 vulnerabilities) and lodash 4.17.21 (2 vulnerabilities: CVE-2025-13465, CVE-2026-4800). OSV (recorded 2026-11-23, test_corpus/osv): npm dompurify@3.2.4 has 22 advisories."
+        },
+        {
+          "target": "grafana",
+          "key": "vulnerable_js_library",
+          "location": "http://grafana.lab.test:3000/public/build/6029.0549a3fcb50e73c4b256.js",
+          "outside": true,
+          "why": "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the bundle (409895 bytes) contains moment.js 2.30.1, 1 vulnerability (CVE-2026-17495). OSV (recorded 2026-11-23, test_corpus/osv): npm moment@2.30.1 has 1 advisory."
+        }
+      ]
+    },
+    {
       "check_id": "open_admin",
-      "targets": 97,
-      "clean_runs": 94,
+      "targets": 104,
+      "clean_runs": 101,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -1486,8 +1565,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 97,
-      "clean_runs": 90,
+      "targets": 104,
+      "clean_runs": 97,
       "tp": 16,
       "fp": 0,
       "fn": 0,
@@ -1624,8 +1703,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 97,
-      "clean_runs": 91,
+      "targets": 104,
+      "clean_runs": 98,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1692,8 +1771,8 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 97,
-      "clean_runs": 35,
+      "targets": 104,
+      "clean_runs": 42,
       "tp": 62,
       "fp": 0,
       "fn": 0,
@@ -2116,8 +2195,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 97,
-      "clean_runs": 91,
+      "targets": 104,
+      "clean_runs": 98,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -2222,8 +2301,8 @@
     },
     {
       "check_id": "tls_depth",
-      "targets": 97,
-      "clean_runs": 92,
+      "targets": 104,
+      "clean_runs": 99,
       "tp": 5,
       "fp": 0,
       "fn": 0,
