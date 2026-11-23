@@ -2,6 +2,6 @@ target: ck-domain
 origin: https://ck-domain.lab.test
 description: >
   clean.lab.test with Set-Cookie: sid=lab; Path=/; Domain=lab.test; Secure; HttpOnly; SameSite=Lax (session cookie for the parent domain lab.test (positive: cookie_domain_too_broad)).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: cookie_depth, key: cookie_domain_too_broad, location: "https://ck-domain.lab.test/#set-cookie=sid", why: "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): stored sid with domain=lab.test hostOnly=false (sent to every lab.test subdomain)."}

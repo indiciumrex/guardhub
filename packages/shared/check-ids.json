@@ -171,6 +171,13 @@
       ]
     },
     {
+      "id": "js_libraries",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "vulnerable_js_library", "severity": "medium", "params": ["library", "version", "advisories", "fixed_version", "script"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

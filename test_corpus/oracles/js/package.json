@@ -1,0 +1,10 @@
+{
+  "name": "guardhub-lab-oracle-js",
+  "private": true,
+  "type": "module",
+  "description": "Independent ground truth for js_libraries: retire.js (lab only, not shipped)",
+  "dependencies": {
+    "htmlparser2": "9.1.0",
+    "retire": "6.1.1"
+  }
+}

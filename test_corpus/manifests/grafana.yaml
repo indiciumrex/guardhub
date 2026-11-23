@@ -4,7 +4,7 @@ description: >
   Grafana OSS 11.6.0 (pinned), default configuration: / redirects to /login, whose
   documented default account is admin/admin. Sends X-Frame-Options and nosniff, no CSP
   (Grafana's content_security_policy is off by default).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: default_creds, key: default_login_product, why: "Grafana login with the documented default admin/admin account, never changed."}
   - {check: security_headers, key: csp_missing, why: "/login sends no Content-Security-Policy."}
@@ -30,3 +30,18 @@ expect:
       this file: HTTP 200, version 3, 21 sources, 21 embedded (sourcesContent), served without
       authentication as Grafana ships. Missing from this manifest at first; CI's accuracy run
       45116314006 surfaced it as a false positive.
+  - check: js_libraries
+    key: vulnerable_js_library
+    location: "http://grafana.lab.test:3000/public/build/6029.0549a3fcb50e73c4b256.js"
+    outside: true # js_libraries declares scripts read up to the probe's 256 KiB; this banner is at byte 348922
+    why: >-
+      JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the bundle (409895 bytes) contains moment.js 2.30.1, 1 vulnerability
+      (CVE-2026-17495). OSV (recorded 2026-11-23, test_corpus/osv): npm moment@2.30.1 has 1 advisory.
+  - check: js_libraries
+    key: vulnerable_js_library
+    location: "http://grafana.lab.test:3000/public/build/4315.04038860e30ccfb6f1fb.js"
+    outside: true # DOMPurify's banner is at byte 684198 (past 256 KiB); lodash is not in the declared catalogue
+    why: >-
+      JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the bundle (909850 bytes) contains DOMPurify 3.2.4 (22 vulnerabilities) and
+      lodash 4.17.21 (2 vulnerabilities: CVE-2025-13465, CVE-2026-4800). OSV (recorded 2026-11-23, test_corpus/osv): npm
+      dompurify@3.2.4 has 22 advisories.

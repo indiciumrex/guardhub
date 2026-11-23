@@ -73,6 +73,7 @@ func runLab(cfg config.Config, logger *slog.Logger, args []string) int {
 	// Repo targets (ADR-0006): the lab's GitHub and OSV stand-ins, reached
 	// through the production egress transport (IP guard + allowlist).
 	egress := probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts)
+	opts.OSVURL, opts.OSVTransport = cfg.OSVURL, egress
 	svc := &queue.Service{
 		Registry:     checks.DefaultWith(opts),
 		RepoRegistry: checks.DefaultRepo(checks.RepoOptions{OSVURL: cfg.OSVURL, Transport: egress}),

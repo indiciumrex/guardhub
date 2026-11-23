@@ -3,7 +3,7 @@ origin: https://td-preload.lab.test
 description: >
   Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
   HSTS 'max-age=31536000; preload' without includeSubDomains.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - check: tls_depth
     key: hsts_preload_ineligible

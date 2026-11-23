@@ -2,6 +2,6 @@ target: tls-weak
 origin: https://tls-weak.lab.test
 description: >
   nginx (OpenSSL 3), hardened headers, TLS 1.2+1.3, ssl_ciphers HIGH:eNULL:aNULL (nginx/tls-weak.conf).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: tls_config, key: weak_cipher_insecure, why: "openssl -cipher eNULL:aNULL: accepted ECDHE-ECDSA-NULL-SHA (no encryption)."}

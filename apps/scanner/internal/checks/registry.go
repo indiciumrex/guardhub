@@ -2,7 +2,10 @@ package checks
 
 import (
 	"crypto/x509"
+	"net/http"
+	"time"
 
+	"github.com/hksolutions/guardhub/apps/scanner/internal/deps"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
 )
 
@@ -19,7 +22,15 @@ type Options struct {
 	// subdomain_takeover ("" = crt.sh, "off" = DNS-only discovery; the lab
 	// uses its own stand-in).
 	CTURL string
+	// OSVURL and OSVTransport reach the OSV API for js_libraries ("" =
+	// api.osv.dev; the lab uses its replay stand-in). The transport is the
+	// scanner's egress transport; nil = http.DefaultTransport (tests).
+	OSVURL       string
+	OSVTransport http.RoundTripper
 }
+
+// siteMaxVulns caps OSV advisory detail fetches per site scan (js_libraries).
+const siteMaxVulns = 100
 
 // Registry maps check ids to checks. Adding a check = new file + one line in
 // Default().
@@ -51,6 +62,10 @@ func Default() *Registry { return DefaultWith(Options{}) }
 
 // DefaultWith is Default with injected options (validation lab).
 func DefaultWith(o Options) *Registry {
+	transport := o.OSVTransport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
 	tlsCert := NewTLSCert()
 	tlsCert.Roots = o.Roots
 	return NewRegistry(
@@ -69,6 +84,7 @@ func DefaultWith(o Options) *Registry {
 		DNSDepth{Roots: o.Roots},
 		CookieDepth{},
 		ExposedFiles{},
+		JSLibraries{OSV: deps.NewOSV(o.OSVURL, transport, 20*time.Second, siteMaxVulns)},
 	)
 }
 

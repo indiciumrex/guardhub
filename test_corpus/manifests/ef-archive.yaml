@@ -2,6 +2,6 @@ target: ef-archive
 origin: https://ef-archive.lab.test
 description: >
   clean.lab.test's headers and TLS; site archive at /backup.tar.gz (positive: archive_backup_exposed) (test_corpus/ef-init.sh).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: exposed_files, key: archive_backup_exposed, location: "https://ef-archive.lab.test/backup.tar.gz", why: "Files oracle (curl + libmagic, lab run 2026-11-23): /backup.tar.gz: libmagic 'gzip compressed data, from Unix'."}

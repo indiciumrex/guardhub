@@ -2,5 +2,5 @@ target: ef-schema
 origin: https://ef-schema.lab.test
 description: >
   clean.lab.test's headers and TLS; schema-only SQL dump at /dump.sql (negative: no data rows) (test_corpus/ef-init.sh).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect: []

@@ -1,4 +1,4 @@
-"""Compare the header oracle's output with the manifests' header_quality and cookie_depth expectations.
+"""Compare the oracles' output with the manifests' header_quality, cookie_depth, exposed_files and js_libraries expectations.
 
     python3 compare.py OUT_DIR
 
@@ -25,7 +25,7 @@ import yaml
 HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFESTS = os.path.join(HERE, "..", "..", "manifests")
 # check -> the oracle output field holding its keys
-CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys", "exposed_files": "file_keys"}
+CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys", "exposed_files": "file_keys", "js_libraries": "js_keys"}
 COOKIE_KEYS = {"cookie_response_cacheable", "cookie_prefix_invalid", "cookie_domain_too_broad"}
 
 
@@ -43,6 +43,15 @@ def load_truth(out: str) -> dict[str, dict]:
                 entry = truth.setdefault(origin, {"keys": [], "notes": []})
                 entry["file_keys"] = t["file_keys"]
                 entry["notes"] = entry.get("notes", []) + t["notes"]
+    # js_libraries truth (oracles/js, retire.js): merged the same way
+    for path in sorted(glob.glob(os.path.join(out, "js-*.json"))):
+        with open(path, encoding="utf-8") as f:
+            for origin, t in json.load(f).items():
+                entry = truth.setdefault(origin, {"keys": [], "notes": []})
+                entry["js_keys"] = t["js_keys"]
+                entry["notes"] = entry.get("notes", []) + [n for n in t["notes"] if not n.startswith("GET / ->")]
+                if any(n.startswith("fetch failed") for n in t["notes"]):
+                    entry["notes"].append("fetch failed (js oracle)")
     relaxed = os.path.join(out, "light-relaxed.json")
     if os.path.exists(relaxed):
         with open(relaxed, encoding="utf-8") as f:
@@ -51,6 +60,8 @@ def load_truth(out: str) -> dict[str, dict]:
                 before = truth.get(origin, {})
                 if "file_keys" in before:  # the files oracle does not depend on Node's TLS
                     t["file_keys"] = before["file_keys"]
+                if "js_keys" in before:
+                    t["js_keys"] = before["js_keys"]
                     t["notes"] += [n for n in before.get("notes", []) if not n.startswith("fetch failed")]
                 truth[origin] = t
     return truth
@@ -64,6 +75,8 @@ def expected_keys(manifest: dict, check: str) -> set[str]:
         loc = e.get("location") or ""
         if check == "exposed_files" and loc:
             keys.add(f"{e['key']}:{urlparse(loc).path or '/'}")
+        elif check == "js_libraries" and loc:
+            keys.add(f"{e['key']}:{loc}")
         elif e["key"] in COOKIE_KEYS and "#set-cookie=" in loc:
             keys.add(f"{e['key']}:{loc.split('#set-cookie=', 1)[1]}")
         else:
@@ -103,7 +116,7 @@ def main() -> int:
 
     bad = [r for r in rows if r["status"] != "ok"]
     lines = [
-        "# header_quality, cookie_depth and exposed_files ground truth vs manifests",
+        "# header_quality, cookie_depth, exposed_files and js_libraries ground truth vs manifests",
         "",
         f"{len(rows)} target/check pairs, {len(rows) - len(bad)} agree, {len(bad)} do not.",
         "",

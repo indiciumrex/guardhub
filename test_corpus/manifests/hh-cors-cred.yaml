@@ -2,7 +2,7 @@ target: hh-cors-cred
 origin: http://hh-cors-cred.lab.test
 description: >
   Hardened, but CORS echoes any Origin with Access-Control-Allow-Credentials: true (nginx/hh.conf; verified with curl incl. Origin headers).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only: nothing listens on 443."}
   - {check: http_hardening, key: cors_any_origin_with_credentials, why: "Origin https://guardhub-cors-check.invalid is echoed in Access-Control-Allow-Origin with Allow-Credentials: true."}

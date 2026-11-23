@@ -616,5 +616,17 @@
         "fix": "1. If this address should serve your site, add a server block or virtual host for this name pointing to your application.\n2. If it should not serve anything, make the default server return an error or redirect, for example in nginx: `server { listen 80 default_server; return 444; }`.\n3. Remove the default index page from the web root and run the scan again."
       }
     }
+  },
+  "js_libraries": {
+    "name": "Outdated JavaScript libraries",
+    "description": "Finds well-known JavaScript libraries your home page loads (jQuery, jQuery UI, Bootstrap, AngularJS, Moment, Handlebars, DOMPurify, Vue and others) and checks the exact version against public vulnerability advisories (OSV). A library is reported only when its version is certain: read from the library's own header inside the file, or from a public CDN address that contains the version.",
+    "findings": {
+      "vulnerable_js_library": {
+        "title": "{library} {version} on your site has known vulnerabilities",
+        "summary": "Your home page loads {library} {version} ({script}). Public advisories list vulnerabilities in this version: {advisories}.",
+        "why": "Every visitor's browser runs this library. The listed advisories describe how attackers can abuse it, most often cross-site scripting (running their own code in your visitors' browsers) when your pages pass untrusted input to the affected functions. GuardHub cannot see from outside whether your code uses those functions, so this is rated medium: the risk is real, but it depends on how the library is used. Attackers' tools look for exactly these version numbers.",
+        "fix": "1. Upgrade {library} to its latest release. The lowest version that fixes every listed advisory is {fixed_version} (a dash means no fixed release exists yet: replace the library or stop using the affected feature).\n2. Major upgrades can change behaviour (for example jQuery 1.x/2.x to 3.x): test your pages, and use the library's migration guide or plugin while you update your code.\n3. If you load it from a CDN, change the version in the script address; if you serve it yourself, replace the file and clear caches.\n4. Run the scan again."
+      }
+    }
   }
 }

@@ -616,5 +616,17 @@
         "fix": "1. Bu adres sitenizi sunmalıysa, bu ad için uygulamanızı gösteren bir server bloğu ya da sanal sunucu ekleyin.\n2. Hiçbir şey sunmaması gerekiyorsa, varsayılan sunucunun hata döndürmesini ya da yönlendirme yapmasını sağlayın, örneğin nginx'te: `server { listen 80 default_server; return 444; }`.\n3. Varsayılan index sayfasını web kök dizininden kaldırın ve taramayı tekrar çalıştırın."
       }
     }
+  },
+  "js_libraries": {
+    "name": "Güncel olmayan JavaScript kütüphaneleri",
+    "description": "Ana sayfanızın yüklediği bilinen JavaScript kütüphanelerini (jQuery, jQuery UI, Bootstrap, AngularJS, Moment, Handlebars, DOMPurify, Vue ve diğerleri) bulur ve tam sürümü herkese açık zafiyet bildirimleriyle (OSV) karşılaştırır. Bir kütüphane yalnızca sürümü kesin olduğunda bildirilir: dosyanın içindeki kütüphanenin kendi başlığından ya da sürümü içeren herkese açık bir CDN adresinden okunur.",
+    "findings": {
+      "vulnerable_js_library": {
+        "title": "Sitenizdeki {library} {version} sürümünün bilinen zafiyetleri var",
+        "summary": "Ana sayfanız {library} {version} yüklüyor ({script}). Herkese açık bildirimler bu sürümde zafiyetler listeliyor: {advisories}.",
+        "why": "Bu kütüphaneyi her ziyaretçinin tarayıcısı çalıştırır. Listelenen bildirimler saldırganların onu nasıl kötüye kullanabileceğini anlatır; en sık görülen, sayfalarınız güvenilmeyen girdiyi etkilenen fonksiyonlara verdiğinde siteler arası betik çalıştırmadır (ziyaretçilerinizin tarayıcısında saldırganın kendi kodunu çalıştırması). GuardHub dışarıdan kodunuzun bu fonksiyonları kullanıp kullanmadığını göremez; bu yüzden orta seviye verilir: risk gerçektir ama kütüphanenin nasıl kullanıldığına bağlıdır. Saldırganların araçları tam olarak bu sürüm numaralarını arar.",
+        "fix": "1. {library} kütüphanesini en son sürümüne yükseltin. Listelenen tüm bildirimleri düzelten en düşük sürüm {fixed_version} (tire, henüz düzeltilmiş bir sürüm olmadığı anlamına gelir: kütüphaneyi değiştirin ya da etkilenen özelliği kullanmayı bırakın).\n2. Büyük sürüm yükseltmeleri davranışı değiştirebilir (örneğin jQuery 1.x/2.x'ten 3.x'e): sayfalarınızı test edin ve kodunuzu güncellerken kütüphanenin geçiş kılavuzunu ya da eklentisini kullanın.\n3. Kütüphaneyi bir CDN'den yüklüyorsanız betik adresindeki sürümü değiştirin; kendiniz sunuyorsanız dosyayı değiştirin ve önbellekleri temizleyin.\n4. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

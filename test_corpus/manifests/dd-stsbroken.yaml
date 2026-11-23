@@ -2,7 +2,7 @@ target: dd-stsbroken
 origin: http://stsbroken.dd.lab.test
 description: >
   as dd-good, but the policy URL answers 404 (test_corpus/dns/dd/).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_depth, key: mta_sts_policy_broken, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): curl https://mta-sts.stsbroken.dd.lab.test/.well-known/mta-sts.txt: HTTP 404 text/html"}
