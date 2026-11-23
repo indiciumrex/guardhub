@@ -156,6 +156,21 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'secret_in_javascript': 'high',
         'test_secret_in_javascript': 'low',
     },
+    'active_xss': {
+        'reflected_xss': 'medium',
+    },
+    'active_sqli': {
+        'sql_injection': 'high',
+    },
+    'active_redirect': {
+        'open_redirect': 'medium',
+    },
+    'active_cors': {
+        'cors_origin_reflected': 'high',
+    },
+    'active_ssrf': {
+        'ssrf_confirmed': 'high',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',
@@ -173,4 +188,6 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
 CHECK_IDS: tuple[str, ...] = tuple(CHECK_FINDING_KEYS)
 # Checks that scan a connected repository (check-ids.json "target": "repo", ADR-0006).
 REPO_CHECK_IDS: tuple[str, ...] = ('dependency_vulns', 'repo_secrets')
-SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS)
+# Active checks (check-ids.json "target": "active", ADR-0008): never in a passive site scan.
+ACTIVE_CHECK_IDS: tuple[str, ...] = ('active_xss', 'active_sqli', 'active_redirect', 'active_cors', 'active_ssrf')
+SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS and c not in ACTIVE_CHECK_IDS)

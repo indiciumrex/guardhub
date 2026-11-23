@@ -62,6 +62,11 @@ const (
 	CheckJsLibraries       = "js_libraries"
 	CheckContentSignals    = "content_signals"
 	CheckJsSecrets         = "js_secrets"
+	CheckActiveXss         = "active_xss"
+	CheckActiveSqli        = "active_sqli"
+	CheckActiveRedirect    = "active_redirect"
+	CheckActiveCors        = "active_cors"
+	CheckActiveSsrf        = "active_ssrf"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -188,6 +193,21 @@ var FindingKeys = map[string]map[string]Severity{
 		"secret_in_javascript":      SeverityHigh,
 		"test_secret_in_javascript": SeverityLow,
 	},
+	"active_xss": {
+		"reflected_xss": SeverityMedium,
+	},
+	"active_sqli": {
+		"sql_injection": SeverityHigh,
+	},
+	"active_redirect": {
+		"open_redirect": SeverityMedium,
+	},
+	"active_cors": {
+		"cors_origin_reflected": SeverityHigh,
+	},
+	"active_ssrf": {
+		"ssrf_confirmed": SeverityHigh,
+	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,
 		"vulnerable_dependency_medium": SeverityMedium,
@@ -206,4 +226,13 @@ var FindingKeys = map[string]map[string]Severity{
 var RepoChecks = map[string]bool{
 	"dependency_vulns": true,
 	"repo_secrets":     true,
+}
+
+// ActiveChecks holds the ids of active checks (check-ids.json "target": "active", ADR-0008).
+var ActiveChecks = map[string]bool{
+	"active_xss":      true,
+	"active_sqli":     true,
+	"active_redirect": true,
+	"active_cors":     true,
+	"active_ssrf":     true,
 }
