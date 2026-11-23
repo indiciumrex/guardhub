@@ -18,7 +18,7 @@ type Payload struct {
 	ID      string
 	Module  string // the active check that may send it
 	In      string // InQuery or InOrigin
-	Value   string // exact bytes ({oob} is replaced by a per-probe OOB name)
+	Value   string // exact bytes ({oob}: the collaborator's per-probe URL)
 	Control string // a harmless value of the same shape: a difference it also causes is no finding
 	Why     string // why it cannot harm the target
 }
@@ -27,7 +27,8 @@ type Payload struct {
 // name it, and nothing ever connects to it.
 const CanaryHost = "gh-canary.invalid"
 
-// OOBPlaceholder is replaced by "<token>.<oob domain>" for each probe.
+// OOBPlaceholder is the whole value of an OOB payload; it is replaced by the
+// collaborator's unique URL for each probe (oob.go).
 const OOBPlaceholder = "{oob}"
 
 // Payloads is the catalogue.
@@ -69,7 +70,7 @@ var Payloads = []Payload{
 	},
 	{
 		ID: "ssrf.oob.http", Module: "active_ssrf", In: InQuery,
-		Value: "http://" + OOBPlaceholder + "/", Control: "",
+		Value: OOBPlaceholder, Control: "",
 		Why: "a unique name on GuardHub's own collaborator; only a fetch of it is recorded, nothing internal is named",
 	},
 	{

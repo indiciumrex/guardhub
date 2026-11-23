@@ -46,12 +46,15 @@ func review(p Payload) []string {
 			errorf("%s: names an internal or local address or a non-http scheme: %q", p.ID, v)
 		}
 	}
-	// any URL a payload names points at the canary or the OOB placeholder only
+	// an OOB payload is exactly the placeholder; any other URL names the canary only
+	if strings.Contains(p.Value+p.Control, OOBPlaceholder) && (p.Value != OOBPlaceholder || p.Control != "") {
+		errorf("%s: an OOB payload is exactly %s, with no control", p.ID, OOBPlaceholder)
+	}
 	for _, v := range []string{p.Value, p.Control} {
 		if !strings.Contains(v, "//") {
 			continue
 		}
-		raw := strings.ReplaceAll(v, OOBPlaceholder, "tok.oob.example")
+		raw := v
 		if strings.HasPrefix(raw, "//") {
 			raw = "https:" + raw
 		}
@@ -60,11 +63,8 @@ func review(p Payload) []string {
 			errorf("%s: unparsable URL %q", p.ID, v)
 			continue
 		}
-		if h := u.Hostname(); h != CanaryHost && h != "tok.oob.example" {
-			errorf("%s: names host %q (only %s or the OOB placeholder)", p.ID, h, CanaryHost)
-		}
-		if strings.Contains(v, OOBPlaceholder) && !strings.HasPrefix(v, "http://"+OOBPlaceholder) {
-			errorf("%s: the OOB placeholder must be the whole host", p.ID)
+		if h := u.Hostname(); h != CanaryHost {
+			errorf("%s: names host %q (only %s, or the OOB placeholder)", p.ID, h, CanaryHost)
 		}
 	}
 	return out

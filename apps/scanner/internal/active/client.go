@@ -58,10 +58,11 @@ func ControlProbe(module string, target *url.URL, param string, p Payload) Reque
 	return r
 }
 
-// OOBProbe is Probe for a payload with the {oob} placeholder.
-func OOBProbe(module string, target *url.URL, param string, p Payload, oobName string) Request {
+// OOBProbe is Probe for an OOB payload: {oob} becomes the collaborator's URL
+// for this probe's token (oob.go).
+func OOBProbe(module string, target *url.URL, param string, p Payload, oobURL string) Request {
 	r := Probe(module, target, param, p)
-	r.oob = oobName
+	r.oob = oobURL
 	return r
 }
 
