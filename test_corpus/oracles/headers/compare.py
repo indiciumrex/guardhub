@@ -60,9 +60,9 @@ def load_truth(out: str) -> dict[str, dict]:
                 before = truth.get(origin, {})
                 if "file_keys" in before:  # the files oracle does not depend on Node's TLS
                     t["file_keys"] = before["file_keys"]
-                if "js_keys" in before:
-                    t["js_keys"] = before["js_keys"]
                     t["notes"] += [n for n in before.get("notes", []) if not n.startswith("fetch failed")]
+                if "js_keys" in before:  # nor does the js oracle (it reads with TLS relaxed)
+                    t["js_keys"] = before["js_keys"]
                 truth[origin] = t
     return truth
 
