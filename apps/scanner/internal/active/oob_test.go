@@ -25,7 +25,7 @@ func TestCollaboratorRoundTrip(t *testing.T) {
 	// a vulnerable "target" fetches whatever URL it is given
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if u := r.URL.Query().Get("url"); u != "" {
-			if resp, err := http.Get(u); err == nil { //nolint:noctx // the test's deliberately vulnerable target
+			if resp, err := http.Get(u); err == nil {
 				_ = resp.Body.Close()
 			}
 		}
