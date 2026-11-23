@@ -574,5 +574,47 @@
         "fix": "1. Remove the `Domain=` attribute from the \"{cookie_name}\" cookie (in most frameworks, leave the session cookie domain setting empty). The cookie then stays host-only.\n2. Better still, rename it with the `__Host-` prefix (`__Host-session; Path=/; Secure; HttpOnly; SameSite=Lax`), which browsers lock to your exact host.\n3. If several subdomains really need one login, use a dedicated authentication host and short-lived tokens instead of a shared cookie.\n4. Run the scan again."
       }
     }
+  },
+  "exposed_files": {
+    "name": "Forgotten files",
+    "description": "Looks for files that should never be public but often are: database dumps, backup copies of source code, site archives, macOS .DS_Store files, source maps with your original code, and a web server's default page. Each hit is confirmed by the file's content.",
+    "findings": {
+      "database_dump_exposed": {
+        "title": "A database dump with data can be downloaded at {path}",
+        "summary": "Anyone can download {path}, an SQL dump of your database that contains data rows, not just the table structure.",
+        "why": "A database dump is a full copy of your data: customer records, e-mail addresses, password hashes, orders. Automated scanners request paths like {path} on every site all day, so assume it has already been downloaded. Depending on what the tables hold, this can be a personal-data breach you must report (for example under GDPR or KVKK).",
+        "fix": "1. Delete {path} from the web server now (and any other dump files next to it).\n2. Keep backups outside the web root, or in private storage that is never served over HTTP.\n3. Check your server's access logs for downloads of this file and treat its contents as exposed: rotate the database passwords and API keys stored in it, and assess whether personal data must be reported.\n4. Run the scan again."
+      },
+      "source_backup_exposed": {
+        "title": "A backup of your PHP source code can be read at {path}",
+        "summary": "{path} returns PHP source code as plain text instead of running it, so anyone can read it.",
+        "why": "Editors and deployment tools leave copies such as .bak, ~ or .save next to the real file. The web server does not run them as PHP; it hands them out as text. Configuration files like wp-config.php hold the database password and secret keys, which an attacker can use directly. Other source files reveal how your application works and where it is weak.",
+        "fix": "1. Delete {path} and any other backup copies (*.bak, *~, *.save, *.old, *.swp) from the web root.\n2. If the file held passwords or keys (for wp-config.php: database password, authentication keys and salts), change all of them now.\n3. Block such files in the server configuration, for example in nginx: `location ~* (\\.bak|\\.old|\\.save|\\.swp|~)$ { deny all; }`.\n4. Run the scan again."
+      },
+      "archive_backup_exposed": {
+        "title": "A site archive can be downloaded at {path}",
+        "summary": "Anyone can download {path}, a compressed archive at a typical backup location.",
+        "why": "Archives like this are usually a full copy of the website: source code, configuration files with passwords, and sometimes uploaded files and database dumps. GuardHub confirms that the file is an archive by its first bytes; it does not open or keep it. Attackers' scanners request these names on every site.",
+        "fix": "1. Delete {path} from the web server now.\n2. Store backups outside the web root or in private storage.\n3. Assume the archive was downloaded: change the passwords and keys it may contain (database, mail, API keys) and check your access logs.\n4. Run the scan again."
+      },
+      "ds_store_exposed": {
+        "title": "A macOS .DS_Store file is public at {path}",
+        "summary": "{path} is a .DS_Store file left behind by macOS Finder. It lists the names of the files in that folder.",
+        "why": "When a folder is uploaded from a Mac, Finder's hidden .DS_Store file often goes with it. It contains the names of the files and folders that were there, including ones that are not linked anywhere, such as backups, old admin pages or private documents. Attackers use these names to find files to download. On its own it reveals names, not contents.",
+        "fix": "1. Delete .DS_Store files from the server (`find /var/www -name .DS_Store -delete`).\n2. Exclude them from deployments (add `.DS_Store` to .gitignore and to your upload or rsync exclude list).\n3. Optionally block them in the server, for example in nginx: `location ~ /\\.DS_Store { deny all; }`.\n4. Run the scan again."
+      },
+      "source_map_exposed": {
+        "title": "Your JavaScript source map exposes the original code of {source_count} file(s)",
+        "summary": "The source map {path} is public and contains the original, unminified source code of {source_count} file(s).",
+        "why": "Source maps help developers debug minified JavaScript. When they include the original code (sourcesContent), anyone can read your front-end code with its comments, internal API routes, feature flags and sometimes keys that were never meant to be shipped. This is not a vulnerability by itself, but it makes finding one much easier.",
+        "fix": "1. Stop publishing source maps in production builds (for example Vite: `build.sourcemap: false`; webpack: `devtool: false`; Next.js: `productionBrowserSourceMaps: false`, the default).\n2. If you need them for error tracking, upload them to your error tracker (for example Sentry) instead of serving them, or build them without sourcesContent.\n3. Remove the .map files from the server and run the scan again."
+      },
+      "default_page_exposed": {
+        "title": "Your home page is {server}'s default welcome page",
+        "summary": "The address you scanned shows the stock welcome page of {server}, not your site.",
+        "why": "A default page usually means the web server is not configured for this name: the real site is on another address, or the server was set up and forgotten. It tells visitors and attackers which software you run and that the server may not be maintained. This is advice, not a vulnerability.",
+        "fix": "1. If this address should serve your site, add a server block or virtual host for this name pointing to your application.\n2. If it should not serve anything, make the default server return an error or redirect, for example in nginx: `server { listen 80 default_server; return 444; }`.\n3. Remove the default index page from the web root and run the scan again."
+      }
+    }
   }
 }

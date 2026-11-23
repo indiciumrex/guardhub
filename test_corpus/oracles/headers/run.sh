@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ground truth for header_quality on every lab site target, from Mozilla's HTTP
+# Ground truth for header_quality, cookie_depth and exposed_files (oracles/files) on every lab site target, from Mozilla's HTTP
 # Observatory and Google's CSP Evaluator (oracle_headers.mjs), then a comparison
 # with the manifests (compare.py). Used by CI's header-truth job.
 #
@@ -40,6 +40,11 @@ for f in $(grep -l 'header_quality' manifests/*.yaml); do
 done
 
 docker build -q -t gh-oracle-headers "$HERE" >/dev/null
+docker build -q -t gh-oracle-files "$HERE/../files" >/dev/null
+files_oracle() { # files_oracle OUTFILE origins...   (exposed_files truth, curl + libmagic)
+  local out=$1; shift
+  docker run --rm --network "$NET" gh-oracle-files "$@" > "$out"
+}
 RELAX=(-e NODE_TLS_REJECT_UNAUTHORIZED=0 -e "NODE_OPTIONS=--tls-min-v1.0 --tls-cipher-list=DEFAULT@SECLEVEL=0")
 oracle() { # oracle OUTFILE [docker -e ...] -- origins...
   local out=$1; shift; local env=()
@@ -61,6 +66,7 @@ echo "light services: ${light_services[*]}"
 "${LAB[@]}" up -d --build --quiet-pull "${light_services[@]}"
 wait_ready --soft "${light[@]}"
 oracle "$OUT/light.json" -- "${light[@]}"
+files_oracle "$OUT/files-light.json" "${light[@]}"
 # targets whose TLS Node refuses (expired, self-signed, SHA-1, legacy ciphers...): read
 # again with certificate checks relaxed, marked as such in the notes
 mapfile -t refused < <(python3 -c 'import json,sys
@@ -78,6 +84,7 @@ for app in "${HEAVY_ORDER[@]}"; do
   "${LAB[@]}" up -d --quiet-pull "${svcs[@]}"
   wait_ready "$o"
   oracle "$OUT/app-$app.json" -- "$o"
+  files_oracle "$OUT/files-app-$app.json" "$o"
   "${LAB[@]}" rm -s -f -v "${svcs[@]}" >/dev/null
   echo "removed: ${svcs[*]}"
 done

@@ -1,0 +1,6 @@
+target: ef-mapnames
+origin: https://ef-mapnames.lab.test
+description: >
+  clean.lab.test's headers and TLS; source map with file names only, no sourcesContent (negative) (test_corpus/ef-init.sh).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+expect: []

@@ -4,7 +4,7 @@ description: >
   Grafana OSS 11.6.0 (pinned), default configuration: / redirects to /login, whose
   documented default account is admin/admin. Sends X-Frame-Options and nosniff, no CSP
   (Grafana's content_security_policy is off by default).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
 expect:
   - {check: default_creds, key: default_login_product, why: "Grafana login with the documented default admin/admin account, never changed."}
   - {check: security_headers, key: csp_missing, why: "/login sends no Content-Security-Policy."}
@@ -21,3 +21,12 @@ expect:
   - check: header_quality
     key: coop_missing
     why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://grafana.lab.test:3000/login without a Cross-Origin-Opener-Policy header, as the app ships."
+  - check: exposed_files
+    key: source_map_exposed
+    location: "http://grafana.lab.test:3000/public/build/runtime.a83631aa5c22ce7c0887.js.map"
+    why: >-
+      Files oracle (curl + Python html.parser, local run of the pinned image, 2026-11-23): / ->
+      same-host redirect -> /login (200), whose script runtime.a83631aa5c22ce7c0887.js maps to
+      this file: HTTP 200, version 3, 21 sources, 21 embedded (sourcesContent), served without
+      authentication as Grafana ships. Missing from this manifest at first; CI's accuracy run
+      45116314006 surfaced it as a false positive.

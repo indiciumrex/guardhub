@@ -1,6 +1,6 @@
 # `dependency_vulns` accuracy
 
-Lab source revision `f7de8791e3b0`. Verdict: **meets the gate**.
+Lab source revision `925c3461ae43`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|

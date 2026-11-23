@@ -2,7 +2,7 @@ target: dns-chunked
 origin: http://chunked.dns.lab.test
 description: >
   ONE valid SPF record split mid-token into two strings ('...inclu' 'de:_spf...'): NOTHING to report (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_depth, key: mta_sts_missing, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): MX: mx.chunked.dns.lab.test; _mta-sts: no single valid v=STSv1 record"}

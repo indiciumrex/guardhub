@@ -68,6 +68,7 @@ func DefaultWith(o Options) *Registry {
 		HeaderQuality{},
 		DNSDepth{Roots: o.Roots},
 		CookieDepth{},
+		ExposedFiles{},
 	)
 }
 

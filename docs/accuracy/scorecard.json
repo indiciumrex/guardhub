@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "f7de8791e3b0",
+  "source": "925c3461ae43",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -45,6 +45,16 @@
     "dns-twospf",
     "drupal",
     "dvwa",
+    "ef-archive",
+    "ef-default",
+    "ef-dsstore",
+    "ef-dump",
+    "ef-dumpgz",
+    "ef-mapnames",
+    "ef-phpbak",
+    "ef-phprun",
+    "ef-schema",
+    "ef-sourcemap",
     "grafana",
     "hh-cors-cred",
     "hh-cors-null",
@@ -110,8 +120,8 @@
   "checks": [
     {
       "check_id": "cookie_depth",
-      "targets": 87,
-      "clean_runs": 82,
+      "targets": 97,
+      "clean_runs": 92,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -172,8 +182,8 @@
     },
     {
       "check_id": "default_creds",
-      "targets": 87,
-      "clean_runs": 83,
+      "targets": 97,
+      "clean_runs": 93,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -447,8 +457,8 @@
     },
     {
       "check_id": "dns_depth",
-      "targets": 87,
-      "clean_runs": 67,
+      "targets": 97,
+      "clean_runs": 77,
       "tp": 20,
       "fp": 0,
       "fn": 0,
@@ -639,8 +649,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 87,
-      "clean_runs": 78,
+      "targets": 97,
+      "clean_runs": 88,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -750,8 +760,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 87,
-      "clean_runs": 86,
+      "targets": 97,
+      "clean_runs": 96,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -804,9 +814,109 @@
       "false_negatives": null
     },
     {
+      "check_id": "exposed_files",
+      "targets": 97,
+      "clean_runs": 89,
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 40,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "archive_backup_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "database_dump_exposed": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "default_page_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "ds_store_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "source_backup_exposed": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "source_map_exposed": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "ef-archive",
+          "key": "archive_backup_exposed",
+          "location": "https://ef-archive.lab.test/backup.tar.gz",
+          "why": "Files oracle (curl + libmagic, lab run 2026-11-23): /backup.tar.gz: libmagic 'gzip compressed data, from Unix'."
+        },
+        {
+          "target": "ef-default",
+          "key": "default_page_exposed",
+          "location": "https://ef-default.lab.test/",
+          "why": "Files oracle (curl + Python html.parser, lab run 2026-11-23): home page title 'Welcome to nginx!', the nginx image's own stock page (copied by ef-init.sh)."
+        },
+        {
+          "target": "ef-dsstore",
+          "key": "ds_store_exposed",
+          "location": "https://ef-dsstore.lab.test/.DS_Store",
+          "why": "Files oracle (curl + libmagic, lab run 2026-11-23): /.DS_Store: libmagic 'Apple Desktop Services Store'."
+        },
+        {
+          "target": "ef-dump",
+          "key": "database_dump_exposed",
+          "location": "https://ef-dump.lab.test/backup.sql",
+          "why": "Files oracle (curl + libmagic, lab run 2026-11-23): /backup.sql: libmagic 'ASCII text', MySQL dump header and INSERT INTO data rows."
+        },
+        {
+          "target": "ef-dumpgz",
+          "key": "database_dump_exposed",
+          "location": "https://ef-dumpgz.lab.test/db.sql.gz",
+          "why": "Files oracle (curl + libmagic, lab run 2026-11-23): /db.sql.gz: libmagic 'gzip compressed data, max compression, from Unix'; decompressed: PostgreSQL dump header and COPY ... FROM stdin data rows."
+        },
+        {
+          "target": "ef-phpbak",
+          "key": "source_backup_exposed",
+          "location": "https://ef-phpbak.lab.test/wp-config.php.bak",
+          "why": "Files oracle (curl + libmagic, lab run 2026-11-23): /wp-config.php.bak: libmagic 'PHP script, ASCII text'."
+        },
+        {
+          "target": "ef-sourcemap",
+          "key": "source_map_exposed",
+          "location": "https://ef-sourcemap.lab.test/static/app.js.map",
+          "why": "Files oracle (curl + Python html.parser, lab run 2026-11-23): home page script /static/app.js -\u003e /static/app.js.map: HTTP 200, version 3, 2 sources, 2 embedded (sourcesContent)."
+        },
+        {
+          "target": "grafana",
+          "key": "source_map_exposed",
+          "location": "http://grafana.lab.test:3000/public/build/runtime.a83631aa5c22ce7c0887.js.map",
+          "why": "Files oracle (curl + Python html.parser, local run of the pinned image, 2026-11-23): / -\u003e same-host redirect -\u003e /login (200), whose script runtime.a83631aa5c22ce7c0887.js maps to this file: HTTP 200, version 3, 21 sources, 21 embedded (sourcesContent), served without authentication as Grafana ships. Missing from this manifest at first; CI's accuracy run 45116314006 surfaced it as a false positive."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "header_quality",
-      "targets": 87,
-      "clean_runs": 75,
+      "targets": 97,
+      "clean_runs": 85,
       "tp": 21,
       "fp": 0,
       "fn": 0,
@@ -983,8 +1093,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 87,
-      "clean_runs": 81,
+      "targets": 97,
+      "clean_runs": 91,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1066,8 +1176,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 87,
-      "clean_runs": 81,
+      "targets": 97,
+      "clean_runs": 91,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -1181,8 +1291,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 87,
-      "clean_runs": 84,
+      "targets": 97,
+      "clean_runs": 94,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -1376,8 +1486,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 87,
-      "clean_runs": 80,
+      "targets": 97,
+      "clean_runs": 90,
       "tp": 16,
       "fp": 0,
       "fn": 0,
@@ -1514,8 +1624,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 87,
-      "clean_runs": 81,
+      "targets": 97,
+      "clean_runs": 91,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1582,8 +1692,8 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 87,
-      "clean_runs": 25,
+      "targets": 97,
+      "clean_runs": 35,
       "tp": 62,
       "fp": 0,
       "fn": 0,
@@ -2006,8 +2116,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 87,
-      "clean_runs": 81,
+      "targets": 97,
+      "clean_runs": 91,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -2112,8 +2222,8 @@
     },
     {
       "check_id": "tls_depth",
-      "targets": 87,
-      "clean_runs": 82,
+      "targets": 97,
+      "clean_runs": 92,
       "tp": 5,
       "fp": 0,
       "fn": 0,

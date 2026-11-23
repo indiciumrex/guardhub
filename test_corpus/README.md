@@ -44,7 +44,13 @@ Observatory scanner and Google's CSP Evaluator, versions locked in `package-lock
 unmodified inside the lab network (the Dockerfile has the command). It prints, per origin, the
 keys the tools find; the `hq-*` expectations cite that output. The same oracle gives the
 `cookie_depth` truth: every `Set-Cookie` header goes through tough-cookie 5.1.2 (Observatory's cookie
-jar, prefix security "strict"), and the `ck-*` expectations cite what it refused or stored. Its only change to the tools'
+jar, prefix security "strict"), and the `ck-*` expectations cite what it refused or stored.
+
+**Files oracle (`oracles/files/`).** `exposed_files` truth comes from curl and libmagic (`file`): every
+path of the check's documented list is fetched, PHP source, archives and `.DS_Store` are recognised by
+libmagic's signatures, dumps need data rows (after zcat), and source maps are found with Python's HTML
+parser. `oracles/headers/run.sh` runs it next to the header oracle (third-party apps one at a time),
+and `compare.py` compares all three checks. Its only change to the tools'
 setup: an empty HSTS preload list, which the Observatory loads at start-up but its CSP
 verdicts do not read. CI's `header-truth` job runs `oracles/headers/run.sh` on every
 push: light targets together, then each third-party app alone (start, wait, measure,
@@ -70,6 +76,7 @@ check may derive a finding.
 | `hq-*` | `clean`, wrong in one browser-policy header (`nginx/hq.conf`); `hq-wasm` and `hq-private` are look-alike negatives | `header_quality` (truth: `oracles/headers`) |
 | `dd-*` | own zones under `dd.lab.test` (`dns/dd/`), signed at lab start by `labdns`; `dd-good` with one DNS or e-mail transport difference each; `dd-good`, `dd-www`, `dd-nomail` are negatives | `dns_depth` (truth: `oracles/dns`) |
 | `ck-*` | `clean`, different only in its `Set-Cookie` header (`nginx/ck.conf`); `ck-analytics` and `ck-foreign` are look-alike negatives | `cookie_depth` (truth: tough-cookie in `oracles/headers`) |
+| `ef-*` | `clean`'s headers and TLS with one forgotten file each (content from `ef-init.sh`, nginx `ef.conf`); `ef-schema`, `ef-phprun` and `ef-mapnames` are look-alike negatives | `exposed_files` (truth: `oracles/files`) |
 | `leaky` | a careless static deployment (.env, .git, .aws, autoindex) | `exposed_env`, `info_leak` |
 | `juice-shop` | OWASP Juice Shop (SPA: 200 for every path) | soft-404 trap, `info_leak`, `open_admin` |
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |
