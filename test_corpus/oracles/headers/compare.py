@@ -1,10 +1,10 @@
-"""Compare the header oracle's output with the manifests' header_quality expectations.
+"""Compare the header oracle's output with the manifests' header_quality and cookie_depth expectations.
 
     python3 compare.py OUT_DIR
 
 Reads OUT_DIR/light.json, OUT_DIR/light-relaxed.json (targets re-read with certificate checks
-relaxed) and OUT_DIR/app-*.json from run.sh. For every manifest that lists header_quality,
-the set of keys the oracle found must equal the set the manifest expects (a cookie key is
+relaxed) and OUT_DIR/app-*.json from run.sh. For every manifest and each of those checks it
+lists, the set of keys the oracle found must equal the set the manifest expects (a cookie key is
 compared with its cookie name, taken from the expectation's location). A target the oracle
 could not fetch at all is UNMEASURED and fails too: it cannot count as correct.
 
@@ -23,7 +23,9 @@ import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFESTS = os.path.join(HERE, "..", "..", "manifests")
-CHECK = "header_quality"
+# check -> the oracle output field holding its keys
+CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys"}
+COOKIE_KEYS = {"cookie_response_cacheable", "cookie_prefix_invalid", "cookie_domain_too_broad"}
 
 
 def load_truth(out: str) -> dict[str, dict]:
@@ -42,13 +44,13 @@ def load_truth(out: str) -> dict[str, dict]:
     return truth
 
 
-def expected_keys(manifest: dict) -> set[str]:
+def expected_keys(manifest: dict, check: str) -> set[str]:
     keys = set()
     for e in manifest.get("expect") or []:
-        if e.get("check") != CHECK:
+        if e.get("check") != check:
             continue
         loc = e.get("location") or ""
-        if e["key"] == "cookie_response_cacheable" and "#set-cookie=" in loc:
+        if e["key"] in COOKIE_KEYS and "#set-cookie=" in loc:
             keys.add(f"{e['key']}:{loc.split('#set-cookie=', 1)[1]}")
         else:
             keys.add(e["key"])
@@ -62,43 +64,46 @@ def main() -> int:
     for path in sorted(glob.glob(os.path.join(MANIFESTS, "*.yaml"))):
         with open(path, encoding="utf-8") as f:
             m = yaml.safe_load(f)
-        if CHECK not in (m.get("checks") or []):
-            continue
         origin = m.get("origin", "")
-        want = expected_keys(m)
         t = truth.get(origin)
-        if t is None or any(n.startswith("fetch failed") for n in t["notes"]):
-            status, got = "UNMEASURED", set()
-        else:
-            got = set(t["keys"])
-            status = "ok" if got == want else "MISMATCH"
-        rows.append(
-            {
-                "target": m["target"],
-                "origin": origin,
-                "status": status,
-                "oracle": sorted(got),
-                "manifest": sorted(want),
-                "notes": (t or {}).get("notes", ["no oracle output"]),
-            }
-        )
+        for check, field in CHECKS.items():
+            if check not in (m.get("checks") or []):
+                continue
+            want = expected_keys(m, check)
+            if t is None or any(n.startswith("fetch failed") for n in t["notes"]):
+                status, got = "UNMEASURED", set()
+            else:
+                got = set(t.get(field, []))
+                status = "ok" if got == want else "MISMATCH"
+            rows.append(
+                {
+                    "target": m["target"],
+                    "check": check,
+                    "origin": origin,
+                    "status": status,
+                    "oracle": sorted(got),
+                    "manifest": sorted(want),
+                    "notes": (t or {}).get("notes", ["no oracle output"]),
+                }
+            )
 
     bad = [r for r in rows if r["status"] != "ok"]
     lines = [
-        "# header_quality ground truth vs manifests",
+        "# header_quality and cookie_depth ground truth vs manifests",
         "",
-        f"{len(rows)} targets, {len(rows) - len(bad)} agree, {len(bad)} do not.",
+        f"{len(rows)} target/check pairs, {len(rows) - len(bad)} agree, {len(bad)} do not.",
         "",
-        "| Target | Status | Oracle keys | Manifest keys |",
-        "|---|---|---|---|",
+        "| Target | Check | Status | Oracle keys | Manifest keys |",
+        "|---|---|---|---|---|",
     ]
     for r in rows:
         lines.append(
-            f"| `{r['target']}` | {r['status']} | {', '.join(r['oracle']) or '-'} | {', '.join(r['manifest']) or '-'} |"
+            f"| `{r['target']}` | {r['check']} | {r['status']} | {', '.join(r['oracle']) or '-'} | {', '.join(r['manifest']) or '-'} |"
         )
     lines += ["", "## Oracle notes", ""]
     for r in rows:
-        lines.append(f"- `{r['target']}`: " + " · ".join(r["notes"]))
+        if r["check"] == "header_quality":  # one notes line per target
+            lines.append(f"- `{r['target']}`: " + " · ".join(r["notes"]))
     text = "\n".join(lines) + "\n"
     with open(os.path.join(out, "summary.md"), "w", encoding="utf-8") as f:
         f.write(text)

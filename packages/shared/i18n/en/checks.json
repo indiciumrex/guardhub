@@ -556,5 +556,23 @@
         "fix": "1. Generate a new 2048-bit DKIM key in your mail provider's settings (under a new selector if possible) and publish its TXT record.\n2. Switch signing to the new key.\n3. Revoke the old key now: set the \"{selector}\" record to `v=DKIM1; p=` (empty key) so nobody can use it, then remove it later. Run the scan again."
       }
     }
+  },
+  "cookie_depth": {
+    "name": "Cookie scope",
+    "description": "Looks past the Secure, HttpOnly and SameSite flags: whether cookies with the __Host- and __Secure- prefixes follow the rules browsers enforce, and whether session cookies are shared with every subdomain.",
+    "findings": {
+      "cookie_prefix_invalid": {
+        "title": "Browsers refuse your cookie \"{cookie_name}\"",
+        "summary": "The cookie \"{cookie_name}\" uses the __Host- or __Secure- prefix but breaks its rules, so browsers silently refuse to store it.",
+        "why": "The __Secure- prefix promises that a cookie always has the Secure attribute; __Host- also promises Path=/ and no Domain attribute, so the cookie is locked to exactly your host. Browsers enforce these promises by dropping any prefixed cookie that breaks them. The protection you meant to get is therefore missing, and if this is your login or session cookie, users may be logged out or unable to log in at all.",
+        "fix": "1. Find where your application sets \"{cookie_name}\" (framework session settings or a `Set-Cookie` header).\n2. For a __Host- cookie set `Secure` and `Path=/`, and remove any `Domain=` attribute. For a __Secure- cookie set `Secure`.\n3. Serve the site over HTTPS only, since Secure cookies require it.\n4. Run the scan again."
+      },
+      "cookie_domain_too_broad": {
+        "title": "Your session cookie \"{cookie_name}\" is shared with every subdomain of {domain}",
+        "summary": "The session cookie \"{cookie_name}\" is set with Domain={domain}, so browsers send it to {domain} and to every subdomain under it.",
+        "why": "Without a Domain attribute a cookie goes back only to the host that set it. With Domain={domain}, every subdomain receives your users' session cookie: a forgotten staging server, a marketing site run by a third party, a subdomain taken over through a dangling DNS record, or a page with user content. Any of them can read the cookie and impersonate your users. The attack needs control of one subdomain, so the risk is low but real.",
+        "fix": "1. Remove the `Domain=` attribute from the \"{cookie_name}\" cookie (in most frameworks, leave the session cookie domain setting empty). The cookie then stays host-only.\n2. Better still, rename it with the `__Host-` prefix (`__Host-session; Path=/; Secure; HttpOnly; SameSite=Lax`), which browsers lock to your exact host.\n3. If several subdomains really need one login, use a dedicated authentication host and short-lived tokens instead of a shared cookie.\n4. Run the scan again."
+      }
+    }
   }
 }

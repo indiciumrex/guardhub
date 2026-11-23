@@ -556,5 +556,23 @@
         "fix": "1. E-posta sağlayıcınızın ayarlarında (mümkünse yeni bir seçiciyle) 2048 bitlik yeni bir DKIM anahtarı oluşturun ve TXT kaydını yayımlayın.\n2. İmzalamayı yeni anahtara geçirin.\n3. Eski anahtarı hemen iptal edin: kimse kullanamasın diye \"{selector}\" kaydını `v=DKIM1; p=` (boş anahtar) yapın, daha sonra silin. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "cookie_depth": {
+    "name": "Çerez kapsamı",
+    "description": "Secure, HttpOnly ve SameSite işaretlerinin ötesine bakar: __Host- ve __Secure- önekli çerezlerin tarayıcıların uyguladığı kurallara uyup uymadığına ve oturum çerezlerinin tüm alt alan adlarıyla paylaşılıp paylaşılmadığına.",
+    "findings": {
+      "cookie_prefix_invalid": {
+        "title": "Tarayıcılar \"{cookie_name}\" çerezinizi reddediyor",
+        "summary": "\"{cookie_name}\" çerezi __Host- veya __Secure- önekini kullanıyor ama bu önekin kurallarına uymuyor; bu yüzden tarayıcılar onu sessizce kaydetmeyi reddediyor.",
+        "why": "__Secure- öneki, çerezin her zaman Secure özniteliği taşıdığını garanti eder; __Host- ayrıca Path=/ ve Domain özniteliği olmamasını garanti eder, böylece çerez tam olarak sizin sunucunuza kilitlenir. Tarayıcılar bu kuralları, onlara uymayan önekli her çerezi atarak uygular. Bu yüzden amaçladığınız koruma yoktur; bu çerez oturum ya da giriş çereziniz ise kullanıcılarınız oturumdan düşebilir ya da hiç giriş yapamayabilir.",
+        "fix": "1. Uygulamanızın \"{cookie_name}\" çerezini nerede ayarladığını bulun (çatının oturum ayarları ya da bir `Set-Cookie` başlığı).\n2. __Host- çerezinde `Secure` ve `Path=/` ayarlayın ve `Domain=` özniteliğini kaldırın. __Secure- çerezinde `Secure` ayarlayın.\n3. Secure çerezler HTTPS gerektirdiği için siteyi yalnızca HTTPS üzerinden sunun.\n4. Taramayı tekrar çalıştırın."
+      },
+      "cookie_domain_too_broad": {
+        "title": "\"{cookie_name}\" oturum çereziniz {domain} altındaki her alt alan adıyla paylaşılıyor",
+        "summary": "\"{cookie_name}\" oturum çerezi Domain={domain} ile ayarlanmış; bu yüzden tarayıcılar onu {domain} adresine ve altındaki her alt alan adına gönderiyor.",
+        "why": "Domain özniteliği olmayan bir çerez yalnızca onu ayarlayan sunucuya geri gönderilir. Domain={domain} ile ise her alt alan adı kullanıcılarınızın oturum çerezini alır: unutulmuş bir test sunucusu, üçüncü bir tarafın işlettiği bir pazarlama sitesi, sarkan bir DNS kaydı üzerinden ele geçirilmiş bir alt alan adı ya da kullanıcı içeriği barındıran bir sayfa. Bunlardan herhangi biri çerezi okuyup kullanıcılarınızın kimliğine bürünebilir. Saldırı bir alt alan adının ele geçirilmesini gerektirir; risk düşük ama gerçektir.",
+        "fix": "1. \"{cookie_name}\" çerezinden `Domain=` özniteliğini kaldırın (çoğu çatıda oturum çerezinin domain ayarını boş bırakın). Çerez böylece yalnızca bu sunucuya ait olur.\n2. Daha iyisi, tarayıcıların tam olarak sizin sunucunuza kilitlediği `__Host-` önekiyle yeniden adlandırın (`__Host-session; Path=/; Secure; HttpOnly; SameSite=Lax`).\n3. Birkaç alt alan adının gerçekten tek bir girişe ihtiyacı varsa, paylaşılan bir çerez yerine ayrı bir kimlik doğrulama sunucusu ve kısa ömürlü belirteçler kullanın.\n4. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

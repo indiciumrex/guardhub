@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "c3afef35c824",
+  "source": "f7de8791e3b0",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -8,6 +8,13 @@
     "min_clean_runs": 1
   },
   "targets": [
+    "ck-analytics",
+    "ck-domain",
+    "ck-domainself",
+    "ck-foreign",
+    "ck-hostdomain",
+    "ck-hostpath",
+    "ck-secure",
     "clean",
     "dd-broken",
     "dd-dkim1024",
@@ -102,9 +109,71 @@
   ],
   "checks": [
     {
+      "check_id": "cookie_depth",
+      "targets": 87,
+      "clean_runs": 82,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "cookie_domain_too_broad": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "cookie_prefix_invalid": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "ck-domain",
+          "key": "cookie_domain_too_broad",
+          "location": "https://ck-domain.lab.test/#set-cookie=sid",
+          "why": "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): stored sid with domain=lab.test hostOnly=false (sent to every lab.test subdomain)."
+        },
+        {
+          "target": "ck-domainself",
+          "key": "cookie_domain_too_broad",
+          "location": "https://ck-domainself.lab.test/#set-cookie=connect.sid",
+          "why": "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): stored connect.sid with domain=ck-domainself.lab.test hostOnly=false (sent to its subdomains too)."
+        },
+        {
+          "target": "ck-hostdomain",
+          "key": "cookie_prefix_invalid",
+          "location": "https://ck-hostdomain.lab.test/#set-cookie=__Host-sid",
+          "why": "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): refused __Host-sid: Cookie has __Host prefix but either Secure or HostOnly attribute is not set or Path is not '/' (Domain attribute set)."
+        },
+        {
+          "target": "ck-hostpath",
+          "key": "cookie_prefix_invalid",
+          "location": "https://ck-hostpath.lab.test/#set-cookie=__Host-sid",
+          "why": "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): refused __Host-sid: Cookie has __Host prefix but either Secure or HostOnly attribute is not set or Path is not '/' (Path=/app)."
+        },
+        {
+          "target": "ck-secure",
+          "key": "cookie_prefix_invalid",
+          "location": "https://ck-secure.lab.test/#set-cookie=__Secure-sid",
+          "why": "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): refused __Secure-sid: Cookie has __Secure prefix but Secure attribute is not set."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "default_creds",
-      "targets": 80,
-      "clean_runs": 76,
+      "targets": 87,
+      "clean_runs": 83,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -378,8 +447,8 @@
     },
     {
       "check_id": "dns_depth",
-      "targets": 80,
-      "clean_runs": 60,
+      "targets": 87,
+      "clean_runs": 67,
       "tp": 20,
       "fp": 0,
       "fn": 0,
@@ -570,8 +639,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 80,
-      "clean_runs": 71,
+      "targets": 87,
+      "clean_runs": 78,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -681,8 +750,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 80,
-      "clean_runs": 79,
+      "targets": 87,
+      "clean_runs": 86,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -736,8 +805,8 @@
     },
     {
       "check_id": "header_quality",
-      "targets": 80,
-      "clean_runs": 68,
+      "targets": 87,
+      "clean_runs": 75,
       "tp": 21,
       "fp": 0,
       "fn": 0,
@@ -914,8 +983,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 80,
-      "clean_runs": 74,
+      "targets": 87,
+      "clean_runs": 81,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -997,8 +1066,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 80,
-      "clean_runs": 74,
+      "targets": 87,
+      "clean_runs": 81,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -1112,8 +1181,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 80,
-      "clean_runs": 77,
+      "targets": 87,
+      "clean_runs": 84,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -1307,9 +1376,9 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 80,
-      "clean_runs": 74,
-      "tp": 15,
+      "targets": 87,
+      "clean_runs": 80,
+      "tp": 16,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -1327,7 +1396,7 @@
           "fn": 0
         },
         "cookie_flags_missing": {
-          "tp": 1,
+          "tp": 2,
           "fp": 0,
           "fn": 0
         },
@@ -1343,6 +1412,12 @@
         }
       },
       "true_positives": [
+        {
+          "target": "ck-secure",
+          "key": "cookie_flags_missing",
+          "location": "https://ck-secure.lab.test/#set-cookie=__Secure-sid",
+          "why": "The Set-Cookie header (nginx/ck.conf) has no Secure attribute on an https response."
+        },
         {
           "target": "drupal",
           "key": "clickjacking_unprotected",
@@ -1439,8 +1514,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 80,
-      "clean_runs": 74,
+      "targets": 87,
+      "clean_runs": 81,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1507,8 +1582,8 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 80,
-      "clean_runs": 18,
+      "targets": 87,
+      "clean_runs": 25,
       "tp": 62,
       "fp": 0,
       "fn": 0,
@@ -1931,8 +2006,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 80,
-      "clean_runs": 74,
+      "targets": 87,
+      "clean_runs": 81,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -2037,8 +2112,8 @@
     },
     {
       "check_id": "tls_depth",
-      "targets": 80,
-      "clean_runs": 75,
+      "targets": 87,
+      "clean_runs": 82,
       "tp": 5,
       "fp": 0,
       "fn": 0,

@@ -57,6 +57,7 @@ const (
 	CheckTlsDepth          = "tls_depth"
 	CheckHeaderQuality     = "header_quality"
 	CheckDnsDepth          = "dns_depth"
+	CheckCookieDepth       = "cookie_depth"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -158,6 +159,10 @@ var FindingKeys = map[string]map[string]Severity{
 		"dane_unsigned":         SeverityInfo,
 		"dkim_weak_key":         SeverityLow,
 		"dkim_key_too_short":    SeverityMedium,
+	},
+	"cookie_depth": {
+		"cookie_prefix_invalid":   SeverityLow,
+		"cookie_domain_too_broad": SeverityLow,
 	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,

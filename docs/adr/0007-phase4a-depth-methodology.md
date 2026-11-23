@@ -45,7 +45,7 @@ check already reports; each check's doc lists the overlap it avoids (for example
 | DNS & e-mail depth | `dns_depth` | BIND dig and delv, OpenSSL and curl, run unmodified in the lab (`test_corpus/oracles/dns`) |
 | Technology + known CVEs | fingerprint module (CVE only when the version is certain) | curated version fixtures, plus OSV and retire.js |
 | Misconfiguration | exposed-files module (`.DS_Store`, backups, source maps, default pages) | curated fixtures, plus the request log |
-| Cookies | cookie module (SameSite, scope, prefixes) | Observatory cookie rules re-implemented independently |
+| Cookies | `cookie_depth` (prefixes, Domain scope; the flags stay in `security_headers`) | tough-cookie 5.1.2 (the cookie jar of Mozilla's HTTP Observatory), run unmodified in the lab (`test_corpus/oracles/headers`) |
 | Content signals | content module (mixed content, SRI, keys in JS bundles) | curated fixtures, plus gitleaks rules |
 
 Module names are fixed in each check's doc when the check lands.

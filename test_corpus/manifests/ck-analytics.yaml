@@ -1,0 +1,6 @@
+target: ck-analytics
+origin: https://ck-analytics.lab.test
+description: >
+  clean.lab.test with Set-Cookie: _ga=GA1.1.lab; Path=/; Domain=lab.test; Secure; HttpOnly; SameSite=Lax (analytics cookie with Domain=lab.test: not a session (negative)).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+expect: []
