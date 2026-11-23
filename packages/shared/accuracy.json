@@ -8,6 +8,17 @@
     "min_clean_runs": 1
   },
   "checks": {
+    "cookie_depth": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "targets": 87
+    },
     "default_creds": {
       "meets_gate": true,
       "precision": 1,
@@ -17,7 +28,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 80
+      "targets": 87
     },
     "dependency_vulns": {
       "meets_gate": true,
@@ -39,7 +50,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "dns_email": {
       "meets_gate": true,
@@ -50,7 +61,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "exposed_env": {
       "meets_gate": true,
@@ -61,7 +72,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "header_quality": {
       "meets_gate": true,
@@ -72,7 +83,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "http_hardening": {
       "meets_gate": true,
@@ -83,7 +94,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "info_leak": {
       "meets_gate": true,
@@ -94,7 +105,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 80
+      "targets": 87
     },
     "open_admin": {
       "meets_gate": true,
@@ -105,7 +116,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "repo_secrets": {
       "meets_gate": true,
@@ -123,11 +134,11 @@
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "tp": 15,
+      "tp": 16,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "subdomain_takeover": {
       "meets_gate": true,
@@ -138,7 +149,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "tls_cert": {
       "meets_gate": true,
@@ -149,7 +160,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "tls_config": {
       "meets_gate": true,
@@ -160,7 +171,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     },
     "tls_depth": {
       "meets_gate": true,
@@ -171,7 +182,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 80
+      "targets": 87
     }
   }
 }

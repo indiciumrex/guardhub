@@ -1,6 +1,6 @@
 # `repo_secrets` accuracy
 
-Lab source revision `c3afef35c824`. Verdict: **meets the gate**.
+Lab source revision `f7de8791e3b0`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|

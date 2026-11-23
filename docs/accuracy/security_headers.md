@@ -1,17 +1,17 @@
 # `security_headers` accuracy
 
-Lab source revision `c3afef35c824`. Verdict: **meets the gate**.
+Lab source revision `f7de8791e3b0`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 15 | 0 | 0 | 0 | 0 | 80 | 74 | 0 |
+| 100.0% | 100.0% | 100.0% | 16 | 0 | 0 | 0 | 0 | 87 | 80 | 0 |
 
 ## By finding
 
 | Finding key | TP | FP | FN |
 |---|---|---|---|
 | `clickjacking_unprotected` | 4 | 0 | 0 |
-| `cookie_flags_missing` | 1 | 0 | 0 |
+| `cookie_flags_missing` | 2 | 0 | 0 |
 | `csp_missing` | 6 | 0 | 0 |
 | `nosniff_missing` | 4 | 0 | 0 |
 
@@ -23,8 +23,9 @@ None.
 
 None.
 
-## True positives (15)
+## True positives (16)
 
+- `ck-secure` / `cookie_flags_missing` at `https://ck-secure.lab.test/#set-cookie=__Secure-sid`: The Set-Cookie header (nginx/ck.conf) has no Secure attribute on an https response.
 - `drupal` / `clickjacking_unprotected` at `http://drupal.lab.test/core/install.php`: The installer page sends neither X-Frame-Options nor frame-ancestors.
 - `drupal` / `csp_missing` at `http://drupal.lab.test/core/install.php`: The installer page sends no Content-Security-Policy.
 - `drupal` / `nosniff_missing` at `http://drupal.lab.test/core/install.php`: The installer page sends no X-Content-Type-Options.
