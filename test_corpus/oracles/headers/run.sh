@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ground truth for header_quality, cookie_depth, exposed_files (oracles/files) and js_libraries (oracles/js) on every lab site target, from Mozilla's HTTP
+# Ground truth for header_quality, cookie_depth, exposed_files (oracles/files) js_libraries (oracles/js) and content_signals (oracles/content + Observatory) on every lab site target, from Mozilla's HTTP
 # Observatory and Google's CSP Evaluator (oracle_headers.mjs), then a comparison
 # with the manifests (compare.py). Used by CI's header-truth job.
 #
@@ -39,6 +39,7 @@ done
 docker build -q -t gh-oracle-headers "$HERE" >/dev/null
 docker build -q -t gh-oracle-files "$HERE/../files" >/dev/null
 docker build -q -t gh-oracle-js "$HERE/../js" >/dev/null
+docker build -q -t gh-oracle-content "$HERE/../content" >/dev/null
 files_oracle() { # files_oracle OUTFILE origins...   (exposed_files truth, curl + libmagic)
   local out=$1; shift
   docker run --rm --network "$NET" gh-oracle-files "$@" > "$out"
@@ -47,6 +48,10 @@ js_oracle() { # js_oracle OUTFILE origins...   (js_libraries truth, retire.js)
   local out=$1; shift
   # content, not TLS, is judged here: certificate checks relaxed, as the files oracle (curl -k)
   docker run --rm --network "$NET" "${RELAX[@]}" gh-oracle-js "$@" > "$out"
+}
+content_oracle() { # content_oracle OUTFILE origins...   (content_signals mixed content, Chromium)
+  local out=$1; shift
+  docker run --rm --network "$NET" --ipc=host gh-oracle-content "$@" > "$out"
 }
 RELAX=(-e NODE_TLS_REJECT_UNAUTHORIZED=0 -e "NODE_OPTIONS=--tls-min-v1.0 --tls-cipher-list=DEFAULT@SECLEVEL=0")
 oracle() { # oracle OUTFILE [docker -e ...] -- origins...
@@ -71,6 +76,7 @@ wait_ready --soft "${light[@]}"
 oracle "$OUT/light.json" -- "${light[@]}"
 files_oracle "$OUT/files-light.json" "${light[@]}"
 js_oracle "$OUT/js-light.json" "${light[@]}"
+content_oracle "$OUT/content-light.json" "${light[@]}"
 # targets whose TLS Node refuses (expired, self-signed, SHA-1, legacy ciphers...): read
 # again with certificate checks relaxed, marked as such in the notes
 mapfile -t refused < <(python3 -c 'import json,sys
@@ -92,6 +98,7 @@ for app in "${HEAVY_ORDER[@]}"; do
   oracle "$OUT/app-$app.json" -- "$o"
   files_oracle "$OUT/files-app-$app.json" "$o"
   js_oracle "$OUT/js-app-$app.json" "$o"
+  content_oracle "$OUT/content-app-$app.json" "$o"
   "${LAB[@]}" rm -s -f -v "${svcs[@]}" >/dev/null
   echo "removed: ${svcs[*]}"
 done

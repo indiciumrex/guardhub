@@ -2,7 +2,7 @@ target: dns-pnone
 origin: http://pnone.dns.lab.test
 description: >
   MX + SPF + DMARC p=none (monitoring only) (test_corpus/dns/; verified with dig against dns-res, ns and ns-open).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_email, key: dmarc_not_enforced, why: "dig: _dmarc.pnone.dns.lab.test is 'v=DMARC1; p=none; ...'."}

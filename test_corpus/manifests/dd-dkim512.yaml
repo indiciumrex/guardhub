@@ -2,7 +2,7 @@ target: dd-dkim512
 origin: http://dkim512.dd.lab.test
 description: >
   as dd-good, plus a 512-bit RSA key under selector1 (test_corpus/dns/dd/).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_depth, key: dkim_key_too_short, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): DKIM default._domainkey.dkim512.dd.lab.test: RSA 2048 bits (OpenSSL); DKIM selector1._domainkey.dkim512.dd.lab.test: RSA 512 bits (OpenSSL)"}

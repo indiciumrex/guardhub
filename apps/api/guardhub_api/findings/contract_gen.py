@@ -147,6 +147,11 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
     'js_libraries': {
         'vulnerable_js_library': 'medium',
     },
+    'content_signals': {
+        'mixed_content_active': 'medium',
+        'mixed_content_passive': 'low',
+        'sri_missing': 'info',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

@@ -154,7 +154,7 @@ jobs:
           retention-days: 30
 
   header-truth:
-    name: header-truth (independent oracles vs header_quality, cookie_depth, exposed_files, js_libraries manifests)
+    name: header-truth (independent oracles vs header_quality, cookie_depth, exposed_files, js_libraries, content_signals manifests)
     runs-on: ubuntu-latest
     needs: [scanner]
     timeout-minutes: 45

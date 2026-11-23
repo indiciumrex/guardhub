@@ -1,0 +1,7 @@
+target: cs-sri
+origin: https://cs-sri.lab.test
+description: >
+  clean.lab.test's headers and TLS; a script from another site over https without an integrity attribute (positive: sri_missing) (test_corpus/cs/sri).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+expect:
+  - {check: content_signals, key: sri_missing, location: "https://cs-sri.lab.test/", why: "Mozilla HTTP Observatory 1.4.8 subresource-integrity test (local lab run 2026-11-23): sri-not-implemented-but-external-scripts-loaded-securely; https://cdn.example.test/lib.js without integrity."}

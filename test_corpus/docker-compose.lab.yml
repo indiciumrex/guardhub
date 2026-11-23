@@ -58,6 +58,12 @@ services:
       - hq-noperm.lab.test:valid
       - hq-cache.lab.test:valid
       - hq-private.lab.test:valid
+      - cs-script.lab.test:valid
+      - cs-style.lab.test:valid
+      - cs-img.lab.test:valid
+      - cs-sri.lab.test:valid
+      - cs-sriok.lab.test:valid
+      - cs-markup.lab.test:valid
       - js-jquery.lab.test:valid
       - js-bootstrap.lab.test:valid
       - js-moment.lab.test:valid
@@ -191,6 +197,11 @@ services:
     image: guardhub-lab-js:local
     volumes: [./nginx/js.conf:/etc/nginx/conf.d/default.conf:ro, pki:/pki:ro]
     networks: { lab: { aliases: [js-jquery.lab.test, js-bootstrap.lab.test, js-moment.lab.test, js-cdn.lab.test, js-current.lab.test, js-renamed.lab.test, js-mention.lab.test] } }
+  # ---- content_signals: clean's headers, one page each (test_corpus/cs/) ----
+  cs:
+    <<: *nginx
+    volumes: [./nginx/cs.conf:/etc/nginx/conf.d/default.conf:ro, ./cs:/srv/cs:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [cs-script.lab.test, cs-style.lab.test, cs-img.lab.test, cs-sri.lab.test, cs-sriok.lab.test, cs-markup.lab.test] } }
   # ---- cookie_depth: clean, different only in the Set-Cookie header (nginx/ck.conf) ----
   ck:
     <<: *nginx
@@ -350,6 +361,7 @@ services:
         ck-hostpath.lab.test,ck-hostdomain.lab.test,ck-secure.lab.test,ck-domain.lab.test,ck-domainself.lab.test,ck-analytics.lab.test,ck-foreign.lab.test,
         ef-dump.lab.test,ef-dumpgz.lab.test,ef-phpbak.lab.test,ef-archive.lab.test,ef-dsstore.lab.test,ef-sourcemap.lab.test,ef-default.lab.test,ef-schema.lab.test,ef-phprun.lab.test,ef-mapnames.lab.test,
         js-jquery.lab.test,js-bootstrap.lab.test,js-moment.lab.test,js-cdn.lab.test,js-current.lab.test,js-renamed.lab.test,js-mention.lab.test,
+        cs-script.lab.test,cs-style.lab.test,cs-img.lab.test,cs-sri.lab.test,cs-sriok.lab.test,cs-markup.lab.test,
         github.lab.test,osv.lab.test
       SCANNER_DNS_SERVER: dns-res.lab.test:53
       SCANNER_CT_URL: http://ct.lab.test/

@@ -178,6 +178,15 @@
       ]
     },
     {
+      "id": "content_signals",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "mixed_content_active", "severity": "medium", "params": ["count", "example"] },
+        { "key": "mixed_content_passive", "severity": "low", "params": ["count", "example"] },
+        { "key": "sri_missing", "severity": "info", "params": ["count", "example"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

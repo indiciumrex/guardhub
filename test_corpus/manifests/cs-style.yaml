@@ -1,0 +1,7 @@
+target: cs-style
+origin: https://cs-style.lab.test
+description: >
+  clean.lab.test's headers and TLS; an HTTPS page loading a stylesheet over http:// (positive: mixed_content_active) (test_corpus/cs/style).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+expect:
+  - {check: content_signals, key: mixed_content_active, location: "https://cs-style.lab.test/", why: "Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): MixedContentBlocked, Stylesheet http://cs-assets.lab.test/site.css."}
