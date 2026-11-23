@@ -2,6 +2,6 @@ target: ck-hostdomain
 origin: https://ck-hostdomain.lab.test
 description: >
   clean.lab.test with Set-Cookie: __Host-sid=lab; Path=/; Domain=ck-hostdomain.lab.test; Secure; HttpOnly; SameSite=Lax (__Host- cookie with a Domain attribute (positive: cookie_prefix_invalid, domain_set)).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: cookie_depth, key: cookie_prefix_invalid, location: "https://ck-hostdomain.lab.test/#set-cookie=__Host-sid", why: "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): refused __Host-sid: Cookie has __Host prefix but either Secure or HostOnly attribute is not set or Path is not '/' (Domain attribute set)."}

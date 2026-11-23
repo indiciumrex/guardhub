@@ -1,0 +1,7 @@
+target: ks-testkey
+origin: https://ks-testkey.lab.test
+description: >
+  clean.lab.test's headers and TLS; a Stripe test-mode secret key in a same-origin script (positive: test_secret_in_javascript) (test_corpus/ks/testkey).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
+expect:
+  - {check: js_secrets, key: test_secret_in_javascript, location: "https://ks-testkey.lab.test/static/pay.js#stripe_test_secret", why: "gitleaks v8.21.2 default rules (local lab run 2026-11-23): stripe-access-token, sk_test_ prefix, in /static/pay.js line 1."}

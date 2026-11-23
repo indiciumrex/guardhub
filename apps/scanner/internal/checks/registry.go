@@ -86,6 +86,7 @@ func DefaultWith(o Options) *Registry {
 		ExposedFiles{},
 		JSLibraries{OSV: deps.NewOSV(o.OSVURL, transport, 20*time.Second, siteMaxVulns)},
 		ContentSignals{},
+		JSSecrets{},
 	)
 }
 

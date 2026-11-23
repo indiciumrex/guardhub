@@ -2,7 +2,7 @@ target: st-s3
 origin: http://s3pos.st.lab.test
 description: >
   CT lists assets.s3pos, a CNAME to an S3 bucket that no longer exists (test_corpus/dns/st.lab.test.db, ct/, nginx/providers.conf; verified with dig against dns-res and curl inside the lab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: subdomain_takeover, key: unclaimed_resource, location: "http://assets.s3pos.st.lab.test/", why: "dig CNAME assets.s3pos.st.lab.test -> assets.s3pos.st.lab.test.s3.amazonaws.com; curl http://assets.s3pos.st.lab.test/ -> 404 NoSuchBucket \"The specified bucket does not exist\"."}

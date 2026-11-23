@@ -652,5 +652,23 @@
         "fix": "1. For fixed-version files (libraries from a CDN), add the integrity and crossorigin attributes; CDNs such as cdnjs and jsDelivr show the exact tag to copy.\n2. Alternatively, serve the file from your own site.\n3. For scripts that change on their own (analytics, chat, tag managers), choose providers you trust and limit them with a Content-Security-Policy.\n4. Run the scan again."
       }
     }
+  },
+  "js_secrets": {
+    "name": "Secrets in website code",
+    "description": "Looks for credentials that your website sends to every visitor's browser: in the home page's HTML and in its own JavaScript files. Only credential formats that are never meant for browsers are reported (for example GitHub tokens, Stripe secret keys, private keys); public browser keys are not.",
+    "findings": {
+      "secret_in_javascript": {
+        "title": "A {secret_type} is visible in your website's code",
+        "summary": "{script} contains a {secret_type} ({count} value(s)). Every visitor's browser downloads it.",
+        "why": "Anything in a page or script is public: anyone can open the browser's developer tools or download the file. This credential belongs on a server, never in browser code. With it, an outsider can use the account behind it directly: read or change code and data, make payments, or send messages in your name. Bots collect such keys from websites automatically.",
+        "fix": "1. Revoke or rotate the credential now at its provider (GitHub, Stripe, Slack and others all offer this); deleting it from the file is not enough, because copies already exist.\n2. Move the call that needs it to your server (a small backend endpoint or serverless function), and give the browser only what it needs.\n3. Check your build: front-end tools put every environment variable with a public prefix (for example NEXT_PUBLIC_, VITE_, REACT_APP_) into the bundle.\n4. Review the provider's logs for use you do not recognise, then run the scan again."
+      },
+      "test_secret_in_javascript": {
+        "title": "A {secret_type} is visible in your website's code",
+        "summary": "{script} contains a {secret_type} ({count} value(s)). Test-mode keys cannot move real money, but they belong on a server too.",
+        "why": "Test-mode keys only work against the provider's test environment, so the direct risk is low. They still let anyone read and change your test data and settings, and a test key in browser code usually means the live key is handled the same way.",
+        "fix": "1. Rotate the test key at the provider.\n2. Move the calls that use it to your server; browsers should get only publishable keys (for Stripe: pk_test_ / pk_live_).\n3. Check how the live key is deployed, then run the scan again."
+      }
+    }
   }
 }

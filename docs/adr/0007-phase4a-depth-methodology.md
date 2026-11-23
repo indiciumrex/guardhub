@@ -46,7 +46,7 @@ check already reports; each check's doc lists the overlap it avoids (for example
 | Technology + known CVEs | `js_libraries` (JavaScript libraries at a certain version: their own banner, or a versioned CDN path; advisories from OSV) | retire.js 6.1.1 with its repository pinned to a commit, run unmodified in the lab (`test_corpus/oracles/js`); real npm files (`test_corpus/jslab`); advisories cross-checked with the recorded OSV answers |
 | Misconfiguration | `exposed_files` (database dumps, source backups, archives, `.DS_Store`, source maps, default pages) | curl and libmagic (`file`), run unmodified in the lab (`test_corpus/oracles/files`); fixtures generated at lab start (`ef-init.sh`) |
 | Cookies | `cookie_depth` (prefixes, Domain scope; the flags stay in `security_headers`) | tough-cookie 5.1.2 (the cookie jar of Mozilla's HTTP Observatory), run unmodified in the lab (`test_corpus/oracles/headers`) |
-| Content signals | `content_signals` (mixed content, Subresource Integrity); keys in JS bundles follow as their own module | Chromium's own mixed-content decisions (DevTools Audits, Playwright 1.65.1 image pinned by digest, `test_corpus/oracles/content`) and Mozilla HTTP Observatory 1.4.8's subresource-integrity test |
+| Content signals | `content_signals` (mixed content, Subresource Integrity); keys in JS bundles as `js_secrets` (repo_secrets' provider rules on the home page and its same-origin scripts) | Chromium's own mixed-content decisions (DevTools Audits, Playwright 1.65.1 image pinned by digest, `test_corpus/oracles/content`) and Mozilla HTTP Observatory 1.4.8's subresource-integrity test; gitleaks v8.21.2 for `js_secrets` (`test_corpus/oracles/secrets`) |
 
 Module names are fixed in each check's doc when the check lands.
 

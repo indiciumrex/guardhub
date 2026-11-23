@@ -2,6 +2,6 @@ target: cs-markup
 origin: https://cs-markup.lab.test
 description: >
   clean.lab.test's headers and TLS; http:// URLs only in a comment, <noscript>, <template>, a link and script text (negative) (test_corpus/cs/markup).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 # Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): no mixed-content issue; Observatory: sri-not-implemented-but-all-scripts-loaded-from-secure-origin.
 expect: []

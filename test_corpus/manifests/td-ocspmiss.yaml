@@ -3,7 +3,7 @@ origin: https://td-ocspmiss.lab.test
 description: >
   Hardened like clean.lab.test (nginx/td.conf) and different in exactly one property:
   labpki 'ocspmiss': names an OCSP responder (http://ocsp.lab.test/), nothing stapled.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - check: tls_depth
     key: ocsp_stapling_missing

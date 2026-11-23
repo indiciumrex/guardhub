@@ -652,5 +652,23 @@
         "fix": "1. Sabit sürümlü dosyalara (bir CDN'deki kütüphaneler) integrity ve crossorigin özniteliklerini ekleyin; cdnjs ve jsDelivr gibi CDN'ler kopyalanacak etiketi tam olarak gösterir.\n2. Alternatif olarak dosyayı kendi sitenizden sunun.\n3. Kendi kendine değişen betikler (analiz, sohbet, etiket yöneticileri) için güvendiğiniz sağlayıcıları seçin ve onları bir Content-Security-Policy ile sınırlayın.\n4. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "js_secrets": {
+    "name": "Web sitesi kodundaki gizli anahtarlar",
+    "description": "Web sitenizin her ziyaretçinin tarayıcısına gönderdiği kimlik bilgilerini arar: ana sayfanın HTML'inde ve sitenin kendi JavaScript dosyalarında. Yalnızca hiçbir zaman tarayıcı için tasarlanmamış kimlik bilgisi biçimleri bildirilir (örneğin GitHub token'ları, Stripe gizli anahtarları, özel anahtarlar); herkese açık tarayıcı anahtarları bildirilmez.",
+    "findings": {
+      "secret_in_javascript": {
+        "title": "Web sitenizin kodunda bir {secret_type} görünüyor",
+        "summary": "{script} bir {secret_type} içeriyor ({count} değer). Her ziyaretçinin tarayıcısı onu indirir.",
+        "why": "Bir sayfadaki ya da betikteki her şey herkese açıktır: herkes tarayıcının geliştirici araçlarını açabilir ya da dosyayı indirebilir. Bu kimlik bilgisi bir sunucuda durmalıdır, asla tarayıcı kodunda değil. Onunla dışarıdan biri arkasındaki hesabı doğrudan kullanabilir: kodu ve verileri okuyabilir ya da değiştirebilir, ödeme yapabilir veya sizin adınıza mesaj gönderebilir. Botlar bu tür anahtarları web sitelerinden otomatik olarak toplar.",
+        "fix": "1. Kimlik bilgisini sağlayıcısında hemen iptal edin ya da yenileyin (GitHub, Stripe, Slack ve diğerleri bunu sunar); dosyadan silmek yetmez, çünkü kopyaları zaten var.\n2. Ona ihtiyaç duyan çağrıyı sunucunuza taşıyın (küçük bir arka uç uç noktası ya da sunucusuz fonksiyon) ve tarayıcıya yalnızca ihtiyacı olanı verin.\n3. Derlemenizi kontrol edin: ön yüz araçları herkese açık önekli her ortam değişkenini (örneğin NEXT_PUBLIC_, VITE_, REACT_APP_) pakete koyar.\n4. Sağlayıcının kayıtlarında tanımadığınız kullanımlara bakın, sonra taramayı tekrar çalıştırın."
+      },
+      "test_secret_in_javascript": {
+        "title": "Web sitenizin kodunda bir {secret_type} görünüyor",
+        "summary": "{script} bir {secret_type} içeriyor ({count} değer). Test modu anahtarları gerçek para hareket ettiremez ama onlar da sunucuda durmalıdır.",
+        "why": "Test modu anahtarları yalnızca sağlayıcının test ortamında çalışır; bu yüzden doğrudan risk düşüktür. Yine de herkesin test verilerinizi ve ayarlarınızı okumasına ve değiştirmesine izin verirler; tarayıcı kodundaki bir test anahtarı genellikle canlı anahtarın da aynı şekilde ele alındığı anlamına gelir.",
+        "fix": "1. Test anahtarını sağlayıcıda yenileyin.\n2. Onu kullanan çağrıları sunucunuza taşıyın; tarayıcılar yalnızca yayımlanabilir anahtarları almalıdır (Stripe için: pk_test_ / pk_live_).\n3. Canlı anahtarın nasıl dağıtıldığını kontrol edin, sonra taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ target: tls-3des
 origin: https://tls-3des.lab.test
 description: >
   Go crypto/tls (labtls), RSA certificate, TLS 1.2 only, suites ECDHE-RSA-AES128-GCM + ECDHE-RSA-3DES.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: tls_config, key: weak_cipher_3des, why: "labtls verify (full crypto/tls handshake): accepted TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA."}
   - {check: tls_config, key: tls13_unsupported, why: "Served with MaxVersion TLS 1.2."}
