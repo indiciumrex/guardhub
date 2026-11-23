@@ -1,0 +1,7 @@
+target: ck-domainself
+origin: https://ck-domainself.lab.test
+description: >
+  clean.lab.test with Set-Cookie: connect.sid=lab; Path=/; Domain=ck-domainself.lab.test; Secure; HttpOnly; SameSite=Lax (session cookie with Domain = the host itself, so also every subdomain (positive: cookie_domain_too_broad)).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+expect:
+  - {check: cookie_depth, key: cookie_domain_too_broad, location: "https://ck-domainself.lab.test/#set-cookie=connect.sid", why: "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): stored connect.sid with domain=ck-domainself.lab.test hostOnly=false (sent to its subdomains too)."}

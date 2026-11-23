@@ -42,7 +42,9 @@ the gate uses. Every use names the declared scope.
 **Header oracle (`oracles/headers/`).** `header_quality` truth comes from Mozilla's HTTP
 Observatory scanner and Google's CSP Evaluator, versions locked in `package-lock.json`, run
 unmodified inside the lab network (the Dockerfile has the command). It prints, per origin, the
-keys the tools find; the `hq-*` expectations cite that output. Its only change to the tools'
+keys the tools find; the `hq-*` expectations cite that output. The same oracle gives the
+`cookie_depth` truth: every `Set-Cookie` header goes through tough-cookie 5.1.2 (Observatory's cookie
+jar, prefix security "strict"), and the `ck-*` expectations cite what it refused or stored. Its only change to the tools'
 setup: an empty HSTS preload list, which the Observatory loads at start-up but its CSP
 verdicts do not read. CI's `header-truth` job runs `oracles/headers/run.sh` on every
 push: light targets together, then each third-party app alone (start, wait, measure,
@@ -67,6 +69,7 @@ check may derive a finding.
 | `td-*` | `clean`, wrong in one certificate property (no SCT, SHA-1, 825-day lifetime, OCSP stapled / not stapled, HSTS preload ineligible) | `tls_depth` (truth: testssl.sh 3.2) |
 | `hq-*` | `clean`, wrong in one browser-policy header (`nginx/hq.conf`); `hq-wasm` and `hq-private` are look-alike negatives | `header_quality` (truth: `oracles/headers`) |
 | `dd-*` | own zones under `dd.lab.test` (`dns/dd/`), signed at lab start by `labdns`; `dd-good` with one DNS or e-mail transport difference each; `dd-good`, `dd-www`, `dd-nomail` are negatives | `dns_depth` (truth: `oracles/dns`) |
+| `ck-*` | `clean`, different only in its `Set-Cookie` header (`nginx/ck.conf`); `ck-analytics` and `ck-foreign` are look-alike negatives | `cookie_depth` (truth: tough-cookie in `oracles/headers`) |
 | `leaky` | a careless static deployment (.env, .git, .aws, autoindex) | `exposed_env`, `info_leak` |
 | `juice-shop` | OWASP Juice Shop (SPA: 200 for every path) | soft-404 trap, `info_leak`, `open_admin` |
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |

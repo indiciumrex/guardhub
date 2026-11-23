@@ -2,4 +2,4 @@ target: hq-wasm
 origin: https://hq-wasm.lab.test
 description: >
   Hardened like clean.lab.test (nginx/hq.conf); CSP allows only 'wasm-unsafe-eval' (negative look-alike).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]

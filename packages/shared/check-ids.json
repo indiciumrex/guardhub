@@ -151,6 +151,14 @@
       ]
     },
     {
+      "id": "cookie_depth",
+      "category": "hardening",
+      "finding_keys": [
+        { "key": "cookie_prefix_invalid", "severity": "low", "params": ["cookie_name", "reason"] },
+        { "key": "cookie_domain_too_broad", "severity": "low", "params": ["cookie_name", "domain"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

@@ -132,6 +132,10 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'dkim_weak_key': 'low',
         'dkim_key_too_short': 'medium',
     },
+    'cookie_depth': {
+        'cookie_prefix_invalid': 'low',
+        'cookie_domain_too_broad': 'low',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',
