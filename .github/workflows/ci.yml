@@ -118,7 +118,8 @@ jobs:
     name: accuracy (validation lab, measured precision/recall)
     runs-on: ubuntu-latest
     needs: [scanner]
-    timeout-minutes: 30
+    # ~110 lab targets scanned one after another took 29.5 min by Phase 4A's fifth module
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: measure every check against test_corpus (isolated lab network)
