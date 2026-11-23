@@ -144,6 +144,9 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'source_map_exposed': 'low',
         'default_page_exposed': 'info',
     },
+    'js_libraries': {
+        'vulnerable_js_library': 'medium',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

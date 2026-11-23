@@ -4,7 +4,7 @@ description: >
   OWASP Juice Shop v17.1.0 (pinned by digest). A single-page app that answers 200 with
   its shell for ANY path (/.env, /.git/HEAD, /admin ...), so status-code-only detection
   produces false positives here. Facts below were verified with curl inside the lab.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - check: security_headers
     key: csp_missing
@@ -31,3 +31,10 @@ expect:
   - check: header_quality
     key: coop_missing
     why: "Header oracle (CI header-truth run 45052035543, 2026-11-22): HTML 200 at http://juice-shop.lab.test:3000/ without a Cross-Origin-Opener-Policy header, as the app ships."
+  - check: js_libraries
+    key: vulnerable_js_library
+    location: "http://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"
+    why: >-
+      JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the home page loads //cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js,
+      jquery 2.2.4 by its URL, 6 vulnerabilities incl. CVE-2015-9251, CVE-2019-11358,
+      CVE-2020-11022, CVE-2020-11023. OSV (recorded 2026-11-23, test_corpus/osv): npm jquery@2.2.4 has 4 advisories.

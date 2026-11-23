@@ -17,7 +17,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "default_creds": {
       "meets_gate": true,
@@ -28,7 +28,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 97
+      "targets": 104
     },
     "dependency_vulns": {
       "meets_gate": true,
@@ -50,7 +50,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "dns_email": {
       "meets_gate": true,
@@ -61,7 +61,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "exposed_env": {
       "meets_gate": true,
@@ -72,7 +72,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "exposed_files": {
       "meets_gate": true,
@@ -83,7 +83,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "header_quality": {
       "meets_gate": true,
@@ -94,7 +94,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "http_hardening": {
       "meets_gate": true,
@@ -105,7 +105,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "info_leak": {
       "meets_gate": true,
@@ -116,7 +116,18 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
-      "targets": 97
+      "targets": 104
+    },
+    "js_libraries": {
+      "meets_gate": true,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.7143,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "targets": 104
     },
     "open_admin": {
       "meets_gate": true,
@@ -127,7 +138,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "repo_secrets": {
       "meets_gate": true,
@@ -149,7 +160,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "subdomain_takeover": {
       "meets_gate": true,
@@ -160,7 +171,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "tls_cert": {
       "meets_gate": true,
@@ -171,7 +182,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "tls_config": {
       "meets_gate": true,
@@ -182,7 +193,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     },
     "tls_depth": {
       "meets_gate": true,
@@ -193,7 +204,7 @@
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
-      "targets": 97
+      "targets": 104
     }
   }
 }

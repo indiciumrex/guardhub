@@ -110,7 +110,7 @@ func run() int {
 	svc := &queue.Service{
 		RDB:              rdb,
 		Consumer:         cfg.ConsumerName,
-		Registry:         checks.DefaultWith(checks.Options{CTURL: cfg.CTURL}),
+		Registry:         checks.DefaultWith(checks.Options{CTURL: cfg.CTURL, OSVURL: cfg.OSVURL, OSVTransport: egress}),
 		RepoRegistry:     checks.DefaultRepo(checks.RepoOptions{OSVURL: cfg.OSVURL, Transport: egress}),
 		Repo:             queue.RepoScanConfig{GitHubAPI: cfg.GitHubAPIURL, Transport: egress, Timeout: 120 * time.Second, Limits: repo.DefaultLimits()},
 		NewScanProbe:     func() *probe.Client { return probe.New(scanOpts) },
@@ -159,7 +159,7 @@ func runSelfScan(cfg config.Config, logger *slog.Logger, args []string) int {
 	scanOpts.InsecureSkipVerify = true // certificate problems are reported by tls_cert
 	scanOpts.DNSServer = cfg.DNSServer
 	svc := &queue.Service{
-		Registry:       checks.DefaultWith(checks.Options{CTURL: cfg.CTURL}),
+		Registry:       checks.DefaultWith(checks.Options{CTURL: cfg.CTURL, OSVURL: cfg.OSVURL, OSVTransport: probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts)}),
 		NewScanProbe:   func() *probe.Client { return probe.New(scanOpts) },
 		NewVerifyProbe: func() *probe.Client { return probe.New(base) },
 		VerifyDeadline: cfg.VerifyDeadline,

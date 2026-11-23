@@ -1,5 +1,5 @@
 {
-  "source": "https://api.osv.dev recorded 2026-11-21",
+  "source": "https://api.osv.dev recorded 2026-11-21; new queries https://api.osv.dev recorded 2026-11-23",
   "queries": {
     "PyPI|anyio|4.4.0": [
       "GHSA-5p39-cfhj-2xmp",
@@ -209,12 +209,46 @@
       "PYSEC-2026-4175",
       "PYSEC-2026-4177"
     ],
+    "npm|bootstrap|3.3.7": [
+      "GHSA-3mgp-fx93-9xv5",
+      "GHSA-3wqf-4x89-9g79",
+      "GHSA-4p24-vmcr-4gqj",
+      "GHSA-7mvr-5x2g-wfc8",
+      "GHSA-9v3m-8fp8-mj99",
+      "GHSA-ph58-4vrj-w6hr",
+      "GHSA-vxmc-5x29-h64v"
+    ],
+    "npm|bootstrap|5.3.3": [],
     "npm|cookie|0.6.0": [
       "GHSA-pxg6-pf52-xh8x"
     ],
     "npm|debug|2.6.8": [
       "GHSA-9vvw-cc9w-f27h",
       "GHSA-gxpj-cx7g-858c"
+    ],
+    "npm|dompurify|3.2.4": [
+      "GHSA-39q2-94rc-95cp",
+      "GHSA-55q2-fjhq-7xh7",
+      "GHSA-6688-9rhm-gjv2",
+      "GHSA-76mc-f452-cxcm",
+      "GHSA-c2j3-45gr-mqc4",
+      "GHSA-c6gr-qvv4-5v3f",
+      "GHSA-cj63-jhhr-wcxv",
+      "GHSA-cjmm-f4jc-qw8r",
+      "GHSA-cmwh-pvxp-8882",
+      "GHSA-crv5-9vww-q3g8",
+      "GHSA-gvmj-g25r-r7wr",
+      "GHSA-h7mw-gpvr-xq4m",
+      "GHSA-h8r8-wccr-v5f2",
+      "GHSA-hpcv-96wg-7vj8",
+      "GHSA-mrv2-3pqr-j5jr",
+      "GHSA-r47g-fvhr-h676",
+      "GHSA-rp9w-3fw7-7cwq",
+      "GHSA-v2wj-7wpq-c8vv",
+      "GHSA-v8jm-5vwx-cfxm",
+      "GHSA-v9jr-rg53-9pgp",
+      "GHSA-vxr8-fq34-vvx9",
+      "GHSA-x4vx-rjvf-j5p4"
     ],
     "npm|follow-redirects|1.15.5": [
       "GHSA-cxjh-pqwp-8mfp",
@@ -238,10 +272,33 @@
       "GHSA-xw65-4hp5-5hc7"
     ],
     "npm|is-number|7.0.0": [],
+    "npm|jquery-migrate|3.4.1": [],
+    "npm|jquery-migrate|3.5.2": [],
+    "npm|jquery-ui|1.12.1": [
+      "GHSA-9gj3-hwp5-pmwc",
+      "GHSA-gpqq-952q-5327",
+      "GHSA-h6gj-6jjq-h8g9",
+      "GHSA-j7qv-pgf6-hvh4"
+    ],
+    "npm|jquery-ui|1.13.3": [],
+    "npm|jquery|1.12.4": [
+      "GHSA-6c3j-c64m-qhgq",
+      "GHSA-gxr4-xjj5-5px2",
+      "GHSA-jpcq-cgw6-v4j6",
+      "GHSA-rmxg-73gg-4p98"
+    ],
+    "npm|jquery|2.2.4": [
+      "GHSA-6c3j-c64m-qhgq",
+      "GHSA-gxr4-xjj5-5px2",
+      "GHSA-jpcq-cgw6-v4j6",
+      "GHSA-rmxg-73gg-4p98"
+    ],
     "npm|jquery|3.4.1": [
       "GHSA-gxr4-xjj5-5px2",
       "GHSA-jpcq-cgw6-v4j6"
     ],
+    "npm|jquery|3.7.1": [],
+    "npm|jquery|4.0.0-rc.1": [],
     "npm|lodash|4.17.15": [
       "GHSA-29mw-wpgm-hmr9",
       "GHSA-35jh-r3h4-6jhm",
@@ -261,6 +318,14 @@
     ],
     "npm|minimist|1.2.5": [
       "GHSA-xvch-5gv4-984h"
+    ],
+    "npm|moment|2.18.1": [
+      "GHSA-446m-mv8f-q348",
+      "GHSA-8hfj-j24r-96c4",
+      "GHSA-wc69-rhjr-hc9g"
+    ],
+    "npm|moment|2.30.1": [
+      "GHSA-4p3w-j4w9-5jqw"
     ],
     "npm|ms|2.0.0": [],
     "npm|ms|2.1.3": [],

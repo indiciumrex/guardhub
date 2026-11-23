@@ -2,7 +2,7 @@ target: st-surge
 origin: http://surgepos.st.lab.test
 description: >
   CT lists www.surgepos, a CNAME to a deleted Surge.sh project (test_corpus/dns/st.lab.test.db, ct/, nginx/providers.conf; verified with dig against dns-res and curl inside the lab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: subdomain_takeover, key: unclaimed_resource, location: "http://www.surgepos.st.lab.test/", why: "dig CNAME www.surgepos.st.lab.test -> surgepos.surge.sh; curl -> 404 \"project not found\"."}

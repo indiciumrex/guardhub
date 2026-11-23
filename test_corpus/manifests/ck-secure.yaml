@@ -2,7 +2,7 @@ target: ck-secure
 origin: https://ck-secure.lab.test
 description: >
   clean.lab.test with Set-Cookie: __Secure-sid=lab; Path=/; HttpOnly; SameSite=Lax (__Secure- cookie without Secure (positive: cookie_prefix_invalid, secure_missing; security_headers: Secure missing)).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: cookie_depth, key: cookie_prefix_invalid, location: "https://ck-secure.lab.test/#set-cookie=__Secure-sid", why: "Header oracle (tough-cookie 5.1.2, lab run 2026-11-23): refused __Secure-sid: Cookie has __Secure prefix but Secure attribute is not set."}
   - {check: security_headers, key: cookie_flags_missing, location: "https://ck-secure.lab.test/#set-cookie=__Secure-sid", why: "The Set-Cookie header (nginx/ck.conf) has no Secure attribute on an https response."}

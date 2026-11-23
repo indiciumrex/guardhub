@@ -1,10 +1,10 @@
 # `security_headers` accuracy
 
-Lab source revision `925c3461ae43`. Verdict: **meets the gate**.
+Lab source revision `2f16aaca7c6a`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 16 | 0 | 0 | 0 | 0 | 97 | 90 | 0 |
+| 100.0% | 100.0% | 100.0% | 16 | 0 | 0 | 0 | 0 | 104 | 97 | 0 |
 
 ## By finding
 

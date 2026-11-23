@@ -2,6 +2,6 @@ target: ef-default
 origin: https://ef-default.lab.test
 description: >
   clean.lab.test's headers and TLS; nginx's stock welcome page as home page (positive: default_page_exposed) (test_corpus/ef-init.sh).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
 expect:
   - {check: exposed_files, key: default_page_exposed, location: "https://ef-default.lab.test/", why: "Files oracle (curl + Python html.parser, lab run 2026-11-23): home page title 'Welcome to nginx!', the nginx image's own stock page (copied by ef-init.sh)."}

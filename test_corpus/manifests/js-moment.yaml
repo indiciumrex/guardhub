@@ -1,0 +1,7 @@
+target: js-moment
+origin: https://js-moment.lab.test
+description: >
+  clean.lab.test's headers and TLS; Moment 2.18.1 (npm file) at /static/moment.js (positive: vulnerable_js_library) (test_corpus/jslab).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+expect:
+  - {check: js_libraries, key: vulnerable_js_library, location: "https://js-moment.lab.test/static/moment.js", why: "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): /static/moment.js is moment.js 2.18.1 by its content, 3 vulnerabilities: CVE-2017-18214, CVE-2022-24785, CVE-2022-31129. OSV (recorded 2026-11-23, test_corpus/osv): npm moment@2.18.1 has 3 advisories."}

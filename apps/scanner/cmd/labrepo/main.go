@@ -3,7 +3,7 @@
 // production.
 //
 //	labrepo serve       --repos DIR --osv DIR [--listen :80]
-//	labrepo record      --repos DIR --osv DIR [--osv-url https://api.osv.dev]
+//	labrepo record      --repos DIR --osv DIR [--osv-url https://api.osv.dev] [--keep]
 //	labrepo materialize --repos DIR --out DIR
 //
 // serve: a GitHub REST subset for repositories "lab/<dir>" (metadata, commit,
@@ -14,7 +14,11 @@
 //
 // record: asks the real OSV API, once, every query the lab repositories
 // lead to, and writes the answers (index.json + vulns/<id>.json). The
-// recording is committed; the lab then replays it offline.
+// recording is committed; the lab then replays it offline. Queries listed in
+// <osv>/site-queries.txt ("ecosystem|name|version" per line: the JavaScript
+// libraries the site targets load, for js_libraries) are recorded too. With
+// --keep, answers already recorded are kept as they are and only new queries
+// are asked (so adding a lab target does not re-date the existing answers).
 //
 // materialize: writes the lab repositories with their planted secrets
 // filled in, for the independent tools (gitleaks, osv-scanner).
@@ -68,6 +72,7 @@ func main() {
 	listen := fl.String("listen", ":80", "serve: listen address")
 	osvURL := fl.String("osv-url", deps.DefaultOSVURL, "record: the real OSV API")
 	out := fl.String("out", "", "materialize: output directory")
+	keep := fl.Bool("keep", false, "record: keep the recorded answers, ask only new queries")
 	_ = fl.Parse(os.Args[2:])
 	if *repos == "" {
 		log.Fatal("--repos is required")
@@ -77,7 +82,7 @@ func main() {
 	case "serve":
 		err = serve(*listen, *repos, *osvDir)
 	case "record":
-		err = record(*repos, *osvDir, *osvURL)
+		err = record(*repos, *osvDir, *osvURL, *keep)
 	case "materialize":
 		err = materialize(*repos, *out)
 	default:
@@ -310,7 +315,7 @@ func serve(listen, reposRoot, osvDir string) error {
 
 // ---------------------------------------------------------------- record
 
-func record(reposRoot, osvDir, osvURL string) error {
+func record(reposRoot, osvDir, osvURL string, keep bool) error {
 	if osvDir == "" {
 		return errors.New("--osv is required")
 	}
@@ -338,8 +343,26 @@ func record(reposRoot, osvDir, osvURL string) error {
 		}
 		all = append(all, pkgs...)
 	}
+	site, err := siteQueries(filepath.Join(osvDir, "site-queries.txt"))
+	if err != nil {
+		return err
+	}
+	all = append(all, site...)
+	old := osvIndex{Queries: map[string][]string{}}
+	if keep {
+		raw, err := os.ReadFile(filepath.Join(osvDir, "index.json")) //nolint:gosec // lab recording
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(raw, &old); err != nil {
+			return err
+		}
+	}
 	uniq := map[string]deps.Package{}
 	for _, p := range all {
+		if _, done := old.Queries[queryKey(p.Ecosystem, p.Name, p.Version)]; done {
+			continue
+		}
 		uniq[queryKey(p.Ecosystem, p.Name, p.Version)] = deps.Package{Ecosystem: p.Ecosystem, Name: p.Name, Version: p.Version}
 	}
 	keys := make([]string, 0, len(uniq))
@@ -357,15 +380,24 @@ func record(reposRoot, osvDir, osvURL string) error {
 	if err != nil {
 		return err
 	}
-	idx := osvIndex{Source: osvURL + " recorded " + time.Now().UTC().Format("2006-01-02"), Queries: map[string][]string{}}
+	stamp := osvURL + " recorded " + time.Now().UTC().Format("2006-01-02")
+	idx := osvIndex{Source: stamp, Queries: map[string][]string{}}
+	if keep {
+		idx = old
+		if len(keys) > 0 {
+			idx.Source = old.Source + "; new queries " + stamp
+		}
+	}
 	var ids []string
 	for i, k := range keys {
 		idx.Queries[k] = append([]string{}, matches[i]...)
 		ids = append(ids, matches[i]...)
 	}
 	vulnDir := filepath.Join(osvDir, "vulns")
-	if err := os.RemoveAll(vulnDir); err != nil {
-		return err
+	if !keep {
+		if err := os.RemoveAll(vulnDir); err != nil {
+			return err
+		}
 	}
 	if err := os.MkdirAll(vulnDir, 0o755); err != nil { //nolint:gosec // lab fixtures
 		return err
@@ -375,6 +407,9 @@ func record(reposRoot, osvDir, osvURL string) error {
 		return err
 	}
 	for id := range recs {
+		if _, err := os.Stat(filepath.Join(vulnDir, id+".json")); keep && err == nil {
+			continue // already recorded: kept byte for byte
+		}
 		raw, err := fetchRaw(ctx, osvURL+"/v1/vulns/"+id)
 		if err != nil {
 			return err
@@ -393,6 +428,31 @@ func record(reposRoot, osvDir, osvURL string) error {
 	}
 	log.Printf("recorded %d queries, %d advisories", len(keys), len(recs))
 	return os.WriteFile(filepath.Join(osvDir, "index.json"), append(out, '\n'), 0o644) //nolint:gosec // lab fixtures
+}
+
+// siteQueries reads "ecosystem|name|version" lines ("#" comments); a missing
+// file is no queries.
+func siteQueries(path string) ([]deps.Package, error) {
+	raw, err := os.ReadFile(path) //nolint:gosec // lab recording
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var out []deps.Package
+	for _, line := range strings.Split(string(raw), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.Split(line, "|")
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("%s: bad line %q (want ecosystem|name|version)", path, line)
+		}
+		out = append(out, deps.Package{Ecosystem: parts[0], Name: parts[1], Version: parts[2]})
+	}
+	return out, nil
 }
 
 // fetchRaw keeps the record byte-for-byte as OSV serves it (the decoded

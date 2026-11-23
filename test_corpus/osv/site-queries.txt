@@ -1,0 +1,17 @@
+# js_libraries (ADR-0007): every npm library version the lab's site targets load, so the OSV
+# replay can answer each query the scanner makes (labrepo record --keep adds new lines only).
+# js-* targets (test_corpus/jslab)
+npm|jquery|1.12.4
+npm|jquery|3.7.1
+npm|bootstrap|3.3.7
+npm|moment|2.18.1
+npm|jquery-ui|1.12.1
+# third-party apps (versions as their home pages load them, read by the JS oracle)
+npm|jquery|2.2.4
+npm|jquery|4.0.0-rc.1
+npm|jquery-migrate|3.4.1
+npm|jquery-migrate|3.5.2
+npm|jquery-ui|1.13.3
+npm|bootstrap|5.3.3
+npm|moment|2.30.1
+npm|dompurify|3.2.4
