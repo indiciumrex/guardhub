@@ -44,7 +44,7 @@ check already reports; each check's doc lists the overlap it avoids (for example
 | Header quality | `header_quality` | Mozilla HTTP Observatory scanner 1.4.8 and Google CSP Evaluator 1.1.8, run unmodified in the lab (`test_corpus/oracles/headers`) |
 | DNS & e-mail depth | `dns_depth` | BIND dig and delv, OpenSSL and curl, run unmodified in the lab (`test_corpus/oracles/dns`) |
 | Technology + known CVEs | fingerprint module (CVE only when the version is certain) | curated version fixtures, plus OSV and retire.js |
-| Misconfiguration | exposed-files module (`.DS_Store`, backups, source maps, default pages) | curated fixtures, plus the request log |
+| Misconfiguration | `exposed_files` (database dumps, source backups, archives, `.DS_Store`, source maps, default pages) | curl and libmagic (`file`), run unmodified in the lab (`test_corpus/oracles/files`); fixtures generated at lab start (`ef-init.sh`) |
 | Cookies | `cookie_depth` (prefixes, Domain scope; the flags stay in `security_headers`) | tough-cookie 5.1.2 (the cookie jar of Mozilla's HTTP Observatory), run unmodified in the lab (`test_corpus/oracles/headers`) |
 | Content signals | content module (mixed content, SRI, keys in JS bundles) | curated fixtures, plus gitleaks rules |
 

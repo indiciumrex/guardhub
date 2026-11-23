@@ -159,6 +159,18 @@
       ]
     },
     {
+      "id": "exposed_files",
+      "category": "exposure",
+      "finding_keys": [
+        { "key": "database_dump_exposed", "severity": "critical", "params": ["path"] },
+        { "key": "source_backup_exposed", "severity": "high", "params": ["path"] },
+        { "key": "archive_backup_exposed", "severity": "high", "params": ["path"] },
+        { "key": "ds_store_exposed", "severity": "low", "params": ["path"] },
+        { "key": "source_map_exposed", "severity": "low", "params": ["path", "source_count"] },
+        { "key": "default_page_exposed", "severity": "info", "params": ["server"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

@@ -2,7 +2,7 @@ target: hq-noperm
 origin: https://hq-noperm.lab.test
 description: >
   Hardened like clean.lab.test (nginx/hq.conf); no Permissions-Policy and no Cross-Origin-Opener-Policy (positives).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
 expect:
   - check: header_quality
     key: permissions_policy_missing

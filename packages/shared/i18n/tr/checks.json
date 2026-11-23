@@ -574,5 +574,47 @@
         "fix": "1. \"{cookie_name}\" çerezinden `Domain=` özniteliğini kaldırın (çoğu çatıda oturum çerezinin domain ayarını boş bırakın). Çerez böylece yalnızca bu sunucuya ait olur.\n2. Daha iyisi, tarayıcıların tam olarak sizin sunucunuza kilitlediği `__Host-` önekiyle yeniden adlandırın (`__Host-session; Path=/; Secure; HttpOnly; SameSite=Lax`).\n3. Birkaç alt alan adının gerçekten tek bir girişe ihtiyacı varsa, paylaşılan bir çerez yerine ayrı bir kimlik doğrulama sunucusu ve kısa ömürlü belirteçler kullanın.\n4. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "exposed_files": {
+    "name": "Unutulmuş dosyalar",
+    "description": "Asla herkese açık olmaması gereken ama sık sık açık kalan dosyaları arar: veritabanı dökümleri, kaynak kodun yedek kopyaları, site arşivleri, macOS .DS_Store dosyaları, özgün kodunuzu içeren source map dosyaları ve web sunucusunun varsayılan sayfası. Her bulgu dosyanın içeriğiyle doğrulanır.",
+    "findings": {
+      "database_dump_exposed": {
+        "title": "{path} adresinden veri içeren bir veritabanı dökümü indirilebiliyor",
+        "summary": "Herkes {path} dosyasını indirebiliyor: yalnızca tablo yapısını değil, veri satırlarını da içeren bir SQL veritabanı dökümü.",
+        "why": "Veritabanı dökümü verilerinizin tam bir kopyasıdır: müşteri kayıtları, e-posta adresleri, parola özetleri, siparişler. Otomatik tarayıcılar {path} gibi yolları her sitede gün boyu ister; dosyanın çoktan indirildiğini varsayın. Tablolardaki verilere bağlı olarak bu, bildirmeniz gereken bir kişisel veri ihlali olabilir (örneğin KVKK veya GDPR kapsamında).",
+        "fix": "1. {path} dosyasını (ve yanındaki diğer döküm dosyalarını) web sunucusundan hemen silin.\n2. Yedekleri web kök dizininin dışında ya da HTTP üzerinden asla sunulmayan özel bir depoda tutun.\n3. Sunucunuzun erişim günlüklerinde bu dosyanın indirilip indirilmediğine bakın ve içeriğini açığa çıkmış sayın: içinde saklanan veritabanı parolalarını ve API anahtarlarını değiştirin, kişisel verilerin bildirilmesi gerekip gerekmediğini değerlendirin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "source_backup_exposed": {
+        "title": "PHP kaynak kodunuzun bir yedeği {path} adresinde okunabiliyor",
+        "summary": "{path} PHP kaynak kodunu çalıştırmak yerine düz metin olarak döndürüyor; bu yüzden herkes okuyabilir.",
+        "why": "Düzenleyiciler ve dağıtım araçları gerçek dosyanın yanına .bak, ~ veya .save gibi kopyalar bırakır. Web sunucusu bunları PHP olarak çalıştırmaz, metin olarak verir. wp-config.php gibi yapılandırma dosyaları veritabanı parolasını ve gizli anahtarları içerir; saldırgan bunları doğrudan kullanabilir. Diğer kaynak dosyalar uygulamanızın nasıl çalıştığını ve zayıf noktalarını ortaya koyar.",
+        "fix": "1. {path} dosyasını ve web kök dizinindeki diğer tüm yedek kopyaları (*.bak, *~, *.save, *.old, *.swp) silin.\n2. Dosyada parola veya anahtar varsa (wp-config.php için: veritabanı parolası, kimlik doğrulama anahtarları ve tuzları), hepsini hemen değiştirin.\n3. Bu tür dosyaları sunucu yapılandırmasında engelleyin, örneğin nginx'te: `location ~* (\\.bak|\\.old|\\.save|\\.swp|~)$ { deny all; }`.\n4. Taramayı tekrar çalıştırın."
+      },
+      "archive_backup_exposed": {
+        "title": "{path} adresinden bir site arşivi indirilebiliyor",
+        "summary": "Herkes {path} dosyasını indirebiliyor: tipik bir yedek konumundaki sıkıştırılmış bir arşiv.",
+        "why": "Bu tür arşivler genellikle web sitesinin tam bir kopyasıdır: kaynak kod, parolalar içeren yapılandırma dosyaları, bazen de yüklenen dosyalar ve veritabanı dökümleri. GuardHub dosyanın arşiv olduğunu ilk baytlarından doğrular; onu açmaz ve saklamaz. Saldırganların tarayıcıları bu adları her sitede dener.",
+        "fix": "1. {path} dosyasını web sunucusundan hemen silin.\n2. Yedekleri web kök dizininin dışında ya da özel bir depoda saklayın.\n3. Arşivin indirildiğini varsayın: içerebileceği parolaları ve anahtarları (veritabanı, e-posta, API anahtarları) değiştirin ve erişim günlüklerinizi kontrol edin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "ds_store_exposed": {
+        "title": "{path} adresinde herkese açık bir macOS .DS_Store dosyası var",
+        "summary": "{path}, macOS Finder'ın geride bıraktığı bir .DS_Store dosyası. O klasördeki dosyaların adlarını listeler.",
+        "why": "Bir klasör Mac'ten yüklendiğinde Finder'ın gizli .DS_Store dosyası çoğu zaman onunla birlikte gider. Bu dosya oradaki dosya ve klasörlerin adlarını içerir; hiçbir yerden bağlantı verilmeyenler de dahil: yedekler, eski yönetim sayfaları, özel belgeler. Saldırganlar bu adları indirilecek dosyaları bulmak için kullanır. Tek başına içerikleri değil, adları açığa çıkarır.",
+        "fix": "1. Sunucudaki .DS_Store dosyalarını silin (`find /var/www -name .DS_Store -delete`).\n2. Dağıtımlardan hariç tutun (`.DS_Store` satırını .gitignore dosyasına ve yükleme ya da rsync hariç tutma listenize ekleyin).\n3. İsterseniz sunucuda engelleyin, örneğin nginx'te: `location ~ /\\.DS_Store { deny all; }`.\n4. Taramayı tekrar çalıştırın."
+      },
+      "source_map_exposed": {
+        "title": "JavaScript source map dosyanız {source_count} dosyanın özgün kodunu açığa çıkarıyor",
+        "summary": "{path} source map dosyası herkese açık ve {source_count} dosyanın küçültülmemiş özgün kaynak kodunu içeriyor.",
+        "why": "Source map dosyaları geliştiricilerin küçültülmüş JavaScript'te hata ayıklamasına yardım eder. Özgün kodu (sourcesContent) içerdiklerinde herkes ön yüz kodunuzu yorumları, iç API yolları, özellik bayrakları ve bazen hiç yayınlanmaması gereken anahtarlarla birlikte okuyabilir. Bu tek başına bir zafiyet değildir, ama bir zafiyet bulmayı çok kolaylaştırır.",
+        "fix": "1. Üretim derlemelerinde source map yayımlamayı durdurun (örneğin Vite: `build.sourcemap: false`; webpack: `devtool: false`; Next.js: varsayılan olan `productionBrowserSourceMaps: false`).\n2. Hata takibi için gerekiyorsa, onları sunmak yerine hata takip aracınıza (örneğin Sentry) yükleyin ya da sourcesContent olmadan derleyin.\n3. .map dosyalarını sunucudan kaldırın ve taramayı tekrar çalıştırın."
+      },
+      "default_page_exposed": {
+        "title": "Ana sayfanız {server} varsayılan karşılama sayfası",
+        "summary": "Taradığınız adres sitenizi değil, {server} yazılımının hazır karşılama sayfasını gösteriyor.",
+        "why": "Varsayılan sayfa genellikle web sunucusunun bu ad için yapılandırılmadığı anlamına gelir: asıl site başka bir adrestedir ya da sunucu kurulup unutulmuştur. Ziyaretçilere ve saldırganlara hangi yazılımı çalıştırdığınızı ve sunucunun bakımsız olabileceğini söyler. Bu bir zafiyet değil, tavsiyedir.",
+        "fix": "1. Bu adres sitenizi sunmalıysa, bu ad için uygulamanızı gösteren bir server bloğu ya da sanal sunucu ekleyin.\n2. Hiçbir şey sunmaması gerekiyorsa, varsayılan sunucunun hata döndürmesini ya da yönlendirme yapmasını sağlayın, örneğin nginx'te: `server { listen 80 default_server; return 444; }`.\n3. Varsayılan index sayfasını web kök dizininden kaldırın ve taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

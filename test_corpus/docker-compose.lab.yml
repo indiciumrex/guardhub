@@ -16,6 +16,7 @@ x-nginx: &nginx
 
 volumes:
   pki: {}
+  ef: {}
   ddkeys: {}
   leak: {}
 
@@ -57,6 +58,16 @@ services:
       - hq-noperm.lab.test:valid
       - hq-cache.lab.test:valid
       - hq-private.lab.test:valid
+      - ef-dump.lab.test:valid
+      - ef-dumpgz.lab.test:valid
+      - ef-phpbak.lab.test:valid
+      - ef-archive.lab.test:valid
+      - ef-dsstore.lab.test:valid
+      - ef-sourcemap.lab.test:valid
+      - ef-default.lab.test:valid
+      - ef-schema.lab.test:valid
+      - ef-phprun.lab.test:valid
+      - ef-mapnames.lab.test:valid
       - ck-hostpath.lab.test:valid
       - ck-hostdomain.lab.test:valid
       - ck-secure.lab.test:valid
@@ -153,6 +164,19 @@ services:
     <<: *nginx
     volumes: [./nginx/hh.conf:/etc/nginx/conf.d/default.conf:ro, ./nginx:/etc/nginx/lab:ro, ./site:/usr/share/nginx/html:ro]
     networks: { lab: { aliases: [hh-cors-cred.lab.test, hh-cors-null.lab.test, hh-cors-public.lab.test, hh-csp-weak.lab.test, hh-csp-strict.lab.test, hh-meta-csp.lab.test, hh-xfo-allowfrom.lab.test, hh-referrer.lab.test, hh-csrf-cookie.lab.test] } }
+  # ---- exposed_files: clean's headers, one forgotten file each (content from ef-init.sh) ----
+  ef-init:
+    image: nginx:1.27-alpine
+    entrypoint: ["sh", "/ef-init.sh"]
+    volumes: [./ef-init.sh:/ef-init.sh:ro, ./site:/site:ro, ef:/srv/ef]
+    network_mode: none
+  ef:
+    <<: *nginx
+    depends_on:
+      pki: { condition: service_completed_successfully }
+      ef-init: { condition: service_completed_successfully }
+    volumes: [./nginx/ef.conf:/etc/nginx/conf.d/default.conf:ro, ef:/srv/ef:ro, pki:/pki:ro]
+    networks: { lab: { aliases: [ef-dump.lab.test, ef-dumpgz.lab.test, ef-phpbak.lab.test, ef-archive.lab.test, ef-dsstore.lab.test, ef-sourcemap.lab.test, ef-default.lab.test, ef-schema.lab.test, ef-phprun.lab.test, ef-mapnames.lab.test] } }
   # ---- cookie_depth: clean, different only in the Set-Cookie header (nginx/ck.conf) ----
   ck:
     <<: *nginx
@@ -310,6 +334,7 @@ services:
         good.dd.lab.test,broken.dd.lab.test,unsigned.dd.lab.test,nocaa.dd.lab.test,nosts.dd.lab.test,nomail.dd.lab.test,ststesting.dd.lab.test,stsbroken.dd.lab.test,stsmismatch.dd.lab.test,notlsrpt.dd.lab.test,dkim1024.dd.lab.test,dkim512.dd.lab.test,www.good.dd.lab.test,
         mta-sts.good.dd.lab.test,mta-sts.broken.dd.lab.test,mta-sts.unsigned.dd.lab.test,mta-sts.nocaa.dd.lab.test,mta-sts.ststesting.dd.lab.test,mta-sts.stsbroken.dd.lab.test,mta-sts.stsmismatch.dd.lab.test,mta-sts.notlsrpt.dd.lab.test,mta-sts.dkim1024.dd.lab.test,mta-sts.dkim512.dd.lab.test,
         ck-hostpath.lab.test,ck-hostdomain.lab.test,ck-secure.lab.test,ck-domain.lab.test,ck-domainself.lab.test,ck-analytics.lab.test,ck-foreign.lab.test,
+        ef-dump.lab.test,ef-dumpgz.lab.test,ef-phpbak.lab.test,ef-archive.lab.test,ef-dsstore.lab.test,ef-sourcemap.lab.test,ef-default.lab.test,ef-schema.lab.test,ef-phprun.lab.test,ef-mapnames.lab.test,
         github.lab.test,osv.lab.test
       SCANNER_DNS_SERVER: dns-res.lab.test:53
       SCANNER_CT_URL: http://ct.lab.test/

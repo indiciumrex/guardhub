@@ -136,6 +136,14 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'cookie_prefix_invalid': 'low',
         'cookie_domain_too_broad': 'low',
     },
+    'exposed_files': {
+        'database_dump_exposed': 'critical',
+        'source_backup_exposed': 'high',
+        'archive_backup_exposed': 'high',
+        'ds_store_exposed': 'low',
+        'source_map_exposed': 'low',
+        'default_page_exposed': 'info',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

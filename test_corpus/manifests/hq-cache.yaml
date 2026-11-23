@@ -2,7 +2,7 @@ target: hq-cache
 origin: https://hq-cache.lab.test
 description: >
   Hardened like clean.lab.test (nginx/hq.conf); sets the session cookie on a 'public, max-age=600' response (positive: cookie_response_cacheable).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
 expect:
   - check: header_quality
     key: cookie_response_cacheable

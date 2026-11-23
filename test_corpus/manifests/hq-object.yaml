@@ -2,7 +2,7 @@ target: hq-object
 origin: https://hq-object.lab.test
 description: >
   Hardened like clean.lab.test (nginx/hq.conf); script-src only, no object-src and no default-src (positive: csp_object_src_unrestricted).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files]
 expect:
   - check: header_quality
     key: csp_object_src_unrestricted

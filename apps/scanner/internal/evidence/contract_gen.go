@@ -58,6 +58,7 @@ const (
 	CheckHeaderQuality     = "header_quality"
 	CheckDnsDepth          = "dns_depth"
 	CheckCookieDepth       = "cookie_depth"
+	CheckExposedFiles      = "exposed_files"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -163,6 +164,14 @@ var FindingKeys = map[string]map[string]Severity{
 	"cookie_depth": {
 		"cookie_prefix_invalid":   SeverityLow,
 		"cookie_domain_too_broad": SeverityLow,
+	},
+	"exposed_files": {
+		"database_dump_exposed":  SeverityCritical,
+		"source_backup_exposed":  SeverityHigh,
+		"archive_backup_exposed": SeverityHigh,
+		"ds_store_exposed":       SeverityLow,
+		"source_map_exposed":     SeverityLow,
+		"default_page_exposed":   SeverityInfo,
 	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,
