@@ -1,0 +1,16 @@
+target: juice-shop
+origin: http://juice-shop.lab.test:3000
+active: true
+description: >
+  OWASP Juice Shop (the lab's pinned image), anonymous. A single-page app: its API endpoints
+  are referenced from JavaScript, not from HTML links or GET forms, so active discovery (same-
+  origin links and GET forms, ADR-0008 §4) does not reach them. Its known injection points are
+  therefore outside what the checks declare. Access-Control-Allow-Origin is "*" without
+  credentials, which is not cors_origin_reflected. Confirmed by the pinned OWASP ZAP oracle.
+checks: [active_xss, active_sqli, active_redirect, active_cors]
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://juice-shop.lab.test:3000/rest/products/search?q
+    outside: true # only referenced from the SPA's JavaScript: not discoverable by links/GET forms
+    why: "/rest/products/search builds a SQLite query from q by string concatenation (SQLITE_ERROR on a lone quote)."

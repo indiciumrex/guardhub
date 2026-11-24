@@ -31,6 +31,12 @@ type Manifest struct {
 	Checks      []string      `yaml:"checks"` // check ids scored on this target
 	Expect      []Expectation `yaml:"expect"`
 	Tolerate    []Expectation `yaml:"tolerate"`
+	// Active marks an active-test target (ADR-0008, Gate M: scanner
+	// activelab): its checks are all active checks; a passive manifest may
+	// list none. Sessions names the lab-made session file (two consented
+	// test accounts, JSON {"a":{...},"b":{...}}), relative to the manifests.
+	Active   bool   `yaml:"active,omitempty"`
+	Sessions string `yaml:"sessions,omitempty"`
 }
 
 // Expectation names one finding. Location, when set, must match exactly;
@@ -119,7 +125,7 @@ func (m Manifest) Validate() error {
 		if _, ok := evidence.FindingKeys[id]; !ok {
 			return fmt.Errorf("checks: unknown check id %q", id)
 		}
-		if evidence.RepoChecks[id] != m.IsRepo() {
+		if evidence.RepoChecks[id] != m.IsRepo() || evidence.ActiveChecks[id] != m.Active {
 			return fmt.Errorf("checks: %q cannot run on this kind of target", id)
 		}
 		scored[id] = true

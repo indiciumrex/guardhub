@@ -1,0 +1,11 @@
+target: webgoat
+origin: http://webgoat.lab.test:8080
+active: true
+description: >
+  OWASP WebGoat (the lab's pinned image), anonymous. / redirects to /WebGoat/login, a POST
+  login form; every lesson is behind that login and driven by JavaScript and POST requests.
+  Nothing a GET-only, link-and-form discovery reaches is vulnerable, so no active check may
+  report anything here (false-positive control on a real application). Confirmed by the
+  pinned OWASP ZAP oracle.
+checks: [active_xss, active_sqli, active_redirect, active_cors]
+expect: []

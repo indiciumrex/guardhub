@@ -48,3 +48,4 @@ ops/github-app/*.pem
 !test_corpus/repos/**/node_modules/
 !test_corpus/repos/**/node_modules/**
 test_corpus/.manifests-light/
+test_corpus/active/manifests/*-session.json

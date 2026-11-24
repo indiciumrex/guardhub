@@ -79,6 +79,9 @@ func run() int {
 	if len(os.Args) > 1 && os.Args[1] == "lab" {
 		return runLab(cfg, logger, os.Args[2:])
 	}
+	if len(os.Args) > 1 && os.Args[1] == "activelab" {
+		return runActiveLab(cfg, logger, os.Args[2:])
+	}
 
 	ropts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
@@ -144,11 +147,15 @@ func run() int {
 
 // activeConfig builds the active-scan configuration (ADR-0008). Disabled
 // unless SCANNER_ACTIVE_ENABLED=true; SSRF only with a collaborator URL.
+func labHTTPClient(cfg config.Config) *http.Client {
+	return &http.Client{Transport: probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts), Timeout: cfg.RequestTimeout}
+}
+
 func activeConfig(cfg config.Config) queue.ActiveConfig {
 	ac := queue.ActiveConfig{Enabled: cfg.ActiveEnabled, AllowPrivateHosts: cfg.AllowPrivateHosts}
 	if cfg.ActiveOOBURL != "" {
 		ac.Collab = active.HTTPCollaborator{Base: cfg.ActiveOOBURL,
-			HTTP: &http.Client{Transport: probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts), Timeout: cfg.RequestTimeout}}
+			HTTP: labHTTPClient(cfg)}
 	}
 	return ac
 }

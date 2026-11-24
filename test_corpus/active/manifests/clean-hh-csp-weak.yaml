@@ -1,0 +1,8 @@
+target: active-hh-csp-weak
+origin: http://hh-csp-weak.lab.test
+active: true
+description: >
+  False-positive control: the passive lab target hh-csp-weak (static nginx pages; no parameter
+  reaches any code). No active check may report anything here.
+checks: [active_xss, active_sqli, active_redirect, active_cors]
+expect: []

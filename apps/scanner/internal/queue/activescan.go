@@ -189,42 +189,21 @@ func (s *Service) runActiveScan(jobCtx context.Context, job Job) error {
 	return nil
 }
 
-// runActiveChecks runs discovery and then each requested check in order. A
-// fatal stop (kill switch, breaker, budget, deadline) fails the running check
-// and every later one with the same code; findings so far are kept.
+// runActiveChecks is activescan.Run with the scan's error codes (shared with
+// the lab harness, cmd/scanner activelab).
 func runActiveChecks(ctx context.Context, client *active.Client, scope active.Scope, ids []string,
 	sessions activeSessions, collab active.Collaborator) ([]evidence.Finding, []CheckResult) {
-	byID := map[string]activescan.Check{}
-	for _, c := range activescan.All() {
-		byID[c.ID()] = c
-	}
-	findings := []evidence.Finding{}
-	results := make([]CheckResult, 0, len(ids))
-	stopCode := ""
-	points, pages, err := activescan.Discover(ctx, client, scope.Origin(), nil, activescan.DiscoveryLimits{})
-	if err != nil {
-		stopCode = activeErrCode(ctx, err)
-	}
-	env := activescan.Env{Client: client, Origin: scope.Origin(), Points: points, Pages: pages, Collab: collab,
-		SessionA: sessions.A, SessionB: sessions.B}
-	for _, id := range ids {
-		if stopCode != "" {
-			results = append(results, CheckResult{CheckID: id, Status: string(progress.Failed), Error: strPtr(stopCode)})
-			continue
+	findings, outs := activescan.Run(ctx, client, scope, ids, sessions.A, sessions.B, collab)
+	results := make([]CheckResult, 0, len(outs))
+	for _, o := range outs {
+		switch {
+		case o.Err == nil:
+			results = append(results, CheckResult{CheckID: o.CheckID, Status: string(progress.Done)})
+		case errors.Is(o.Err, activescan.ErrUnknownCheck):
+			results = append(results, CheckResult{CheckID: o.CheckID, Status: string(progress.Failed), Error: strPtr(ErrCodeUnknownCheck)})
+		default:
+			results = append(results, CheckResult{CheckID: o.CheckID, Status: string(progress.Failed), Error: strPtr(activeErrCode(ctx, o.Err))})
 		}
-		c, ok := byID[id]
-		if !ok {
-			results = append(results, CheckResult{CheckID: id, Status: string(progress.Failed), Error: strPtr(ErrCodeUnknownCheck)})
-			continue
-		}
-		fs, err := c.Run(ctx, env)
-		findings = append(findings, fs...)
-		if err != nil {
-			stopCode = activeErrCode(ctx, err)
-			results = append(results, CheckResult{CheckID: id, Status: string(progress.Failed), Error: strPtr(stopCode)})
-			continue
-		}
-		results = append(results, CheckResult{CheckID: id, Status: string(progress.Done)})
 	}
 	return findings, results
 }
