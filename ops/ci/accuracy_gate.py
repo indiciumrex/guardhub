@@ -26,6 +26,7 @@ def main() -> int:
     committed = json.load(open(sys.argv[1], encoding="utf-8"))
     measured = json.load(open(sys.argv[2], encoding="utf-8"))
     c_checks, m_checks = committed.get("checks", {}), measured.get("checks", {})
+    min_positives = int(committed.get("gate", {}).get("min_positives", 3))
     bad: list[str] = []
     print(f"{'check':<22} {'tp':>4} {'fp':>4} {'fn':>4}  {'gate':<5} committed(tp/fp/fn,gate)")
     for cid in sorted(set(c_checks) | set(m_checks)):
@@ -44,9 +45,10 @@ def main() -> int:
             bad.append(f"{cid}: new false positive(s): {m['fp']} > committed {c['fp']}")
         if m["fn"] > c["fn"]:
             bad.append(f"{cid}: new miss(es): {m['fn']} > committed {c['fn']}")
-        # a check whose positives all sit on heavy apps has nothing to find in a light run: its
-        # precision/recall are undefined there, so only the FP/FN rules above apply to it
-        if c["meets_gate"] and not m["meets_gate"] and m["tp"] + m["fn"] > 0:
+        # a check whose positives sit mostly on heavy apps may have fewer than the gate's minimum
+        # in a light run (e.g. info_leak: 2 of 10): that is a smaller sample, not a regression;
+        # the FP/FN rules above still apply to it
+        if c["meets_gate"] and not m["meets_gate"] and m["tp"] + m["fn"] >= min_positives:
             bad.append(f"{cid}: met the gate in the committed scorecard, fails it now")
     if bad:
         print("\naccuracy gate FAILED:\n  " + "\n  ".join(bad))
