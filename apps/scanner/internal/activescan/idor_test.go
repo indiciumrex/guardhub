@@ -238,7 +238,7 @@ func TestChecksProbeAsSessionA(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte("<html><body>Hello " + r.URL.Query().Get("name") + "</body></html>")) //nolint:gosec // deliberately vulnerable test server
+		_, _ = w.Write([]byte("<html><body>Hello " + r.URL.Query().Get("name") + "</body></html>"))
 	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
