@@ -628,5 +628,29 @@
         "fix": "1. Upgrade {library} to its latest release. The lowest version that fixes every listed advisory is {fixed_version} (a dash means no fixed release exists yet: replace the library or stop using the affected feature).\n2. Major upgrades can change behaviour (for example jQuery 1.x/2.x to 3.x): test your pages, and use the library's migration guide or plugin while you update your code.\n3. If you load it from a CDN, change the version in the script address; if you serve it yourself, replace the file and clear caches.\n4. Run the scan again."
       }
     }
+  },
+  "content_signals": {
+    "name": "Page content loading",
+    "description": "Reads your home page's HTML the way a browser does and checks what it loads: scripts, stylesheets, frames, images and media over insecure http:// on an HTTPS page (mixed content), and scripts from other sites without Subresource Integrity.",
+    "findings": {
+      "mixed_content_active": {
+        "title": "Your HTTPS page loads scripts, styles or frames over insecure http://",
+        "summary": "{count} script, stylesheet or frame address(es) on your home page use http://, for example {example}.",
+        "why": "Browsers block these requests on an HTTPS page (\"mixed content\"), so the parts of your page that depend on them break for every visitor. Where they do load, for example in older browsers, anyone on the network path (public Wi-Fi, a compromised router) can replace the file and take over the page: read what visitors type, change what they see.",
+        "fix": "1. Change each address to https:// (for example {example}). Most CDNs and services support it; if a host does not, serve the file from your own site.\n2. Prefer relative or https:// addresses in templates and content, and fix any hard-coded http:// links in your CMS settings.\n3. As a safety net, the header `Content-Security-Policy: upgrade-insecure-requests` makes browsers request https:// instead.\n4. Run the scan again."
+      },
+      "mixed_content_passive": {
+        "title": "Your HTTPS page loads images or media over insecure http://",
+        "summary": "{count} image, audio or video address(es) on your home page use http://, for example {example}.",
+        "why": "Current browsers try the https:// address instead or show a \"not fully secure\" warning; if the file is not available over https, it is missing. Older browsers load it in clear, so anyone on the network path can see what visitors look at and replace the images.",
+        "fix": "1. Change each address to https:// (for example {example}), or serve the files from your own site.\n2. Fix hard-coded http:// addresses in your templates, CMS content and settings.\n3. Optionally add `Content-Security-Policy: upgrade-insecure-requests`.\n4. Run the scan again."
+      },
+      "sri_missing": {
+        "title": "Scripts from other sites run without an integrity check",
+        "summary": "{count} script(s) from other sites are loaded without an integrity attribute, for example {example}.",
+        "why": "These scripts run with full access to your page. If the other site or CDN is ever compromised, or the file is changed, the new code runs for all your visitors. Subresource Integrity (an integrity=\"sha384-...\" attribute) makes the browser refuse a file that no longer matches. It only works for files that never change, such as a library at a fixed version; analytics and chat widgets that change all the time cannot use it. This is a best practice, not a weakness on its own.",
+        "fix": "1. For fixed-version files (libraries from a CDN), add the integrity and crossorigin attributes; CDNs such as cdnjs and jsDelivr show the exact tag to copy.\n2. Alternatively, serve the file from your own site.\n3. For scripts that change on their own (analytics, chat, tag managers), choose providers you trust and limit them with a Content-Security-Policy.\n4. Run the scan again."
+      }
+    }
   }
 }

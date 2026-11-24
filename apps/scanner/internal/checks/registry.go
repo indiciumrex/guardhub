@@ -85,6 +85,7 @@ func DefaultWith(o Options) *Registry {
 		CookieDepth{},
 		ExposedFiles{},
 		JSLibraries{OSV: deps.NewOSV(o.OSVURL, transport, 20*time.Second, siteMaxVulns)},
+		ContentSignals{},
 	)
 }
 

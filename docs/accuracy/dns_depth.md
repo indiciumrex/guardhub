@@ -1,10 +1,10 @@
 # `dns_depth` accuracy
 
-Lab source revision `2f16aaca7c6a`. Verdict: **meets the gate**.
+Lab source revision `709c7f0ecbd3`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 20 | 0 | 0 | 0 | 0 | 104 | 84 | 0 |
+| 100.0% | 100.0% | 100.0% | 20 | 0 | 0 | 0 | 0 | 110 | 90 | 0 |
 
 ## By finding
 

@@ -2,7 +2,7 @@ target: dd-ststesting
 origin: http://ststesting.dd.lab.test
 description: >
   as dd-good, MTA-STS policy mode testing (test_corpus/dns/dd/).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: dns_depth, key: mta_sts_testing, why: "DNS oracle (BIND dig/delv, OpenSSL, curl; test_corpus/oracles/dns, lab run 2026-11-23): curl https://mta-sts.ststesting.dd.lab.test/.well-known/mta-sts.txt: HTTP 200 text/plain Policy mode: testing (dns/dd-sts/)."}

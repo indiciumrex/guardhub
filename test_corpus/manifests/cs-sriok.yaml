@@ -1,0 +1,7 @@
+target: cs-sriok
+origin: https://cs-sriok.lab.test
+description: >
+  clean.lab.test's headers and TLS; a script from another site over https WITH an integrity attribute (negative) (test_corpus/cs/sriok).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+# Mozilla HTTP Observatory 1.4.8 subresource-integrity test (local lab run 2026-11-23): sri-implemented-and-external-scripts-loaded-securely; Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): no mixed-content issue.
+expect: []

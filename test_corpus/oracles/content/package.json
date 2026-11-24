@@ -1,0 +1,9 @@
+{
+  "name": "guardhub-lab-oracle-content",
+  "private": true,
+  "type": "module",
+  "description": "Independent ground truth for content_signals' mixed content: Chromium's own verdicts (lab only, not shipped)",
+  "dependencies": {
+    "playwright": "1.65.1"
+  }
+}

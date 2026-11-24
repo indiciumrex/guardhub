@@ -2,6 +2,6 @@ target: js-renamed
 origin: https://js-renamed.lab.test
 description: >
   clean.lab.test's headers and TLS; jQuery 3.7.1 in a file named jquery-1.8.3.min.js (negative: the file, not its name, decides) (test_corpus/jslab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 # JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the file named jquery-1.8.3.min.js is jquery 3.7.1 by its content, 0 vulnerabilities.
 expect: []

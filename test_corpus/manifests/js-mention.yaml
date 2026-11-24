@@ -2,6 +2,6 @@ target: js-mention
 origin: https://js-mention.lab.test
 description: >
   clean.lab.test's headers and TLS; application script whose comment mentions jQuery v1.12.4 (negative: not a library banner) (test_corpus/jslab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 # JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): no library recognised in /static/app.js.
 expect: []

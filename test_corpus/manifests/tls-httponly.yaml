@@ -1,7 +1,7 @@
 target: tls-httponly
 origin: http://tls-httponly.lab.test
 description: Plain HTTP only (nginx/tls-httponly.conf), nothing listens on 443. Hardened headers otherwise.
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 expect:
   - check: tls_cert
     key: https_unavailable

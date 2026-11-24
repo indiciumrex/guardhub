@@ -2,6 +2,14 @@ target: js-cdn
 origin: https://js-cdn.lab.test
 description: >
   clean.lab.test's headers and TLS; jQuery UI 1.12.1 loaded from code.jquery.com, version from the CDN path (positive: vulnerable_js_library) (test_corpus/jslab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
 expect:
   - {check: js_libraries, key: vulnerable_js_library, location: "https://code.jquery.com/ui/1.12.1/jquery-ui.min.js", why: "JS oracle (retire.js 6.1.1, repository pinned at RetireJS commit 0a99704, local lab run 2026-11-23): the script URL is jquery-ui 1.12.1 (uri), 4 vulnerabilities: CVE-2021-41182, CVE-2021-41183, CVE-2021-41184, CVE-2022-31160. OSV (recorded 2026-11-23, test_corpus/osv): npm jquery-ui@1.12.1 has 4 advisories."}
+  - check: content_signals
+    key: sri_missing
+    location: "https://js-cdn.lab.test/"
+    why: >-
+      Mozilla HTTP Observatory 1.4.8 subresource-integrity test (CI header-truth run 45163435593,
+      2026-11-23): sri-not-implemented-but-external-scripts-loaded-securely;
+      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js without integrity. Missing from this
+      manifest at first; the oracle surfaced it.

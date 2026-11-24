@@ -628,5 +628,29 @@
         "fix": "1. {library} kütüphanesini en son sürümüne yükseltin. Listelenen tüm bildirimleri düzelten en düşük sürüm {fixed_version} (tire, henüz düzeltilmiş bir sürüm olmadığı anlamına gelir: kütüphaneyi değiştirin ya da etkilenen özelliği kullanmayı bırakın).\n2. Büyük sürüm yükseltmeleri davranışı değiştirebilir (örneğin jQuery 1.x/2.x'ten 3.x'e): sayfalarınızı test edin ve kodunuzu güncellerken kütüphanenin geçiş kılavuzunu ya da eklentisini kullanın.\n3. Kütüphaneyi bir CDN'den yüklüyorsanız betik adresindeki sürümü değiştirin; kendiniz sunuyorsanız dosyayı değiştirin ve önbellekleri temizleyin.\n4. Taramayı tekrar çalıştırın."
       }
     }
+  },
+  "content_signals": {
+    "name": "Sayfa içeriğinin yüklenmesi",
+    "description": "Ana sayfanızın HTML'ini bir tarayıcının okuduğu gibi okur ve neyi yüklediğini denetler: HTTPS bir sayfada güvensiz http:// üzerinden yüklenen betikler, stil dosyaları, çerçeveler, görseller ve medya (karışık içerik) ile Subresource Integrity olmadan başka sitelerden yüklenen betikler.",
+    "findings": {
+      "mixed_content_active": {
+        "title": "HTTPS sayfanız betik, stil veya çerçeveleri güvensiz http:// üzerinden yüklüyor",
+        "summary": "Ana sayfanızdaki {count} betik, stil dosyası veya çerçeve adresi http:// kullanıyor; örneğin {example}.",
+        "why": "Tarayıcılar HTTPS bir sayfada bu istekleri engeller (\"karışık içerik\"); bu yüzden sayfanızın onlara bağlı bölümleri her ziyaretçi için bozulur. Yüklendikleri yerde, örneğin eski tarayıcılarda, ağ yolundaki herkes (halka açık Wi-Fi, ele geçirilmiş bir modem) dosyayı değiştirip sayfayı ele geçirebilir: ziyaretçilerin yazdıklarını okuyabilir, gördüklerini değiştirebilir.",
+        "fix": "1. Her adresi https:// olarak değiştirin (örneğin {example}). CDN ve servislerin çoğu bunu destekler; desteklemeyen bir sunucu varsa dosyayı kendi sitenizden sunun.\n2. Şablonlarda ve içerikte göreli ya da https:// adresleri tercih edin; CMS ayarlarınızdaki sabit http:// bağlantılarını düzeltin.\n3. Güvenlik ağı olarak `Content-Security-Policy: upgrade-insecure-requests` başlığı tarayıcıların bunun yerine https:// istemesini sağlar.\n4. Taramayı tekrar çalıştırın."
+      },
+      "mixed_content_passive": {
+        "title": "HTTPS sayfanız görsel veya medyayı güvensiz http:// üzerinden yüklüyor",
+        "summary": "Ana sayfanızdaki {count} görsel, ses veya video adresi http:// kullanıyor; örneğin {example}.",
+        "why": "Güncel tarayıcılar bunun yerine https:// adresini dener ya da \"tamamen güvenli değil\" uyarısı gösterir; dosya https üzerinden yoksa görünmez. Eski tarayıcılar onu şifresiz yükler; ağ yolundaki herkes ziyaretçilerin neye baktığını görebilir ve görselleri değiştirebilir.",
+        "fix": "1. Her adresi https:// olarak değiştirin (örneğin {example}) ya da dosyaları kendi sitenizden sunun.\n2. Şablonlarınızda, CMS içeriğinizde ve ayarlarınızdaki sabit http:// adresleri düzeltin.\n3. İsterseniz `Content-Security-Policy: upgrade-insecure-requests` ekleyin.\n4. Taramayı tekrar çalıştırın."
+      },
+      "sri_missing": {
+        "title": "Başka sitelerden gelen betikler bütünlük denetimi olmadan çalışıyor",
+        "summary": "Başka sitelerden {count} betik integrity özniteliği olmadan yükleniyor; örneğin {example}.",
+        "why": "Bu betikler sayfanıza tam erişimle çalışır. Diğer site ya da CDN bir gün ele geçirilirse veya dosya değiştirilirse, yeni kod tüm ziyaretçileriniz için çalışır. Subresource Integrity (integrity=\"sha384-...\" özniteliği) artık eşleşmeyen bir dosyayı tarayıcının reddetmesini sağlar. Yalnızca hiç değişmeyen dosyalarda işe yarar, örneğin sabit sürümlü bir kütüphane; sürekli değişen analiz ve sohbet araçları bunu kullanamaz. Bu tek başına bir zafiyet değil, iyi bir uygulamadır.",
+        "fix": "1. Sabit sürümlü dosyalara (bir CDN'deki kütüphaneler) integrity ve crossorigin özniteliklerini ekleyin; cdnjs ve jsDelivr gibi CDN'ler kopyalanacak etiketi tam olarak gösterir.\n2. Alternatif olarak dosyayı kendi sitenizden sunun.\n3. Kendi kendine değişen betikler (analiz, sohbet, etiket yöneticileri) için güvendiğiniz sağlayıcıları seçin ve onları bir Content-Security-Policy ile sınırlayın.\n4. Taramayı tekrar çalıştırın."
+      }
+    }
   }
 }

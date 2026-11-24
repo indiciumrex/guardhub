@@ -9,6 +9,10 @@
 // prefix (prefixSecurity "strict"); cookie_domain_too_broad = a session-named cookie the jar
 // stores as NOT host-only (a Domain attribute it accepted). Session names: sess, sid, auth,
 // token, login, never csrf/xsrf (docs/checks/cookie_depth.md).
+// Ground truth for content_signals' sri_missing (content_keys): Observatory's
+// subresource-integrity test lists the scripts it counts as foreign with their integrity
+// attribute; a listed script without integrity that loads over https (resolved against the page)
+// is sri_missing. Observatory runs for it only when the page names a script on another host at all.
 // usage (lab network): node oracle_headers.mjs origin [origin ...]  -> JSON on stdout
 import { scan } from "@mdn/mdn-http-observatory";
 import { CspParser } from "csp_evaluator/dist/parser.js";
@@ -92,7 +96,7 @@ function cacheableCookie(h) {
 
 const result = {};
 for (const origin of process.argv.slice(2)) {
-  const target = { keys: [], cookie_keys: [], notes: [] };
+  const target = { keys: [], cookie_keys: [], content_keys: [], notes: [] };
   result[origin] = target;
   try {
     const { r, body, url, refused } = await fetchRoot(origin);
@@ -102,18 +106,37 @@ for (const origin of process.argv.slice(2)) {
       const headerCsps = (r.headers.get("content-security-policy") || "").split(",").map((s) => s.trim()).filter(Boolean);
       const metas = metaCsps(body);
       const all = [...headerCsps, ...metas];
-      if (all.length) {
+      // a superset pre-filter (any absolute or protocol-relative script src); Observatory decides
+      const foreignScript = /<script\b[^>]*\bsrc\s*=\s*["']?(?:https?:)?\/\//i.test(body);
+      let obs = null;
+      if (all.length || foreignScript) {
         const u = new URL(origin);
         const opts = u.protocol === "https:" ? { httpsPort: u.port || undefined } : { httpPort: u.port || undefined };
         try {
-          const obs = await scan(u.hostname, opts);
-          const csp = obs.tests["content-security-policy"];
-          target.notes.push(`observatory csp: ${csp.result} unsafeEval=${csp.policy?.unsafeEval} unsafeObjects=${csp.policy?.unsafeObjects}`);
-          if (csp.policy?.unsafeEval) target.keys.push("csp_unsafe_eval");
-          if (csp.policy?.unsafeObjects) target.keys.push("csp_object_src_unrestricted");
+          obs = await scan(u.hostname, opts);
         } catch (e) {
           target.notes.push(`observatory failed: ${e.message}`);
         }
+      }
+      if (obs && foreignScript) {
+        const sri = obs.tests["subresource-integrity"];
+        target.notes.push(`observatory sri: ${sri.result}`);
+        for (const [src, d] of Object.entries(sri.data || {})) {
+          let resolved = null;
+          try {
+            resolved = new URL(src, url);
+          } catch {}
+          target.notes.push(`observatory sri script ${src}: integrity=${d.integrity ? "yes" : "no"}`);
+          if (!d.integrity && resolved?.protocol === "https:") target.content_keys = ["sri_missing"];
+        }
+      }
+      if (all.length && obs) {
+        const csp = obs.tests["content-security-policy"];
+        target.notes.push(`observatory csp: ${csp.result} unsafeEval=${csp.policy?.unsafeEval} unsafeObjects=${csp.policy?.unsafeObjects}`);
+        if (csp.policy?.unsafeEval) target.keys.push("csp_unsafe_eval");
+        if (csp.policy?.unsafeObjects) target.keys.push("csp_object_src_unrestricted");
+      }
+      if (all.length) {
         const parsed = all.map((p) => new CspParser(p).csp);
         if (checkMultipleMissingBaseUriDirective(parsed).length) target.keys.push("csp_base_uri_missing");
       }
