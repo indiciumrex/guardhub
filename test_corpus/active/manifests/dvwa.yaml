@@ -9,8 +9,9 @@ description: >
   OWASP ZAP oracle (test_corpus/oracles/zap). Active tests are GET-only (ADR-0008 §4):
   POST-only modules (xss_s, exec, upload, captcha, csp, weak_id) are outside what the checks
   declare, and state-changing GET forms (csrf, brute) are never requested (do-no-harm).
-  SSRF: fi includes $_GET['page'], but the image's PHP has allow_url_include=0, so a URL is
-  never fetched (no SSRF). IDOR: DVWA keeps no per-account objects; every module page shows
+  SSRF: fi includes $_GET['page'] and the image's Apache PHP includes remote URLs (reproduced
+  2026-11-24: fi/?page=http://<listener>/... fetched the listener and printed its body), so the
+  server fetches any URL given (remote file inclusion; SSRF confirmed out of band). IDOR: DVWA keeps no per-account objects; every module page shows
   the viewing account, so B never sees A's account line (false-positive control).
 checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
 expect:
@@ -30,3 +31,7 @@ expect:
     key: open_redirect
     location: http://dvwa.lab.test/vulnerabilities/open_redirect/source/low.php?redirect
     why: "open_redirect low.php sends header('location: ' . $_GET['redirect']) for any value."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://dvwa.lab.test/vulnerabilities/fi/?page
+    why: "fi low.php includes $_GET['page']; Apache's PHP includes remote URLs, so the server fetches any URL it is given."

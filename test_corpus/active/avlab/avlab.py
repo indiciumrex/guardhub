@@ -381,11 +381,14 @@ def site_ssrf(path: str, a: dict, h: "Handler") -> Resp:
                 page("Fetch", "<p>blocked: only av-ssrf.lab.test may be fetched</p>"),
             )
         return Resp(body=page("Fetch", f"<p>{E(fetch(u))}</p>"))
-    if path == "/link":  # shows the URL, never fetches it
+    if (
+        path == "/link"
+    ):  # shows the URL, never fetches it; only http(s) URLs become links
+        u = v("url")
+        if urllib.parse.urlsplit(u).scheme not in ("http", "https"):
+            return Resp(body=page("Link", f"<p>Saved text: {E(u)}</p>"))
         return Resp(
-            body=page(
-                "Link", f'<p>Saved link: <a href="{E(v("url"))}">{E(v("url"))}</a></p>'
-            )
+            body=page("Link", f'<p>Saved link: <a href="{E(u)}">{E(u)}</a></p>')
         )
     if path == "/validate":  # parses, never fetches
         s = urllib.parse.urlsplit(v("url"))
@@ -561,8 +564,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", r.ctype)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Length", str(len(body)))
-        for k, val in r.headers.items():
-            self.send_header(k, val)
+        for (
+            k,
+            val,
+        ) in r.headers.items():  # no CR/LF in a header value (no response splitting)
+            self.send_header(k, val.replace(chr(13), "").replace(chr(10), ""))
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)

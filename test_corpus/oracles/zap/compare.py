@@ -7,7 +7,11 @@ risk Medium or higher (CORS: only risk High, i.e. a foreign or null origin grant
 credentials; "*" or an echo without credentials is not cors_origin_reflected; XSS at risk Low is
 ZAP's "reflected in a JSON response" weakness, not an HTML reflection) must equal the manifest's
 expectations that are not `outside`, for every check ZAP has a rule for (active_idor has none:
-its expectations are listed as manifest-only truth, never compared). An
+its expectations are listed as manifest-only truth, never compared). Not counted either: an SSRF
+alert at a location where ZAP also reports an External Redirect (ZAP's scan requests follow
+redirects, so its callback is fetched by ZAP itself, not by the server; the redirect is counted as
+active_redirect), and an alert a manifest disputes (`oracle_disputed`: check, location and the
+evidence that the alert is wrong). Every alert not counted is listed in the summary. An
 `outside` expectation (beyond what the checks declare, e.g. reachable only from JavaScript) is
 listed with whether the oracle reached it; it never fails the run. A target with no oracle output
 is UNMEASURED and fails. Writes OUT_DIR/summary.md and summary.json; exit 1 on any mismatch.
@@ -43,9 +47,18 @@ def load_truth(out: str) -> dict[str, dict]:
     return truth
 
 
-def oracle_set(t: dict, checks: set[str]) -> set[tuple[str, str]]:
+def oracle_set(
+    t: dict, checks: set[str], disputed: frozenset = frozenset()
+) -> set[tuple[str, str]]:
     got = set()
+    redirects = {a["location"] for a in t["alerts"] if a["check"] == "active_redirect"}
     for a in t["alerts"]:
+        if a.get("confidence") == "False Positive":
+            continue
+        if a["check"] == "active_ssrf" and a["location"] in redirects:
+            continue
+        if (a["check"], a["location"]) in disputed:
+            continue
         if a["method"] != "GET" or a["check"] not in checks:
             continue
         if a["risk"] not in RISK_OK_BY_CHECK.get(a["check"], RISK_OK):
@@ -62,6 +75,9 @@ def main() -> int:
         with open(path, encoding="utf-8") as f:
             m = yaml.safe_load(f)
         t = truth.get(m["origin"].rstrip("/"))
+        disp = frozenset(
+            (d["check"], d["location"]) for d in m.get("oracle_disputed") or []
+        )
         want = {
             (e["check"], e["location"])
             for e in m.get("expect") or []
@@ -80,7 +96,7 @@ def main() -> int:
         if t is None:
             status, got = "UNMEASURED", set()
         else:
-            got = oracle_set(t, set(m["checks"])) - outside
+            got = oracle_set(t, set(m["checks"]), disp) - outside
             status = "ok" if got == want else "MISMATCH"
         bad += status != "ok"
         rows.append(
@@ -102,6 +118,21 @@ def main() -> int:
                     ]
                 ),
                 "manifest_only_truth_no_oracle_rule": no_oracle,
+                "oracle_disputed": [
+                    [d["check"], d["location"], d["why"]]
+                    for d in m.get("oracle_disputed") or []
+                ],
+                "oracle_not_counted": sorted(
+                    [
+                        a["check"],
+                        a["location"],
+                        a.get("risk", ""),
+                        a.get("confidence", ""),
+                    ]
+                    for a in (t or {}).get("alerts", [])
+                    if (a["check"], a["location"])
+                    not in oracle_set(t, set(m["checks"]), disp)
+                ),
                 "notes": (t or {}).get("notes", ["no oracle output"]),
             }
         )

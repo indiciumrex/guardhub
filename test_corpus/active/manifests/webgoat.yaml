@@ -10,12 +10,13 @@ description: >
   pinned OWASP ZAP oracle (same session, same route list). WebGoat keeps no objects one lab
   account could read of another's through these routes (IDOR false-positive control); its IDOR
   lesson uses its own fixture users behind a lesson login, not cross-account objects.
+  Not in the route list: the lesson endpoints below answer HTTP 500 to malformed input, and
+  three 500s in a row stop the whole active scan by design (circuit breaker, ADR-0008 §4; seen
+  in Gate M run 45441968669). They are listed as outside: not measurable under do-no-harm.
 checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
 start:
   - /WebGoat/start.mvc
   - /WebGoat/service/lessonmenu.mvc
-  - /WebGoat/SqlInjectionMitigations/servers?column=hostname
-  - /WebGoat/CrossSiteScripting/attack5a?QTY1=1&QTY2=1&QTY3=1&QTY4=1&field1=4128+3214+0002+1999&field2=111
 expect:
   - check: active_sqli
     key: sql_injection
@@ -27,3 +28,10 @@ expect:
     location: http://webgoat.lab.test:8080/WebGoat/CrossSiteScripting/attack5a?field1
     outside: true # reflected into a JSON answer the lesson's JavaScript inserts into the page: active_xss declares HTML responses only
     why: "Cross Site Scripting lesson 7: field1 comes back in the JSON feedback that the lesson page renders as HTML."
+oracle_disputed: # ZAP alerts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_sqli
+    location: http://webgoat.lab.test:8080/WebGoat/start.mvc?lang
+    why: >-
+      ZAP rates it confidence Low, from a bare HTTP 500. lang is Spring's locale parameter
+      (LocaleChangeInterceptor): an unparsable locale throws before any SQL runs; WebGoat's
+      start.mvc has no query that uses it.

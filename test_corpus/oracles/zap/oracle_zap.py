@@ -91,7 +91,7 @@ def main() -> int:
         wait("spider", lambda: zap.spider.status(s2), 600)  # noqa: B023
         seen += len(zap.spider.results(s2))
     policy = "guardhub-gate-m"
-    zap.ascan.add_scan_policy(policy, alertthreshold="MEDIUM", attackstrength="MEDIUM")
+    zap.ascan.add_scan_policy(policy, alertthreshold="MEDIUM", attackstrength="HIGH")
     zap.ascan.disable_all_scanners(scanpolicyname=policy)
     # one rule at a time, and every answer checked: an unknown id makes ZAP enable nothing and
     # the "scan" then tests nothing (Gate M's second CI run: 48 requests, 0 alerts on DVWA)

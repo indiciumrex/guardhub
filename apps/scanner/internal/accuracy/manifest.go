@@ -41,6 +41,17 @@ type Manifest struct {
 	// target's discovery starts besides "/": the lab's route list for pages no
 	// link reaches (a single-page app's API, a login-only lesson).
 	Start []string `yaml:"start,omitempty"`
+	// OracleDisputed lists independent-oracle alerts judged wrong, each with
+	// its evidence (Gate M's ZAP comparison, test_corpus/oracles/zap). It never
+	// changes the scanner's score; it only explains a disagreement.
+	OracleDisputed []Disputed `yaml:"oracle_disputed,omitempty"`
+}
+
+// Disputed is one oracle alert judged wrong and why.
+type Disputed struct {
+	Check    string `yaml:"check"`
+	Location string `yaml:"location"`
+	Why      string `yaml:"why"`
 }
 
 // Expectation names one finding. Location, when set, must match exactly;
