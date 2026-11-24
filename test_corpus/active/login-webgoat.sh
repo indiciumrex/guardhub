@@ -6,7 +6,7 @@
 set -eu
 OUT=${1:?usage: login-webgoat.sh OUT_JSON}
 B=http://webgoat.lab.test:8080/WebGoat
-PASS=gh-lab-only-pass # throwaway lab account, not a secret
+PASS=ghlabpw1 # throwaway lab account, not a secret (WebGoat allows 6-10 characters)
 i=0
 until curl -sf -o /dev/null "$B/login"; do i=$((i+1)); [ $i -lt 120 ] || { echo "webgoat never answered" >&2; exit 1; }; sleep 2; done
 session() {
