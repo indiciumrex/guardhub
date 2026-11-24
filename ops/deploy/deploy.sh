@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Build GuardHub images HERE, ship them + the release files to the server, then activate there.
-# Heavy builds never run on the shared host.   Usage: ops/deploy/deploy.sh root@host
+# Manual trigger for the CD agent (ADR-0009). Nothing is built here or on the server: CI builds,
+# signs and pushes the images; the server pulls and verifies them. Normally cron does this.
+#   ops/deploy/deploy.sh root@host            # the newest main commit (must be green + signed)
+#   ops/deploy/deploy.sh root@host <sha>      # an exact main commit (no downgrades)
+#   ops/deploy/deploy.sh root@host status
 set -Eeuo pipefail
-HOST=${1:?usage: deploy.sh user@host}
+HOST=${1:?usage: deploy.sh user@host [sha|status]}
 cd "$(git rev-parse --show-toplevel)"
-[[ -z $(git status --porcelain) ]] || { echo "working tree not clean: commit first" >&2; exit 1; }
-V=$(git rev-parse --short=12 HEAD)
-echo "== building $V"
-GUARDHUB_VERSION=$V docker compose -f docker-compose.yml build migrate scanner web
-echo "== shipping release files"
-ssh "$HOST" "mkdir -p /opt/guardhub/releases/$V /opt/guardhub/shared && chmod 700 /opt/guardhub/shared"
-git archive --format=tar HEAD | ssh "$HOST" "tar -x -C /opt/guardhub/releases/$V"
-echo "== shipping images"
-docker save "guardhub-api:$V" "guardhub-scanner:$V" "guardhub-web:$V" | gzip -1 | ssh "$HOST" 'gunzip | docker load'
-echo "== activating"
-ssh "$HOST" "bash /opt/guardhub/releases/$V/ops/deploy/guardhub-ctl.sh activate $V"
+git fetch -q origin main
+ARG=${2:-$(git rev-parse origin/main)}
+# first install (or repair) of the agent: the copy from origin/main
+ssh "$HOST" 'test -f /opt/guardhub/cd/cd.sh' ||
+  git show origin/main:ops/deploy/cd.sh | ssh "$HOST" 'install -D -m 700 /dev/stdin /opt/guardhub/cd/cd.sh'
+if [[ $ARG == status ]]; then exec ssh "$HOST" 'bash /opt/guardhub/cd/cd.sh status'; fi
+[[ $ARG =~ ^[0-9a-f]{40}$ ]] || ARG=$(git rev-parse "$ARG")
+ssh "$HOST" "bash /opt/guardhub/cd/cd.sh deploy $ARG"

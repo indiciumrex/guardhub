@@ -234,3 +234,28 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with: { name: playwright-report, path: e2e/playwright-report, retention-days: 7 }
+
+  # CD, CI half (ADR-0009). Only a push to main, and only after EVERY gate above passed: build the
+  # production images, push them to GHCR, sign each digest keyless (GitHub OIDC). The server's CD
+  # agent (ops/deploy/cd.sh) deploys only digests signed by this job for the commit it deploys.
+  release:
+    name: release (signed images to GHCR, main only)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [contracts, secrets, api, scanner, web, images, accuracy, header-truth, dns-truth, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: log in to GHCR with the job's own short-lived token
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: build, push and sign api, scanner, web
+        run: bash ops/ci/release_images.sh
+      - name: log out
+        if: always()
+        run: docker logout ghcr.io
+      - uses: actions/upload-artifact@v4
+        with: { name: release-digests, path: release-digests.txt, retention-days: 90 }
