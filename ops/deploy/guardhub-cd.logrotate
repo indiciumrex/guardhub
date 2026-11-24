@@ -1,0 +1,12 @@
+# Installed by ops/deploy/cd.sh as /etc/logrotate.d/guardhub-cd (ADR-0009). The CD agent's cron
+# line reopens the log with >> on every tick, so a plain rename is safe (no copytruncate).
+/var/log/guardhub-cd.log {
+    weekly
+    maxsize 10M
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 root root
+}
