@@ -20,10 +20,10 @@ export interface RawFinding {
   fingerprint: string;
 }
 
-export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth", "cookie_depth", "exposed_files", "js_libraries", "content_signals", "js_secrets", "active_xss", "active_sqli", "active_redirect", "active_cors", "active_ssrf", "dependency_vulns", "repo_secrets"] as const;
+export const CHECK_IDS = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth", "cookie_depth", "exposed_files", "js_libraries", "content_signals", "js_secrets", "active_xss", "active_sqli", "active_redirect", "active_cors", "active_ssrf", "active_idor", "dependency_vulns", "repo_secrets"] as const;
 export type CheckId = (typeof CHECK_IDS)[number];
 /** Checks that scan a connected repository (check-ids.json "target": "repo"). */
 export const REPO_CHECK_IDS: readonly CheckId[] = ["dependency_vulns", "repo_secrets"];
 /** Active checks (check-ids.json "target": "active", ADR-0008). */
-export const ACTIVE_CHECK_IDS: readonly CheckId[] = ["active_xss", "active_sqli", "active_redirect", "active_cors", "active_ssrf"];
+export const ACTIVE_CHECK_IDS: readonly CheckId[] = ["active_xss", "active_sqli", "active_redirect", "active_cors", "active_ssrf", "active_idor"];
 export const SITE_CHECK_IDS: readonly CheckId[] = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth", "cookie_depth", "exposed_files", "js_libraries", "content_signals", "js_secrets"];

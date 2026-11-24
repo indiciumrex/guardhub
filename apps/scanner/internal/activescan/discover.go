@@ -57,6 +57,13 @@ func (l DiscoveryLimits) withDefaults() DiscoveryLimits {
 // points (query parameters of links, inputs of GET forms) and the pages.
 // Requests are logged under the module "discovery".
 func Discover(ctx context.Context, c *active.Client, origin *url.URL, start []*url.URL, lim DiscoveryLimits) ([]Point, []Page, error) {
+	return DiscoverAs(ctx, c, origin, start, lim, nil)
+}
+
+// DiscoverAs is Discover logged in as a consented test account (nil:
+// anonymous). Links that look state-changing are never followed, with or
+// without a session (unsafeLink).
+func DiscoverAs(ctx context.Context, c *active.Client, origin *url.URL, start []*url.URL, lim DiscoveryLimits, sess *active.Session) ([]Point, []Page, error) {
 	lim = lim.withDefaults()
 	if len(start) == 0 {
 		start = []*url.URL{origin.ResolveReference(&url.URL{Path: "/"})}
@@ -92,7 +99,10 @@ func Discover(ctx context.Context, c *active.Client, origin *url.URL, start []*u
 		for k := range it.u.Query() {
 			addPoint(it.u, k)
 		}
-		resp, err := c.Send(ctx, active.Baseline("discovery", it.u))
+		if unsafeLink(it.u) {
+			continue
+		}
+		resp, err := c.Send(ctx, active.AsSession(active.Baseline("discovery", it.u), sess))
 		if err != nil {
 			if fatal(err) {
 				return sortedPoints(points), pages, err
@@ -228,6 +238,32 @@ func staticAsset(path string) bool {
 	}
 	// never crawl into logout links: they end the user's session
 	return strings.Contains(p, "logout") || strings.Contains(p, "logoff") || strings.Contains(p, "signout")
+}
+
+// unsafeVerbs are words that mark a GET link as doing something (a badly
+// built site may delete, pay or log out on GET). Do-no-harm: never request one.
+var unsafeVerbs = []string{"delete", "remove", "destroy", "drop", "cancel", "unsubscribe", "revoke",
+	"disable", "deactivate", "reset", "approve", "reject", "transfer", "withdraw", "pay", "purchase",
+	"buy", "checkout", "order/place", "confirm", "logout", "logoff", "signout", "sign-out", "log-out",
+	"setup", "install", "truncate", "purge", "archive", "ban", "kick", "promote", "upgrade", "downgrade"}
+
+// unsafeLink reports whether u's path, parameter names or values carry one of
+// unsafeVerbs (as a whole word-ish token) or an action/do/op parameter.
+func unsafeLink(u *url.URL) bool {
+	hay := strings.ToLower(u.Path)
+	for k, vs := range u.Query() {
+		lk := strings.ToLower(k)
+		if lk == "action" || lk == "do" || lk == "op" || lk == "cmd" || lk == "task" || lk == "mode" {
+			return true
+		}
+		hay += " " + lk + " " + strings.ToLower(strings.Join(vs, " "))
+	}
+	for _, v := range unsafeVerbs {
+		if strings.Contains(hay, v) {
+			return true
+		}
+	}
+	return false
 }
 
 func isHTML(r *active.Response) bool {

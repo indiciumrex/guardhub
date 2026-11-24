@@ -27,6 +27,8 @@ type Env struct {
 	Collab active.Collaborator // nil: SSRF is not run
 	// OOBWait is how long SSRF waits for a collaborator hit (default 5s).
 	OOBWait time.Duration
+	// SessionA/SessionB: two consented test accounts (nil: IDOR is not run).
+	SessionA, SessionB *active.Session
 }
 
 // Check is one active check.
@@ -36,7 +38,7 @@ type Check interface {
 }
 
 // All returns the active checks in run order.
-func All() []Check { return []Check{XSS{}, SQLi{}, Redirect{}, CORS{}, SSRF{}} }
+func All() []Check { return []Check{XSS{}, SQLi{}, Redirect{}, CORS{}, SSRF{}, IDOR{}} }
 
 // IsFatal reports whether err ends the whole active scan.
 func IsFatal(err error) bool {

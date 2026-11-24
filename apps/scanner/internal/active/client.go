@@ -35,7 +35,8 @@ type Request struct {
 	control bool    // send the payload's Control instead of its Value
 	target  *url.URL
 	param   string
-	oob     string // OOB name substituted for {oob}
+	oob     string   // OOB name substituted for {oob}
+	session *Session // nil: anonymous (session.go)
 }
 
 // Baseline is an unmodified GET of target (a page with its own query).
@@ -187,13 +188,16 @@ func (c *Client) Send(ctx context.Context, r Request) (*Response, error) {
 			return resp, nil // a redirect elsewhere is a fact for the module, never followed
 		}
 		u = next
-		r = Baseline(r.module, next) // later hops carry no payload of their own
+		r = AsSession(Baseline(r.module, next), r.session) // later hops: no payload, same session (same origin only)
 	}
 }
 
 func (c *Client) one(ctx context.Context, r Request, u *url.URL) (*Response, error) {
 	entry := LogEntry{At: time.Now().UTC(), Module: r.module, PayloadID: r.payloadID(), PayloadHash: payloadHash(r.value()),
 		Method: http.MethodGet, Path: u.EscapedPath(), Param: r.param}
+	if r.session != nil {
+		entry.Session = r.session.Name // never the cookie
+	}
 	if r.payload.ID == "" {
 		entry.PayloadHash = ""
 	}
@@ -226,6 +230,12 @@ func (c *Client) one(ctx context.Context, r Request, u *url.URL) (*Response, err
 	}
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Accept", "text/html,application/json;q=0.9,*/*;q=0.8")
+	if r.session != nil {
+		if err := r.session.Validate(); err != nil {
+			return nil, refuse(OutcomeScope, err)
+		}
+		req.Header.Set("Cookie", r.session.Cookie)
+	}
 	if r.payload.ID != "" && r.payload.In == InOrigin {
 		req.Header.Set("Origin", r.value())
 	}

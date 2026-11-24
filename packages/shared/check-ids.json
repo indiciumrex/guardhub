@@ -235,6 +235,14 @@
       ]
     },
     {
+      "id": "active_idor",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "idor_cross_account_read", "severity": "high", "params": ["path", "param"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",

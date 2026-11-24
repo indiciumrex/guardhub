@@ -27,6 +27,7 @@ type LogEntry struct {
 	Method      string    `json:"method"`
 	Path        string    `json:"path"`
 	Param       string    `json:"param,omitempty"`
+	Session     string    `json:"session,omitempty"` // consented test account name, never its cookie
 	Status      int       `json:"status,omitempty"`
 	Length      int       `json:"length,omitempty"`
 	LatencyMS   int64     `json:"latency_ms,omitempty"`

@@ -67,6 +67,7 @@ const (
 	CheckActiveRedirect    = "active_redirect"
 	CheckActiveCors        = "active_cors"
 	CheckActiveSsrf        = "active_ssrf"
+	CheckActiveIdor        = "active_idor"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -208,6 +209,9 @@ var FindingKeys = map[string]map[string]Severity{
 	"active_ssrf": {
 		"ssrf_confirmed": SeverityHigh,
 	},
+	"active_idor": {
+		"idor_cross_account_read": SeverityHigh,
+	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,
 		"vulnerable_dependency_medium": SeverityMedium,
@@ -235,4 +239,5 @@ var ActiveChecks = map[string]bool{
 	"active_redirect": true,
 	"active_cors":     true,
 	"active_ssrf":     true,
+	"active_idor":     true,
 }
