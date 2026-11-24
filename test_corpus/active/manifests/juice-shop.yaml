@@ -1,0 +1,31 @@
+target: juice-shop
+origin: http://juice-shop.lab.test:3000
+active: true
+description: >
+  OWASP Juice Shop (the lab's pinned image), anonymous. A single-page app: its API endpoints
+  are referenced from JavaScript, not from HTML links or GET forms, so discovery starts from
+  a route list (start below: GET endpoints the app's own front end calls, with the values it
+  sends). Ground truth: Juice Shop's documented challenges for these routes, confirmed by the
+  pinned OWASP ZAP oracle (given the same route list). Access-Control-Allow-Origin is "*"
+  without credentials, which is not cors_origin_reflected. The basket IDOR challenge
+  (/rest/basket/<id>) needs a bearer token in the Authorization header, which a consented
+  session (a Cookie header, ADR-0008 §5) cannot carry: not in the route list.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+start:
+  - /rest/products/search?q=apple
+  - /redirect?to=https://github.com/juice-shop/juice-shop
+  - /api/Products/1
+  - /rest/languages
+  - /rest/admin/application-version
+  - /api/Challenges/?name=Score%20Board
+  - /ftp/legal.md
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://juice-shop.lab.test:3000/rest/products/search?q
+    why: "Login-less SQLi challenge family: /rest/products/search builds a SQLite query from q by string concatenation (SQLITE_ERROR on a lone quote)."
+  - check: active_redirect
+    key: open_redirect
+    location: http://juice-shop.lab.test:3000/redirect?to
+    outside: true # allow-list bypass: the target must contain an allow-listed URL; GuardHub's canary never does by design
+    why: "Allow-listed Redirect challenge: /redirect accepts any URL that merely contains an allow-listed one (substring check)."

@@ -11,7 +11,7 @@ from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import resolve_locale
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import check_description, check_name
-from guardhub_api.findings.contract_gen import CHECK_IDS
+from guardhub_api.findings.contract_gen import ACTIVE_CHECK_IDS, CHECK_IDS
 from guardhub_api.health.service import LiveHealth, live_status
 from guardhub_api.modules.registry import enabled_check_ids
 
@@ -48,4 +48,5 @@ async def checks(
             enabled=cid in enabled,
         )
         for cid in CHECK_IDS
+        if cid not in ACTIVE_CHECK_IDS  # active tests (ADR-0008) are not offered until the founder opens them
     ]

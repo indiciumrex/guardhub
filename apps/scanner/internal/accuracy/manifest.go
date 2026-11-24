@@ -31,6 +31,31 @@ type Manifest struct {
 	Checks      []string      `yaml:"checks"` // check ids scored on this target
 	Expect      []Expectation `yaml:"expect"`
 	Tolerate    []Expectation `yaml:"tolerate"`
+	// Active marks an active-test target (ADR-0008, Gate M: scanner
+	// activelab): its checks are all active checks; a passive manifest may
+	// list none. Sessions names the lab-made session file (two consented
+	// test accounts, JSON {"a":{...},"b":{...}}), relative to the manifests.
+	Active   bool   `yaml:"active,omitempty"`
+	Sessions string `yaml:"sessions,omitempty"`
+	// Start lists same-origin paths (with their query) where an active
+	// target's discovery starts besides "/": the lab's route list for pages no
+	// link reaches (a single-page app's API, a login-only lesson).
+	Start []string `yaml:"start,omitempty"`
+	// Exclude lists path prefixes the active scan must never request: the
+	// scope's excluded paths a customer sets (ADR-0008 §2), e.g. a page that
+	// answers 500 to any unexpected value.
+	Exclude []string `yaml:"exclude,omitempty"`
+	// OracleDisputed lists independent-oracle alerts judged wrong, each with
+	// its evidence (Gate M's ZAP comparison, test_corpus/oracles/zap). It never
+	// changes the scanner's score; it only explains a disagreement.
+	OracleDisputed []Disputed `yaml:"oracle_disputed,omitempty"`
+}
+
+// Disputed is one oracle alert judged wrong and why.
+type Disputed struct {
+	Check    string `yaml:"check"`
+	Location string `yaml:"location"`
+	Why      string `yaml:"why"`
 }
 
 // Expectation names one finding. Location, when set, must match exactly;
@@ -119,7 +144,7 @@ func (m Manifest) Validate() error {
 		if _, ok := evidence.FindingKeys[id]; !ok {
 			return fmt.Errorf("checks: unknown check id %q", id)
 		}
-		if evidence.RepoChecks[id] != m.IsRepo() {
+		if evidence.RepoChecks[id] != m.IsRepo() || evidence.ActiveChecks[id] != m.Active {
 			return fmt.Errorf("checks: %q cannot run on this kind of target", id)
 		}
 		scored[id] = true

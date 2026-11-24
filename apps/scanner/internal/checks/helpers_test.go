@@ -206,10 +206,18 @@ func TestRegistryMatchesCatalog(t *testing.T) {
 	cat := loadCatalog(t)
 	r := Default()
 	rr := DefaultRepo(RepoOptions{})
-	if len(r.IDs())+len(rr.IDs()) != len(cat) {
-		t.Fatalf("registries have %v + %v, catalog has %d checks", r.IDs(), rr.IDs(), len(cat))
+	// active checks (ADR-0008) run in activescan, never in a site or repo registry;
+	// activescan's own test matches them with the catalogue
+	if len(r.IDs())+len(rr.IDs())+len(evidence.ActiveChecks) != len(cat) {
+		t.Fatalf("registries have %v + %v (+%d active), catalog has %d checks", r.IDs(), rr.IDs(), len(evidence.ActiveChecks), len(cat))
 	}
 	for id := range cat {
+		if evidence.ActiveChecks[id] {
+			if _, site := r.Get(id); site {
+				t.Fatalf("active check %s must not be a site check", id)
+			}
+			continue
+		}
 		if evidence.RepoChecks[id] {
 			c, ok := rr.Get(id)
 			if !ok || c.ID() != id {

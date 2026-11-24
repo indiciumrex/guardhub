@@ -670,5 +670,77 @@
         "fix": "1. Rotate the test key at the provider.\n2. Move the calls that use it to your server; browsers should get only publishable keys (for Stripe: pk_test_ / pk_live_).\n3. Check how the live key is deployed, then run the scan again."
       }
     }
+  },
+  "active_xss": {
+    "name": "Reflected cross-site scripting (active test)",
+    "description": "With your consent, sends harmless marker text in your pages' URL parameters and checks whether your site puts it back into the page as HTML instead of plain text.",
+    "findings": {
+      "reflected_xss": {
+        "title": "Page builds HTML from the {param} parameter: {path}",
+        "summary": "We sent a harmless marker in the {param} parameter of {path} and your page returned it as real HTML ({context}), not as plain text. The marker cannot run code; a real attacker's text could.",
+        "why": "If a page turns a URL parameter into HTML, anyone can craft a link to your site that runs their script in your visitor's browser. Clicking such a link can let the attacker act as that visitor on your site: read their data, change their settings or steal their session.",
+        "fix": "1. Encode {param} for the place where it is printed (HTML text, attribute or script) using your framework's escaping, instead of inserting it raw.\n2. Add a Content-Security-Policy that blocks inline scripts as a second line of defence.\n3. Run the active test again to confirm."
+      }
+    }
+  },
+  "active_sqli": {
+    "name": "SQL injection (active test)",
+    "description": "With your consent, adds a single quote and read-only true/false conditions to your pages' URL parameters and checks whether your database reacts to them. Nothing is written, changed or slowed down.",
+    "findings": {
+      "sql_injection": {
+        "title": "Database query can be changed through the {param} parameter: {path}",
+        "summary": "On {path}, the {param} parameter reaches a database query unprotected ({technique}). We only used a quote and read-only conditions; no data was read, changed or deleted.",
+        "why": "If visitors can change your database queries, an attacker can usually read every table: customer accounts, password hashes, orders and payment records. Depending on the database, they may also change or delete data or take over the server.",
+        "fix": "1. Use parameterised queries (prepared statements) or your ORM's query builder for {param}; never build SQL by joining strings.\n2. Give the application's database user only the permissions it needs.\n3. Hide database error messages from visitors.\n4. Run the active test again to confirm."
+      }
+    }
+  },
+  "active_redirect": {
+    "name": "Open redirect (active test)",
+    "description": "With your consent, puts GuardHub's test address into your pages' redirect parameters and checks whether your site sends visitors there.",
+    "findings": {
+      "open_redirect": {
+        "title": "Site redirects visitors to any address given in {param}: {path}",
+        "summary": "{path} sent us to GuardHub's test address when we put it in the {param} parameter. That address is never reachable and was not followed.",
+        "why": "A link that starts with your trusted domain but lands somewhere else is ideal for phishing: people see your name, click, and arrive on an attacker's copy of your login page. It can also leak login tokens to the other site.",
+        "fix": "1. Only redirect to paths on your own site, or to an allow-list of addresses you control.\n2. Reject values in {param} that start with a scheme (http:, https:, //) or a different host.\n3. Run the active test again to confirm."
+      }
+    }
+  },
+  "active_cors": {
+    "name": "Cross-origin access with credentials (active test)",
+    "description": "With your consent, asks your pages for data on behalf of a foreign website and checks whether your site allows it together with the visitor's login.",
+    "findings": {
+      "cors_origin_reflected": {
+        "title": "Any website can read {path} with your visitor's login",
+        "summary": "{path} answered our request from the foreign origin {origin} with permission to read the response, including the visitor's cookies (Access-Control-Allow-Credentials: true).",
+        "why": "If your site trusts any origin with credentials, a malicious website your logged-in visitor opens can silently read their data from your site: profile, messages, orders or API keys shown on that page.",
+        "fix": "1. Return Access-Control-Allow-Origin only for an explicit list of your own origins, never by copying the request's Origin header.\n2. Never allow the origin null.\n3. Send Access-Control-Allow-Credentials: true only where cross-site access with a login is really needed.\n4. Run the active test again to confirm."
+      }
+    }
+  },
+  "active_ssrf": {
+    "name": "Server-side request forgery (active test)",
+    "description": "With your consent, puts a unique GuardHub collaborator address into URL-taking parameters and checks whether your server itself fetches it.",
+    "findings": {
+      "ssrf_confirmed": {
+        "title": "Your server fetches any address given in {param}: {path}",
+        "summary": "After we put a unique GuardHub test address into the {param} parameter of {path}, your server requested that address itself. We used only our own collaborator; nothing internal was touched.",
+        "why": "A server that fetches any address on request can be pointed at your internal network: admin panels, databases and cloud metadata services that hand out access keys. Attackers use this to move from your website into your infrastructure.",
+        "fix": "1. Only fetch addresses from an allow-list of hosts you expect.\n2. Block private, loopback and link-local addresses (including 169.254.169.254) after DNS resolution, and do not follow redirects to them.\n3. Run the fetching code without access to internal services where possible.\n4. Run the active test again to confirm."
+      }
+    }
+  },
+  "active_idor": {
+    "name": "Access to other accounts' data (active test)",
+    "description": "With your consent and two test accounts you create, opens pages that belong to the first account while logged in as the second, to check that your site keeps each account's data private. Only pages are read; nothing is changed.",
+    "findings": {
+      "idor_cross_account_read": {
+        "title": "One account can open another account's data: {path}",
+        "summary": "Logged in as your second test account, we opened {path} for an object of your first test account (identified by {param}) and saw its content. Without a login the page did not show it.",
+        "why": "When a page trusts the identifier in the address instead of checking who owns the object, any customer can read other customers' orders, invoices, messages or personal details by changing a number. This is one of the most common causes of data breaches.",
+        "fix": "1. On every request for {path}, check on the server that the logged-in user owns (or may see) the requested object, not only that someone is logged in.\n2. Prefer looking objects up through the current user (for example user.orders.find(id)).\n3. Run the active test again with your two test accounts to confirm."
+      }
+    }
   }
 }

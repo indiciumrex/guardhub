@@ -1,0 +1,8 @@
+target: active-ef-dump
+origin: https://ef-dump.lab.test
+active: true
+description: >
+  False-positive control: the passive lab target ef-dump (static nginx pages; no parameter
+  reaches any code). No active check may report anything here.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect: []

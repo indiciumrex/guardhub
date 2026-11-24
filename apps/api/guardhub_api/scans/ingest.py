@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any  # JSON event payloads are untyped until validated
@@ -21,6 +22,7 @@ from pydantic import ValidationError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from guardhub_api.active import log as active_log
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Evidence, Finding, Scan
 from guardhub_api.db.session import DbContext, db_session
@@ -41,13 +43,21 @@ SCAN_FAILURE_CODES = {
     "internal",
     "repo_access_lost",
     "repo_empty",
+    # active scans (ADR-0008)
+    "active_disabled",
+    "active_killed",
+    "ownership_unproven",
+    "target_stressed",
 }
+
+
+_FRACTION = re.compile(r"(\.\d{6})\d+")  # Go's RFC 3339 nanoseconds: Python takes microseconds
 
 
 def _parse_time(value: object) -> datetime:
     if isinstance(value, str):
         try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(_FRACTION.sub(r"\1", value.replace("Z", "+00:00")))
             return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
         except ValueError:
             pass
@@ -77,6 +87,55 @@ def validate_findings(raw: object, allowed_checks: set[str]) -> list[RawFinding]
     return list(out.values())
 
 
+MAX_REQUEST_LOG_ENTRIES = 2000  # > the scan budget (300) incl. redirect hops and refusals
+_LOG_TEXT = {"module": 64, "payload_id": 96, "payload_sha256": 64, "path": 2048, "param": 256, "outcome": 32}
+
+
+async def _store_request_log(scan_id: uuid.UUID, event: dict[str, Any]) -> None:
+    """active.request_log -> the append-only active_request_log table (ADR-0008 §6).
+
+    A redelivered event would append the entries twice, so a scan that already has entries is
+    skipped (the scanner sends the log once, before scan.completed).
+    """
+    try:
+        consent_id = uuid.UUID(str(event.get("consent_id")))
+    except ValueError:
+        log.warning("request_log_without_consent", extra={"scan_id": str(scan_id)})
+        return
+    entries = event.get("entries")
+    if not isinstance(entries, list):
+        return
+    rows = []
+    for e in entries[:MAX_REQUEST_LOG_ENTRIES]:
+        if not isinstance(e, dict) or e.get("method") != "GET":
+            continue
+        row: dict[str, Any] = {k: str(e.get(k) or "")[:n] or None for k, n in _LOG_TEXT.items()}
+        if any(row[k] is None for k in ("module", "payload_id", "path", "outcome")):
+            continue
+        session_name = e.get("session")
+        rows.append(
+            {
+                **row,
+                "scan_id": scan_id,
+                "consent_id": consent_id,
+                "at": _parse_time(e.get("at")),
+                "method": "GET",
+                "session": session_name if session_name in ("A", "B") else None,
+                "status": int(e["status"]) if isinstance(e.get("status"), int) else None,
+                "length": int(e["length"]) if isinstance(e.get("length"), int) else None,
+                "latency_ms": int(e["latency_ms"]) if isinstance(e.get("latency_ms"), int) else None,
+            }
+        )
+    async with db_session(DbContext.system()) as session:
+        if await repository.get(session, scan_id) is None:
+            log.warning("request_log_for_unknown_scan", extra={"scan_id": str(scan_id)})
+            return
+        if await active_log.has_entries(session, scan_id):
+            return
+        await active_log.append(session, rows)
+    log.info("active_request_log_stored", extra={"scan_id": str(scan_id), "entries": str(len(rows))})
+
+
 async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
     if event.get("v") != 1:
         log.warning("unsupported_event_version", extra={"v": str(event.get("v"))})
@@ -88,6 +147,9 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         return
     kind = event.get("type")
     at = _parse_time(event.get("at"))
+    if kind == "active.request_log":
+        await _store_request_log(scan_id, event)
+        return
     notify = False
     async with db_session(DbContext.system()) as session:
         scan = await repository.get(session, scan_id, for_update=True)

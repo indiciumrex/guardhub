@@ -1,0 +1,9 @@
+target: av-cors-safe
+origin: http://av-cors-safe.lab.test
+active: true
+description: >
+  False-positive control (avlab.py, site_cors_safe): "*" without credentials, an exact
+  allow-list, an Origin echoed without credentials, and a fixed own origin. None grants a
+  foreign origin a credentialed read. Confirmed by ZAP (no risk-High CORS alert).
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect: []

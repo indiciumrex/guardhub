@@ -670,5 +670,77 @@
         "fix": "1. Test anahtarını sağlayıcıda yenileyin.\n2. Onu kullanan çağrıları sunucunuza taşıyın; tarayıcılar yalnızca yayımlanabilir anahtarları almalıdır (Stripe için: pk_test_ / pk_live_).\n3. Canlı anahtarın nasıl dağıtıldığını kontrol edin, sonra taramayı tekrar çalıştırın."
       }
     }
+  },
+  "active_xss": {
+    "name": "Yansıyan siteler arası betik çalıştırma (aktif test)",
+    "description": "İzninizle sayfalarınızın URL parametrelerine zararsız bir işaret metni gönderir ve sitenizin bunu düz metin yerine HTML olarak sayfaya geri koyup koymadığını kontrol eder.",
+    "findings": {
+      "reflected_xss": {
+        "title": "Sayfa {param} parametresinden HTML oluşturuyor: {path}",
+        "summary": "{path} sayfasının {param} parametresine zararsız bir işaret gönderdik; sayfanız bunu düz metin olarak değil gerçek HTML olarak ({context}) geri döndürdü. İşaretimiz kod çalıştıramaz; gerçek bir saldırganın metni çalıştırabilir.",
+        "why": "Bir sayfa URL parametresini HTML'e dönüştürüyorsa, herkes sitenize ait ve ziyaretçinizin tarayıcısında kendi betiğini çalıştıran bir bağlantı hazırlayabilir. Bu bağlantıya tıklanması, saldırganın sitenizde o ziyaretçi gibi davranmasına izin verebilir: verilerini okuyabilir, ayarlarını değiştirebilir veya oturumunu çalabilir.",
+        "fix": "1. {param} değerini ham olarak eklemek yerine, yazdırıldığı yere (HTML metni, öznitelik veya betik) uygun şekilde framework'ünüzün kaçış (escape) işleviyle kodlayın.\n2. İkinci bir savunma katmanı olarak satır içi betikleri engelleyen bir Content-Security-Policy ekleyin.\n3. Doğrulamak için aktif testi yeniden çalıştırın."
+      }
+    }
+  },
+  "active_sqli": {
+    "name": "SQL enjeksiyonu (aktif test)",
+    "description": "İzninizle sayfalarınızın URL parametrelerine tek bir tırnak işareti ve salt okunur doğru/yanlış koşulları ekler ve veritabanınızın bunlara tepki verip vermediğini kontrol eder. Hiçbir şey yazılmaz, değiştirilmez veya yavaşlatılmaz.",
+    "findings": {
+      "sql_injection": {
+        "title": "Veritabanı sorgusu {param} parametresiyle değiştirilebiliyor: {path}",
+        "summary": "{path} sayfasında {param} parametresi korumasız biçimde bir veritabanı sorgusuna ulaşıyor ({technique}). Yalnızca bir tırnak işareti ve salt okunur koşullar kullandık; hiçbir veri okunmadı, değiştirilmedi veya silinmedi.",
+        "why": "Ziyaretçiler veritabanı sorgularınızı değiştirebiliyorsa, bir saldırgan genellikle tüm tabloları okuyabilir: müşteri hesapları, parola özetleri, siparişler ve ödeme kayıtları. Veritabanına bağlı olarak veriyi değiştirebilir, silebilir veya sunucuyu ele geçirebilir.",
+        "fix": "1. {param} için parametreli sorgular (prepared statement) veya ORM'inizin sorgu oluşturucusunu kullanın; SQL'i asla metin birleştirerek kurmayın.\n2. Uygulamanın veritabanı kullanıcısına yalnızca gereken yetkileri verin.\n3. Veritabanı hata mesajlarını ziyaretçilerden gizleyin.\n4. Doğrulamak için aktif testi yeniden çalıştırın."
+      }
+    }
+  },
+  "active_redirect": {
+    "name": "Açık yönlendirme (aktif test)",
+    "description": "İzninizle sayfalarınızın yönlendirme parametrelerine GuardHub'ın test adresini koyar ve sitenizin ziyaretçileri oraya gönderip göndermediğini kontrol eder.",
+    "findings": {
+      "open_redirect": {
+        "title": "Site, ziyaretçileri {param} içinde verilen herhangi bir adrese yönlendiriyor: {path}",
+        "summary": "{param} parametresine GuardHub'ın test adresini koyduğumuzda {path} bizi o adrese gönderdi. Bu adrese hiçbir zaman ulaşılamaz ve yönlendirme takip edilmedi.",
+        "why": "Güvendiğiniz alan adınızla başlayıp başka bir yere çıkan bir bağlantı oltalama için idealdir: insanlar sizin adınızı görür, tıklar ve giriş sayfanızın saldırgana ait bir kopyasına ulaşır. Ayrıca giriş belirteçlerini diğer siteye sızdırabilir.",
+        "fix": "1. Yalnızca kendi sitenizdeki yollara veya kontrol ettiğiniz adreslerin izin listesine yönlendirin.\n2. {param} içinde bir şemayla (http:, https:, //) veya farklı bir alan adıyla başlayan değerleri reddedin.\n3. Doğrulamak için aktif testi yeniden çalıştırın."
+      }
+    }
+  },
+  "active_cors": {
+    "name": "Kimlik bilgileriyle çapraz kaynak erişimi (aktif test)",
+    "description": "İzninizle sayfalarınızdan yabancı bir web sitesi adına veri ister ve sitenizin buna ziyaretçinin oturumuyla birlikte izin verip vermediğini kontrol eder.",
+    "findings": {
+      "cors_origin_reflected": {
+        "title": "Herhangi bir web sitesi {path} sayfasını ziyaretçinizin oturumuyla okuyabiliyor",
+        "summary": "{path}, yabancı kaynak {origin} üzerinden yaptığımız isteğe, ziyaretçinin çerezleri dahil yanıtı okuma izniyle cevap verdi (Access-Control-Allow-Credentials: true).",
+        "why": "Siteniz kimlik bilgileriyle her kaynağa güveniyorsa, oturum açmış ziyaretçinizin açtığı kötü niyetli bir web sitesi, o sayfada gösterilen verilerini (profil, mesajlar, siparişler veya API anahtarları) sitenizden sessizce okuyabilir.",
+        "fix": "1. Access-Control-Allow-Origin değerini isteğin Origin başlığını kopyalayarak değil, yalnızca kendi kaynaklarınızın açık bir listesi için döndürün.\n2. null kaynağına asla izin vermeyin.\n3. Access-Control-Allow-Credentials: true başlığını yalnızca oturumla çapraz site erişiminin gerçekten gerektiği yerlerde gönderin.\n4. Doğrulamak için aktif testi yeniden çalıştırın."
+      }
+    }
+  },
+  "active_ssrf": {
+    "name": "Sunucu taraflı istek sahteciliği (aktif test)",
+    "description": "İzninizle URL alan parametrelere GuardHub'a ait benzersiz bir test adresi koyar ve sunucunuzun bu adresi kendisinin çekip çekmediğini kontrol eder.",
+    "findings": {
+      "ssrf_confirmed": {
+        "title": "Sunucunuz {param} içinde verilen herhangi bir adresi çekiyor: {path}",
+        "summary": "{path} sayfasının {param} parametresine benzersiz bir GuardHub test adresi koyduktan sonra sunucunuz bu adrese kendisi istek gönderdi. Yalnızca kendi test sunucumuzu kullandık; hiçbir iç sisteme dokunulmadı.",
+        "why": "İstek üzerine herhangi bir adresi çeken bir sunucu, iç ağınıza yönlendirilebilir: yönetim panelleri, veritabanları ve erişim anahtarı veren bulut meta veri servisleri. Saldırganlar bunu web sitenizden altyapınıza geçmek için kullanır.",
+        "fix": "1. Yalnızca beklediğiniz alan adlarının izin listesindeki adresleri çekin.\n2. DNS çözümlemesinden sonra özel, loopback ve link-local adresleri (169.254.169.254 dahil) engelleyin ve bunlara giden yönlendirmeleri takip etmeyin.\n3. Mümkünse adres çeken kodu iç servislere erişimi olmadan çalıştırın.\n4. Doğrulamak için aktif testi yeniden çalıştırın."
+      }
+    }
+  },
+  "active_idor": {
+    "name": "Başka hesapların verilerine erişim (aktif test)",
+    "description": "İzninizle ve oluşturduğunuz iki test hesabıyla, birinci hesaba ait sayfaları ikinci hesapla oturum açmışken açar ve sitenizin her hesabın verilerini gizli tutup tutmadığını kontrol eder. Yalnızca sayfalar okunur; hiçbir şey değiştirilmez.",
+    "findings": {
+      "idor_cross_account_read": {
+        "title": "Bir hesap başka bir hesabın verilerini açabiliyor: {path}",
+        "summary": "İkinci test hesabınızla oturum açmışken, birinci test hesabınıza ait bir nesne için ({param} ile belirtilen) {path} sayfasını açtık ve içeriğini gördük. Oturum açmadan sayfa bu içeriği göstermedi.",
+        "why": "Bir sayfa, nesnenin kime ait olduğunu kontrol etmek yerine adresteki kimliğe güvendiğinde, her müşteri bir sayıyı değiştirerek diğer müşterilerin siparişlerini, faturalarını, mesajlarını veya kişisel bilgilerini okuyabilir. Bu, veri ihlallerinin en yaygın nedenlerinden biridir.",
+        "fix": "1. {path} için her istekte, yalnızca birinin oturum açmış olmasını değil, oturum açan kullanıcının istenen nesnenin sahibi olduğunu (veya görme yetkisi olduğunu) sunucuda kontrol edin.\n2. Nesneleri tercihen mevcut kullanıcı üzerinden arayın (örneğin user.orders.find(id)).\n3. Doğrulamak için aktif testi iki test hesabınızla yeniden çalıştırın."
+      }
+    }
   }
 }

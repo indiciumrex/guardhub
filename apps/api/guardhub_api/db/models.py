@@ -243,3 +243,47 @@ class AuditLog(Base):
     target: Mapped[str] = mapped_column(Text, default="")
     metadata_: Mapped[dict[str, str]] = mapped_column("metadata", JSONB, default=dict)
     at: Mapped[datetime] = _now()
+
+
+class ActiveConsent(Base):
+    """What a customer agreed to for active tests (ADR-0008). Only revocation may change a row."""
+
+    __tablename__ = "active_consents"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL")
+    )
+    origin: Mapped[str] = mapped_column(Text)
+    excluded_paths: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    checks: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    consent_version: Mapped[str] = mapped_column(Text)
+    consent_sha256: Mapped[str] = mapped_column(Text)
+    accepted_at: Mapped[datetime] = _now()
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ActiveRequestLog(Base):
+    """One request an active scan sent (append-only; ADR-0008 §6)."""
+
+    __tablename__ = "active_request_log"
+    # writers append without reading back (the system context may, but keep inserts plain)
+    __table_args__ = {"implicit_returning": False}  # noqa: RUF012 — SQLAlchemy declarative API
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    scan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    consent_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    module: Mapped[str] = mapped_column(Text)
+    payload_id: Mapped[str] = mapped_column(Text)
+    payload_sha256: Mapped[str | None] = mapped_column(Text)
+    method: Mapped[str] = mapped_column(Text)
+    path: Mapped[str] = mapped_column(Text)
+    param: Mapped[str | None] = mapped_column(Text)
+    session: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[int | None] = mapped_column(Integer)
+    length: Mapped[int | None] = mapped_column(Integer)
+    latency_ms: Mapped[int | None] = mapped_column(BigInteger)
+    outcome: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = _now()

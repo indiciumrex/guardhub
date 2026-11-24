@@ -1,0 +1,30 @@
+target: av-sqli
+origin: http://av-sqli.lab.test
+active: true
+description: >
+  Gate M purpose-built site (avlab.py, site_sqli; SQLite): a number concatenated with the
+  database error shown, a quoted string and a number concatenated with errors hidden (blind:
+  404 vs 200, or different text), next to bound-parameter look-alikes, a search whose page
+  changes with every input, a help page that always quotes SQL error messages and an
+  integer-validated parameter. Ground truth: the VULN lines of avlab.py, confirmed by ZAP.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli.lab.test/item?id
+    why: "id is concatenated into WHERE id = ... and the SQLite error is printed."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli.lab.test/account?uid
+    why: "uid is concatenated into a quoted WHERE string; found answers 200, missing 404 (blind)."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli.lab.test/order?id
+    why: "id is concatenated into WHERE id = ...; errors are hidden, found and missing differ only in text (blind)."
+oracle_disputed: # ZAP verdicts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_sqli
+    location: http://av-sqli.lab.test/search?q
+    why: >-
+      ZAP's evidence: results differ between "apple%" and "appleXYZABCDEFGHIJ". /search binds q
+      as a parameter of LIKE (avlab.py site_sqli): % is LIKE's own wildcard inside the bound
+      value, not SQL syntax; no quote, condition or expression reaches the query.

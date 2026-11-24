@@ -235,13 +235,52 @@ jobs:
         if: failure()
         with: { name: playwright-report, path: e2e/playwright-report, retention-days: 7 }
 
+  # Gate M (ADR-0008 §9): the active checks, through the production active path (`scanner
+  # activelab`), on DVWA, Juice Shop, WebGoat and passive targets as false-positive controls,
+  # compared with OWASP ZAP 2.17.0 (pinned by digest). Lab only (*.lab.test, isolated network):
+  # active modules stay OFF in production whatever this measures. Heavy apps: main + manual only.
+  active-lab:
+    name: active-lab (Gate M, ZAP oracle; lab only, modules stay off)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [scanner]
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 } # the committed scorecards' source must be an ancestor of HEAD
+      - name: measure the active checks on the lab and compare with ZAP
+        run: LAB_SOURCE=${GITHUB_SHA::12} bash test_corpus/active/run.sh active-out
+      - name: the committed active scorecards must match the measurement
+        # Every number must be identical. Only the source label may differ (a branch run is
+        # committed, then merged): it must name a commit this one descends from.
+        run: |
+          committed=$(git show HEAD:docs/accuracy-active/scorecard.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["source"])')
+          git merge-base --is-ancestor "$committed" HEAD || {
+            echo "docs/accuracy-active names source $committed, which HEAD does not descend from"; exit 1; }
+          # compare on copies: the artifact keeps this run's own source label
+          t=$(mktemp -d); mkdir -p "$t/committed" "$t/measured"
+          git archive HEAD docs/accuracy-active | tar -x -C "$t/committed"
+          cp -r docs/accuracy-active "$t/measured/"
+          sed -i "s/${GITHUB_SHA::12}/$committed/g" "$t"/measured/accuracy-active/*
+          diff -ru "$t/committed/docs/accuracy-active" "$t/measured/accuracy-active" | head -80
+          diff -rq "$t/committed/docs/accuracy-active" "$t/measured/accuracy-active" >/dev/null || {
+            echo "docs/accuracy-active is stale: commit this run's active-lab artifact"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: active-lab
+          path: |
+            active-out
+            docs/accuracy-active
+          retention-days: 30
+
   # CD, CI half (ADR-0009). Only a push to main, and only after EVERY gate above passed: build the
   # production images, push them to GHCR, sign each digest keyless (GitHub OIDC). The server's CD
   # agent (ops/deploy/cd.sh) deploys only digests signed by this job for the commit it deploys.
   release:
     name: release (signed images to GHCR, main only)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [contracts, secrets, api, scanner, web, images, accuracy, header-truth, dns-truth, e2e]
+    needs: [contracts, secrets, api, scanner, web, images, accuracy, header-truth, dns-truth, e2e, active-lab]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

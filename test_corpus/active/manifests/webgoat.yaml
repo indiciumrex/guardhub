@@ -1,0 +1,40 @@
+target: webgoat
+origin: http://webgoat.lab.test:8080
+active: true
+sessions: webgoat-session.json # written by test_corpus/active/login-webgoat.sh (lab only)
+description: >
+  OWASP WebGoat (the lab's pinned image), logged in as two throwaway lab accounts (A and B,
+  registered through WebGoat's own sign-up form). Lessons are driven by JavaScript and mostly
+  POST requests, so discovery starts from a route list (start below: GET endpoints the lesson
+  pages call). Ground truth: WebGoat's documented lessons for these routes, confirmed by the
+  pinned OWASP ZAP oracle (same session, same route list). WebGoat keeps no objects one lab
+  account could read of another's through these routes (IDOR false-positive control); its IDOR
+  lesson uses its own fixture users behind a lesson login, not cross-account objects.
+  Not in the route list: the lesson endpoints below answer HTTP 500 to malformed input, and
+  three 500s in a row stop the whole active scan by design (circuit breaker, ADR-0008 §4; seen
+  in Gate M run 45441968669). They are listed as outside: not measurable under do-no-harm. For the
+  same reason start.mvc is excluded from the scope (its language parameter answers 500 to any
+  value it does not know; run 45446632581): what remains measurable here is small.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+exclude: # scope exclusion (ADR-0008 §2): its lang parameter answers HTTP 500 to any unexpected value
+  - /WebGoat/start.mvc
+start:
+  - /WebGoat/service/lessonmenu.mvc
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://webgoat.lab.test:8080/WebGoat/SqlInjectionMitigations/servers?column
+    outside: true # ORDER BY injection: active_sqli declares conditions (error text or a true/false answer); here neither changes (Spring hides the error)
+    why: "SQL Injection (mitigation) lesson 12: column is concatenated into ORDER BY."
+  - check: active_xss
+    key: reflected_xss
+    location: http://webgoat.lab.test:8080/WebGoat/CrossSiteScripting/attack5a?field1
+    outside: true # reflected into a JSON answer the lesson's JavaScript inserts into the page: active_xss declares HTML responses only
+    why: "Cross Site Scripting lesson 7: field1 comes back in the JSON feedback that the lesson page renders as HTML."
+oracle_disputed: # ZAP alerts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_sqli
+    location: http://webgoat.lab.test:8080/WebGoat/start.mvc?lang
+    why: >-
+      ZAP rates it confidence Low, from a bare HTTP 500. lang is Spring's locale parameter
+      (LocaleChangeInterceptor): an unparsable locale throws before any SQL runs; WebGoat's
+      start.mvc has no query that uses it.

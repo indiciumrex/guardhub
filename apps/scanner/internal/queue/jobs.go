@@ -62,6 +62,10 @@ type Job struct {
 	ReplyKey        string   `json:"reply_key,omitempty"`
 	Repo            string   `json:"repo,omitempty"`      // repo_scan: owner/name
 	TokenKey        string   `json:"token_key,omitempty"` // repo_scan: RepoTokenPrefix + job_id
+	// active_scan (ADR-0008); Token is the ownership token proven again at scan start.
+	ConsentID  string   `json:"consent_id,omitempty"`
+	Exclude    []string `json:"exclude,omitempty"`     // excluded path prefixes
+	SessionKey string   `json:"session_key,omitempty"` // ActiveSessionPrefix + job_id, or empty
 }
 
 // ErrMalformedJob wraps every job validation error.
@@ -123,6 +127,10 @@ func ParseJob(payload string) (Job, error) {
 			}
 		}
 		return j, nil
+	case KindActiveScan:
+		if err := validateActiveJob(j); err != nil {
+			return bad("%s", err.Error())
+		}
 	case KindVerify:
 		if !strings.HasPrefix(j.ReplyKey, VerifyReplyPrefix) || !idRe.MatchString(strings.TrimPrefix(j.ReplyKey, VerifyReplyPrefix)) {
 			return bad("reply_key must be %s<id>", VerifyReplyPrefix)

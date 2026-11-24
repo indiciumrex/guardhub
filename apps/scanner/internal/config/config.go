@@ -55,6 +55,13 @@ type Config struct {
 	// AllowPrivateHosts are exact hostnames that bypass the dial-time IP
 	// guard. It exists ONLY for the local e2e demo target.
 	AllowPrivateHosts []string
+	// ActiveEnabled (SCANNER_ACTIVE_ENABLED, exactly "true") lets this
+	// scanner run active_scan jobs (ADR-0008). Off unless set; production
+	// keeps it off until the founder's checkpoint (ADR-0008 §8).
+	ActiveEnabled bool
+	// ActiveOOBURL is the OOB collaborator base URL for SSRF
+	// (SCANNER_ACTIVE_OOB_URL); empty = SSRF is not run.
+	ActiveOOBURL string
 }
 
 // Load reads the configuration from the process environment.
@@ -146,6 +153,18 @@ func FromLookup(lookup func(string) (string, bool)) (Config, error) {
 		if h != "" {
 			cfg.AllowPrivateHosts = append(cfg.AllowPrivateHosts, h)
 		}
+	}
+
+	switch v := strings.TrimSpace(get("SCANNER_ACTIVE_ENABLED")); v {
+	case "", "false":
+	case "true":
+		cfg.ActiveEnabled = true
+	default:
+		return Config{}, fmt.Errorf("SCANNER_ACTIVE_ENABLED: must be \"true\" or \"false\", got %q", v)
+	}
+	cfg.ActiveOOBURL = strings.TrimRight(strings.TrimSpace(get("SCANNER_ACTIVE_OOB_URL")), "/")
+	if cfg.ActiveOOBURL != "" && !strings.HasPrefix(cfg.ActiveOOBURL, "https://") && !strings.HasPrefix(cfg.ActiveOOBURL, "http://") {
+		return Config{}, fmt.Errorf("SCANNER_ACTIVE_OOB_URL: must be an http(s) URL, got %q", cfg.ActiveOOBURL)
 	}
 
 	cfg.ConsumerName = get("SCANNER_CONSUMER_NAME")

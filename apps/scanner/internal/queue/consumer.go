@@ -30,6 +30,8 @@ type Service struct {
 	// Repo scans (ADR-0006). RepoRegistry nil = repo scanning not configured.
 	RepoRegistry *checks.RepoRegistry
 	Repo         RepoScanConfig
+	// Active scans (ADR-0008). The zero value refuses every active_scan job.
+	Active ActiveConfig
 	// NewScanProbe returns a fresh per-scan probe client (fresh budget).
 	NewScanProbe func() *probe.Client
 	// NewVerifyProbe returns a fresh probe client for ownership checks.
@@ -233,6 +235,8 @@ func (s *Service) HandleMessage(ctx context.Context, msg redis.XMessage, claimed
 		err = s.runVerify(ctx, job)
 	case KindRepoScan:
 		err = s.runRepoScan(ctx, job)
+	case KindActiveScan:
+		err = s.runActiveScan(ctx, job)
 	}
 	if err != nil {
 		// Not acked: it stays pending and is reclaimed after ClaimMinIdle.
@@ -247,7 +251,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg redis.XMessage, claimed
 func (s *Service) reportUnprocessable(ctx context.Context, job Job, log *slog.Logger) {
 	var err error
 	switch {
-	case (job.Kind == KindScan || job.Kind == KindRepoScan) && idRe.MatchString(job.ScanID):
+	case (job.Kind == KindScan || job.Kind == KindRepoScan || job.Kind == KindActiveScan) && idRe.MatchString(job.ScanID):
 		err = publishEvent(ctx, s.RDB, ScanFailed{V: ProtocolVersion, Type: EventScanFailed, ScanID: job.ScanID,
 			At: rfc3339(s.now()), Error: ErrCodeInternal})
 	case job.Kind == KindVerify && idRe.MatchString(job.JobID) && strings.HasPrefix(job.ReplyKey, VerifyReplyPrefix) &&

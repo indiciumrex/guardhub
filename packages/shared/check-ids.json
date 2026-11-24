@@ -195,6 +195,54 @@
       ]
     },
     {
+      "id": "active_xss",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "reflected_xss", "severity": "medium", "params": ["path", "param", "context"] }
+      ]
+    },
+    {
+      "id": "active_sqli",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "sql_injection", "severity": "high", "params": ["path", "param", "technique"] }
+      ]
+    },
+    {
+      "id": "active_redirect",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "open_redirect", "severity": "medium", "params": ["path", "param"] }
+      ]
+    },
+    {
+      "id": "active_cors",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "cors_origin_reflected", "severity": "high", "params": ["path", "origin"] }
+      ]
+    },
+    {
+      "id": "active_ssrf",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "ssrf_confirmed", "severity": "high", "params": ["path", "param"] }
+      ]
+    },
+    {
+      "id": "active_idor",
+      "category": "active",
+      "target": "active",
+      "finding_keys": [
+        { "key": "idor_cross_account_read", "severity": "high", "params": ["path", "param"] }
+      ]
+    },
+    {
       "id": "dependency_vulns",
       "category": "repo",
       "target": "repo",
