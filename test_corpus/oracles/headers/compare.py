@@ -10,6 +10,9 @@ could not fetch at all is UNMEASURED and fails too: it cannot count as correct.
 
 Writes OUT_DIR/summary.md and OUT_DIR/summary.json. Exit 1 on any mismatch or unmeasured
 target. The oracle output itself is the evidence the manifests cite.
+
+With LAB_SKIP_HEAVY=1 (pull requests) the heavy apps of test_corpus/heavy-apps.txt were not
+started: their pairs are listed as SKIPPED and do not fail the run; pushes to main measure them.
 """
 
 from __future__ import annotations
@@ -27,6 +30,14 @@ MANIFESTS = os.path.join(HERE, "..", "..", "manifests")
 # check -> the oracle output field holding its keys
 CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys", "exposed_files": "file_keys", "js_libraries": "js_keys"}
 COOKIE_KEYS = {"cookie_response_cacheable", "cookie_prefix_invalid", "cookie_domain_too_broad"}
+
+
+def skipped_targets() -> set[str]:
+    """Heavy-app manifest targets left out of a light run (LAB_SKIP_HEAVY=1)."""
+    if os.environ.get("LAB_SKIP_HEAVY") != "1":
+        return set()
+    with open(os.path.join(HERE, "..", "..", "heavy-apps.txt"), encoding="utf-8") as f:
+        return {ln.split()[0] for ln in f if ln.strip() and not ln.startswith("#")}
 
 
 def load_truth(out: str) -> dict[str, dict]:
@@ -88,6 +99,7 @@ def main() -> int:
     out = sys.argv[1]
     truth = load_truth(out)
     rows = []
+    skipped = skipped_targets()
     for path in sorted(glob.glob(os.path.join(MANIFESTS, "*.yaml"))):
         with open(path, encoding="utf-8") as f:
             m = yaml.safe_load(f)
@@ -97,7 +109,9 @@ def main() -> int:
             if check not in (m.get("checks") or []):
                 continue
             want = expected_keys(m, check)
-            if t is None or any(n.startswith("fetch failed") for n in t["notes"]):
+            if os.path.basename(path)[: -len(".yaml")] in skipped:
+                status, got = "SKIPPED", set()
+            elif t is None or any(n.startswith("fetch failed") for n in t["notes"]):
                 status, got = "UNMEASURED", set()
             else:
                 got = set(t.get(field, []))
@@ -114,11 +128,13 @@ def main() -> int:
                 }
             )
 
-    bad = [r for r in rows if r["status"] != "ok"]
+    bad = [r for r in rows if r["status"] not in ("ok", "SKIPPED")]
+    n_skip = sum(r["status"] == "SKIPPED" for r in rows)
     lines = [
         "# header_quality, cookie_depth, exposed_files and js_libraries ground truth vs manifests",
         "",
-        f"{len(rows)} target/check pairs, {len(rows) - len(bad)} agree, {len(bad)} do not.",
+        f"{len(rows)} target/check pairs, {len(rows) - len(bad) - n_skip} agree, {len(bad)} do not"
+        + (f", {n_skip} skipped (heavy apps, light run)." if n_skip else "."),
         "",
         "| Target | Check | Status | Oracle keys | Manifest keys |",
         "|---|---|---|---|---|",

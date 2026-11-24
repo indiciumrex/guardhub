@@ -357,7 +357,7 @@ services:
       SCANNER_OSV_URL: http://osv.lab.test
       LAB_SOURCE: ${LAB_SOURCE:-unknown}
     volumes:
-      - ./manifests:/corpus/manifests:ro
+      - ${LAB_MANIFESTS:-./manifests}:/corpus/manifests:ro
       - ./runner.sh:/corpus/runner.sh:ro
       - ../docs/accuracy:/out
       - ../packages/shared:/shared

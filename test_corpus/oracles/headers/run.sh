@@ -18,17 +18,14 @@ cleanup() { "${LAB[@]}" --profile run down -v --remove-orphans >/dev/null 2>&1 |
 trap cleanup EXIT
 cleanup
 
-# app manifest -> its services (start order)
-declare -A HEAVY=(
-  [juice-shop]="juice-shop"
-  [dvwa]="dvwa-db dvwa"
-  [webgoat]="webgoat"
-  [wordpress]="wordpress-db wordpress"
-  [drupal]="drupal"
-  [phpmyadmin]="dvwa-db phpmyadmin"
-  [grafana]="grafana"
-)
-HEAVY_ORDER=(juice-shop dvwa webgoat wordpress drupal phpmyadmin grafana)
+# app manifest -> its services (start order), from test_corpus/heavy-apps.txt
+declare -A HEAVY=()
+HEAVY_ORDER=()
+while read -r app svcs; do
+  [[ -z $app || $app == \#* ]] && continue
+  HEAVY[$app]=$svcs
+  HEAVY_ORDER+=("$app")
+done < heavy-apps.txt
 heavy_services=" $(printf '%s ' "${HEAVY[@]}") "
 
 origin_of() { awk '/^origin:/ {print $2; exit}' "manifests/$1.yaml"; }
@@ -83,7 +80,9 @@ if ((${#refused[@]})); then
   oracle "$OUT/light-relaxed.json" "${RELAX[@]}" -- "${refused[@]}"
 fi
 
-# 2. heavy apps, one at a time
+# 2. heavy apps, one at a time (skipped on pull requests: LAB_SKIP_HEAVY=1, compare.py
+#    then reports their pairs as SKIPPED; pushes to main measure them)
+[[ ${LAB_SKIP_HEAVY:-} == 1 ]] && { echo "heavy apps skipped (LAB_SKIP_HEAVY=1)"; HEAVY_ORDER=(); }
 for app in "${HEAVY_ORDER[@]}"; do
   read -r -a svcs <<< "${HEAVY[$app]}"
   o=$(origin_of "$app")
