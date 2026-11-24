@@ -247,12 +247,20 @@ jobs:
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 } # the committed scorecards' source must be an ancestor of HEAD
       - name: measure the active checks on the lab and compare with ZAP
         run: LAB_SOURCE=${GITHUB_SHA::12} bash test_corpus/active/run.sh active-out
       - name: the committed active scorecards must match the measurement
+        # Every number must be identical. Only the source label may differ (a branch run is
+        # committed, then merged): it must name a commit this one descends from.
         run: |
+          committed=$(git show HEAD:docs/accuracy-active/scorecard.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["source"])')
+          git merge-base --is-ancestor "$committed" HEAD || {
+            echo "docs/accuracy-active names source $committed, which HEAD does not descend from"; exit 1; }
+          sed -i "s/${GITHUB_SHA::12}/$committed/g" docs/accuracy-active/*
           git status --porcelain -- docs/accuracy-active
           test -z "$(git status --porcelain -- docs/accuracy-active)" || {
+            git diff -- docs/accuracy-active | head -60
             echo "docs/accuracy-active is stale: commit this run's active-lab artifact"; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
