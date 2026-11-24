@@ -98,7 +98,7 @@ async def test_request_log_stored_once_and_append_only(redis: Redis) -> None:
     for stmt in ("UPDATE active_request_log SET path = '/x' WHERE scan_id = :s",
                  "DELETE FROM active_request_log WHERE scan_id = :s"):  # fmt: skip
         # the app role has no UPDATE/DELETE grant at all; the append-only trigger is a 2nd layer
-        with pytest.raises(DBAPIError, match="permission denied|append-only"):
+        with pytest.raises(DBAPIError, match=r"permission denied|append-only"):
             async with db_session(DbContext.system()) as session:
                 await session.execute(text(stmt), {"s": scan_id})
 

@@ -128,6 +128,14 @@ func DiscoverAs(ctx context.Context, c *active.Client, origin *url.URL, start []
 		}
 		for _, l := range links {
 			if sameOrigin(origin, l) && !staticAsset(l.Path) {
+				// A link's own parameters are injection points as soon as it is seen: they need
+				// no request to be known, and the page cap must not hide them (DVWA's open
+				// redirect links sit one level below 25 other pages). Unsafe links never count.
+				if !unsafeLink(l) {
+					for k := range l.Query() {
+						addPoint(l, k)
+					}
+				}
 				queue = append(queue, item{l, it.depth + 1})
 			}
 		}

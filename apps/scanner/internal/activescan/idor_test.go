@@ -213,3 +213,110 @@ func TestDiscoverSkipsStateChangingForms(t *testing.T) {
 		t.Fatalf("points = %v: change forms must be dropped, the search form kept", keys)
 	}
 }
+
+// A page that is only reachable logged in (like DVWA's modules) must be tested logged in:
+// discovery runs as account A, so every check's probes must carry A's session too (Gate M's
+// first CI run found nothing on DVWA because the probes went out anonymously).
+func TestChecksProbeAsSessionA(t *testing.T) {
+	mux := http.NewServeMux()
+	loggedIn := func(r *http.Request) bool { c, err := r.Cookie("sid"); return err == nil && c.Value == "a" }
+	mux.HandleFunc("/login", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body>please log in</body></html>`))
+	})
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !loggedIn(r) {
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body>alice@example.test <a href="/q?name=x">search</a></body></html>`))
+	})
+	mux.HandleFunc("/q", func(w http.ResponseWriter, r *http.Request) {
+		if !loggedIn(r) {
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body>Hello " + r.URL.Query().Get("name") + "</body></html>")) //nolint:gosec // deliberately vulnerable test server
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	for _, tc := range []struct {
+		name string
+		sess *active.Session
+		want bool
+	}{
+		{"with session A", &active.Session{Name: "A", Cookie: "sid=a", Marker: "alice@example.test"}, true},
+		{"anonymous", nil, false},
+	} {
+		env := idorEnv(t, srv, &active.RequestLog{})
+		scope, _ := active.NewScope(srv.URL, nil)
+		fs, outs := Run(context.Background(), env.Client, scope, []string{"active_xss"}, tc.sess, nil, nil)
+		for _, o := range outs {
+			if o.Err != nil {
+				t.Fatalf("%s: %s: %v", tc.name, o.CheckID, o.Err)
+			}
+		}
+		if got := len(fs) > 0; got != tc.want {
+			t.Fatalf("%s: found=%v (%d findings), want %v", tc.name, got, len(fs), tc.want)
+		}
+	}
+}
+
+// A boolean-blind injection whose only signal is the status code (200 "exists" for the true
+// condition and the original request, 404 "missing" for the false one, nearly the same words)
+// is reported (DVWA sqli_blind); a page that answers every input the same is not.
+func TestSQLiBooleanByStatus(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body><a href="/user?id=1">user</a><a href="/same?id=1">same</a></body></html>`))
+	})
+	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		id := r.URL.Query().Get("id")
+		if id == "1" || strings.HasSuffix(id, "'7'='7") || strings.HasSuffix(id, "7=7") {
+			_, _ = w.Write([]byte("<html><body>User ID exists in the database.</body></html>"))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("<html><body>User ID is MISSING from the database.</body></html>"))
+	})
+	mux.HandleFunc("/same", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body>Nothing to see.</body></html>"))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	env := idorEnv(t, srv, &active.RequestLog{})
+	scope, _ := active.NewScope(srv.URL, nil)
+	fs, _ := Run(context.Background(), env.Client, scope, []string{"active_sqli"}, nil, nil, nil)
+	if len(fs) != 1 || fs[0].Params["path"] != "/user" || fs[0].Params["technique"] != "boolean" {
+		t.Fatalf("findings = %+v, want exactly one boolean finding on /user", fs)
+	}
+}
+
+// Parameters of a link count as injection points as soon as the link is seen, even when the
+// page cap stops discovery from fetching it (DVWA's open-redirect links).
+func TestLinkPointsBeyondPageCap(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body><a href='/go?redirect=info.php'>q</a><a href="/logout?next=/">out</a></body></html>`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	env := idorEnv(t, srv, &active.RequestLog{})
+	pts, _, err := Discover(context.Background(), env.Client, env.Origin, nil, DiscoveryLimits{MaxPages: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys := map[string]bool{}
+	for _, p := range pts {
+		keys[p.Key()] = true
+	}
+	if !keys["/go?redirect"] || keys["/logout?next"] {
+		t.Fatalf("points = %v: the link's parameter must be kept, the logout link's never", keys)
+	}
+}

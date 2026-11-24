@@ -63,6 +63,13 @@ func send(ctx context.Context, c *active.Client, r active.Request) (*active.Resp
 	return resp, nil
 }
 
+// send for a check: as consented account A when the customer gave one (discovery found the
+// points logged in, so they must be tested logged in too: anonymously they only redirect to
+// the login page), anonymous otherwise. IDOR sends its anonymous and account-B requests itself.
+func (e Env) send(ctx context.Context, r active.Request) (*active.Response, error) {
+	return send(ctx, e.Client, active.AsSession(r, e.SessionA))
+}
+
 // ---- reflected XSS ----
 
 // XSS: an inert marker element or attribute that the browser's HTML parser
@@ -77,7 +84,7 @@ func (c XSS) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 	var out []evidence.Finding
 	for _, pt := range env.Points {
 		for _, pid := range []string{"xss.marker.tag", "xss.marker.attr"} {
-			resp, err := send(ctx, env.Client, active.Probe(c.ID(), pt.URL, pt.Param, payload(pid)))
+			resp, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, payload(pid)))
 			if err != nil {
 				return out, err
 			}
@@ -139,7 +146,7 @@ var sqlErrorRe = regexp.MustCompile(`(?i)(you have an error in your sql syntax|w
 func (c SQLi) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 	var out []evidence.Finding
 	for _, pt := range env.Points {
-		tech, why, err := c.point(ctx, env.Client, pt)
+		tech, why, err := c.point(ctx, env, pt)
 		if err != nil {
 			return out, err
 		}
@@ -153,18 +160,18 @@ func (c SQLi) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 	return out, nil
 }
 
-func (c SQLi) point(ctx context.Context, cl *active.Client, pt Point) (string, string, error) {
-	base, err := send(ctx, cl, active.Baseline(c.ID(), pt.URL))
+func (c SQLi) point(ctx context.Context, env Env, pt Point) (string, string, error) {
+	base, err := env.send(ctx, active.Baseline(c.ID(), pt.URL))
 	if err != nil || base == nil {
 		return "", "", err
 	}
 	q := payload("sqli.quote")
-	r, err := send(ctx, cl, active.Probe(c.ID(), pt.URL, pt.Param, q))
+	r, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, q))
 	if err != nil || r == nil {
 		return "", "", err
 	}
 	if m := sqlErrorRe.Find(r.Body); m != nil && !sqlErrorRe.Match(base.Body) {
-		ctl, err := send(ctx, cl, active.ControlProbe(c.ID(), pt.URL, pt.Param, q))
+		ctl, err := env.send(ctx, active.ControlProbe(c.ID(), pt.URL, pt.Param, q))
 		if err != nil {
 			return "", "", err
 		}
@@ -175,29 +182,34 @@ func (c SQLi) point(ctx context.Context, cl *active.Client, pt Point) (string, s
 	}
 	for _, pid := range []string{"sqli.bool.true", "sqli.bool.num.true"} {
 		p := payload(pid)
-		t1, err := send(ctx, cl, active.Probe(c.ID(), pt.URL, pt.Param, p))
+		t1, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, p))
 		if err != nil || t1 == nil {
 			return "", "", err
 		}
-		f, err := send(ctx, cl, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
+		f, err := env.send(ctx, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
 		if err != nil || f == nil {
 			return "", "", err
 		}
 		strip := []string{p.Value, p.Control}
-		if similar(t1.Body, f.Body, strip) || t1.Status != 200 {
+		// "the same answer" = same status AND the same words: a page that says 200 "found" for
+		// the true condition and 404 "missing" for the false one differs even when both bodies
+		// are nearly identical (DVWA sqli_blind). The true condition must answer like the
+		// original request, so a page that merely varies with any input is not reported.
+		same := func(a, b *active.Response) bool { return a.Status == b.Status && similar(a.Body, b.Body, strip) }
+		if t1.Status != 200 || same(t1, f) || !same(t1, base) {
 			continue
 		}
-		t2, err := send(ctx, cl, active.Probe(c.ID(), pt.URL, pt.Param, p))
+		t2, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, p))
 		if err != nil || t2 == nil {
 			return "", "", err
 		}
-		f2, err := send(ctx, cl, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
+		f2, err := env.send(ctx, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
 		if err != nil || f2 == nil {
 			return "", "", err
 		}
-		if similar(t1.Body, t2.Body, strip) && similar(f.Body, f2.Body, strip) && !similar(t2.Body, f2.Body, strip) {
-			return "boolean", fmt.Sprintf("GET %s: %s=%s (true) and %s (false) answer differently (%d vs %d bytes), each the same when repeated",
-				pt.URL.Path, pt.Param, p.Value, p.Control, len(t1.Body), len(f.Body)), nil
+		if same(t1, t2) && same(f, f2) && !same(t2, f2) {
+			return "boolean", fmt.Sprintf("GET %s: %s=%s (true: HTTP %d, %d bytes, like the original) and %s (false: HTTP %d, %d bytes) answer differently, each the same when repeated",
+				pt.URL.Path, pt.Param, p.Value, t1.Status, len(t1.Body), p.Control, f.Status, len(f.Body)), nil
 		}
 	}
 	return "", "", nil
@@ -251,7 +263,7 @@ func (c Redirect) Run(ctx context.Context, env Env) ([]evidence.Finding, error) 
 	var out []evidence.Finding
 	for _, pt := range env.Points {
 		for _, pid := range []string{"redirect.canary.abs", "redirect.canary.proto"} {
-			resp, err := send(ctx, env.Client, active.Probe(c.ID(), pt.URL, pt.Param, payload(pid)))
+			resp, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, payload(pid)))
 			if err != nil {
 				return out, err
 			}
@@ -305,7 +317,7 @@ func (c CORS) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 		done[pg.URL.Path] = true
 		for _, pid := range []string{"cors.canary.origin", "cors.null.origin"} {
 			p := payload(pid)
-			resp, err := send(ctx, env.Client, active.Probe(c.ID(), pg.URL, "", p))
+			resp, err := env.send(ctx, active.Probe(c.ID(), pg.URL, "", p))
 			if err != nil {
 				return out, err
 			}
@@ -354,7 +366,7 @@ func (c SSRF) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 			continue
 		}
 		tok := active.NewToken()
-		if _, err := send(ctx, env.Client, active.OOBProbe(c.ID(), pt.URL, pt.Param, p, env.Collab.URL(tok))); err != nil {
+		if _, err := env.send(ctx, active.OOBProbe(c.ID(), pt.URL, pt.Param, p, env.Collab.URL(tok))); err != nil {
 			return out, err
 		}
 		seen, err := active.WaitSeen(ctx, env.Collab, tok, wait, 250*time.Millisecond)
