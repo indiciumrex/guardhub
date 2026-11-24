@@ -12,11 +12,13 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from guardhub_api.active import kill
 from guardhub_api.ai.provider import AIStatus
 from guardhub_api.ai.provider import status as ai_status
 from guardhub_api.auth import repository as user_repo
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit
+from guardhub_api.common.redis import get_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.health import service as health
@@ -87,6 +89,31 @@ async def audit_log(claims: SessionClaims, limit: int) -> list[AuditView]:
     async with db_session(_ctx(claims)) as session:
         rows = await audit.list_recent(session, limit)
     return [AuditView(id=r.id, actor=r.actor, action=r.action, target=r.target, at=r.at) for r in rows]
+
+
+async def active_kill_state(scan_id: uuid.UUID | None) -> kill.KillState:
+    return await kill.state(get_redis(), scan_id)
+
+
+async def set_active_kill(
+    claims: SessionClaims, *, engaged: bool, scan_id: uuid.UUID | None
+) -> kill.KillState:
+    """ADR-0008 §3. Engage: the key is set before anything else. Release: the key is removed only
+    after the audit row is committed. Both are audited (active.kill / active.unkill)."""
+    redis = get_redis()
+    target = "global" if scan_id is None else str(scan_id)
+    if engaged:
+        await kill.engage(redis, scan_id)
+    async with db_session(_ctx(claims)) as session:
+        await audit.record(
+            session,
+            actor=f"admin:{claims.user_id}",
+            action="active.kill" if engaged else "active.unkill",
+            target=target,
+        )
+    if not engaged:
+        await kill.release(redis, scan_id)
+    return kill.KillState(scope=target, engaged=engaged)
 
 
 def ai() -> AIStatus:

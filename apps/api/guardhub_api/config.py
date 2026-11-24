@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     trusted_proxy_hops: int = Field(default=1, ge=0, le=5)
     shared_dir: Path = Field(default_factory=_default_shared_dir)
     log_level: str = "info"
+    # ADR-0008 §8: active tests (DAST) may be switched on in the admin only after the founder's
+    # checkpoint (live scope-guard/kill-switch proof, reviewed consent text, OOB infrastructure).
+    # Off by default; the scanner has its own switch (SCANNER_ACTIVE_ENABLED) as well.
+    active_testing_approved: bool = False
 
     session_ttl_seconds: int = 8 * 3600
     pre_mfa_ttl_seconds: int = 10 * 60

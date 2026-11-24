@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
+from guardhub_api.active.kill import KillState
 from guardhub_api.admin import service
 from guardhub_api.ai.provider import AIStatus
 from guardhub_api.auth.deps import AdminSession
@@ -52,6 +54,22 @@ async def health(claims: AdminSession) -> list[HealthRow]:
 @router.get("/audit")
 async def audit(claims: AdminSession, limit: Limit = 100) -> list[service.AuditView]:
     return await service.audit_log(claims, limit)
+
+
+class ActiveKillRequest(BaseModel):
+    engaged: bool
+    scan_id: uuid.UUID | None = None  # None: every active scan
+
+
+@router.get("/active/kill")
+async def active_kill_state(claims: AdminSession, scan_id: uuid.UUID | None = None) -> KillState:
+    return await service.active_kill_state(scan_id)
+
+
+@router.post("/active/kill")
+async def active_kill(body: ActiveKillRequest, claims: AdminSession) -> KillState:
+    """The active-test kill switch (ADR-0008 §3): stops every active request within ~1 s."""
+    return await service.set_active_kill(claims, engaged=body.engaged, scan_id=body.scan_id)
 
 
 @router.get("/ai")

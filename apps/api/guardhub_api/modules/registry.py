@@ -13,8 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from guardhub_api.common import audit
 from guardhub_api.common.errors import NotFoundError, UnprocessableError
+from guardhub_api.config import get_settings
 from guardhub_api.db.models import Module
-from guardhub_api.findings.contract_gen import CHECK_IDS, REPO_CHECK_IDS, SITE_CHECK_IDS
+from guardhub_api.findings.contract_gen import ACTIVE_CHECK_IDS, CHECK_IDS, REPO_CHECK_IDS, SITE_CHECK_IDS
 from guardhub_api.modules import accuracy
 from guardhub_api.modules.accuracy import CheckAccuracy
 
@@ -57,6 +58,11 @@ async def set_enabled(session: AsyncSession, *, key: str, enabled: bool, actor: 
     module = (await session.execute(select(Module).where(Module.key == key))).scalar_one_or_none()
     if module is None:
         raise NotFoundError("module_not_found", "Unknown module.")
+    if enabled and key in ACTIVE_CHECK_IDS and not get_settings().active_testing_approved:
+        raise UnprocessableError(
+            "active_testing_not_approved",
+            "Active tests stay off until the founder's checkpoint (ADR-0008 §8).",
+        )
     if enabled and not module.enabled_global and key in CHECK_IDS and not accuracy.may_enable(key):
         raise UnprocessableError(
             "module_not_measured",
