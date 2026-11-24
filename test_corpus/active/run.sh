@@ -39,7 +39,7 @@ tools() { docker run --rm --network "$NET" -v "$PWD/active:/a" -v "$OUT:/out" -v
 
 # every origin must answer before anything is measured
 for o in $origins; do
-  tools guardhub-lab-tools:local sh -c "i=0; until curl -s -o /dev/null --max-time 3 $o/; do i=\$((i+1)); [ \$i -lt 120 ] || exit 1; sleep 2; done" \
+  tools guardhub-lab-tools:local sh -c "i=0; until curl -sk -o /dev/null --max-time 3 $o/; do i=\$((i+1)); [ \$i -lt 120 ] || exit 1; sleep 2; done" \
     || { echo "lab target $o never answered" >&2; exit 1; }
   echo "up: $o"
 done
