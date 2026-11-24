@@ -17,7 +17,8 @@
 # previous colour, then HALT (no further deploys until `cd.sh resume`): stop and report.
 #
 # Scope (shared host): /opt/guardhub, the guardhub* compose projects, /etc/cron.d/guardhub-cd,
-# /var/log/guardhub-cd.log and images named guardhub-* / ghcr.io/<owner>/guardhub-*. Nothing else.
+# /var/log/guardhub-cd.log (rotated by /etc/logrotate.d/guardhub-cd) and images named guardhub-* /
+# ghcr.io/<owner>/guardhub-*. Nothing else.
 set -Eeuo pipefail
 umask 077
 
@@ -342,6 +343,7 @@ cmd_deploy() {
   fi
   install -D -m 700 "$ROOT/releases/$v/ops/deploy/cd.sh" "$ROOT/cd/cd.sh"
   install -m 644 "$ROOT/releases/$v/ops/deploy/guardhub-cd.cron" /etc/cron.d/guardhub-cd
+  install -m 644 "$ROOT/releases/$v/ops/deploy/guardhub-cd.logrotate" /etc/logrotate.d/guardhub-cd
   prune_images
   printf '%s %s ok %s\n' "$(date -u +%FT%TZ)" "$v" "$report" >"$CDS/last"
   log "== LIVE: $v in $(active_color); gates A-K green (report $report)"
