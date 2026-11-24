@@ -27,10 +27,12 @@ for s in api scanner web; do
     --label "org.opencontainers.image.revision=$GITHUB_SHA" \
     --label "org.opencontainers.image.description=GuardHub $s" \
     "${CONTEXT[$s]}"
-  # an image must never carry an env file or a private key
-  # (listed from an exported filesystem: the scanner image is distroless, with no shell to ask)
+  # an image must never carry an env file or a private key of ours
+  # (listed from an exported filesystem: the scanner image is distroless, with no shell to ask).
+  # Third-party packages are excluded: they ship public files such as certifi's CA bundle.
   cid=$(docker create "$img")
-  bad=$(docker export "$cid" | tar -t | grep -E '(^|/)(\.env(\.(local|production|prod))?|id_rsa[^/]*|id_ed25519[^/]*)$|^app/.*\.(pem|key)$' || true)
+  bad=$(docker export "$cid" | tar -t | grep -vE '/(\.venv|site-packages|node_modules)/' |
+    grep -E '(^|/)(\.env(\.(local|production|prod))?|id_rsa[^/]*|id_ed25519[^/]*)$|^app/.*\.(pem|key)$' || true)
   docker rm "$cid" >/dev/null
   [[ -z $bad ]] || { echo "$img contains an env file or key: $bad" >&2; exit 1; }
   docker push "$img"
