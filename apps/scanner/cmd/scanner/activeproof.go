@@ -158,7 +158,7 @@ func runActiveProof(cfg config.Config, logger *slog.Logger, args []string) int {
 	b = append(b, '\n')
 	if *out == "" {
 		_, _ = os.Stdout.Write(b)
-	} else if err := os.WriteFile(*out, b, 0o600); err != nil {
+	} else if err := os.WriteFile(*out, b, 0o644); err != nil { //nolint:gosec // a proof report: no secrets, read by the CI runner and the operator
 		logger.Error("cannot write the report", "err", err)
 		return 1
 	}
