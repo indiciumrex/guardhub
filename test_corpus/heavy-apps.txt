@@ -1,0 +1,11 @@
+# Heavy third-party lab apps: <manifest target> <compose services, start order>.
+# CI measures them on pushes to main (and on manual runs); pull requests run the
+# light lab without them (LAB_SKIP_HEAVY=1). The header-truth oracle starts them
+# one at a time. Order = measurement order.
+juice-shop juice-shop
+dvwa dvwa-db dvwa
+webgoat webgoat
+wordpress wordpress-db wordpress
+drupal drupal
+phpmyadmin dvwa-db phpmyadmin
+grafana grafana

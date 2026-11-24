@@ -47,3 +47,4 @@ ops/github-app/*.pem
 !test_corpus/repos/*/.env
 !test_corpus/repos/**/node_modules/
 !test_corpus/repos/**/node_modules/**
+test_corpus/.manifests-light/

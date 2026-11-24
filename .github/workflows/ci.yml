@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # full lab (heavy apps included) on any branch, by hand
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -118,21 +120,34 @@ jobs:
     name: accuracy (validation lab, measured precision/recall)
     runs-on: ubuntu-latest
     needs: [scanner]
-    # ~110 lab targets scanned one after another took 29.5 min by Phase 4A's fifth module
+    # ~115 lab targets scanned one after another took ~45 min on the full lab
     timeout-minutes: 60
+    env:
+      # Pull requests measure the light lab (no heavy third-party apps, test_corpus/heavy-apps.txt)
+      # and are gated against the committed scorecard; pushes to main (and manual runs) measure
+      # the full lab, which is the scorecard.
+      LAB_SKIP_HEAVY: ${{ github.event_name == 'pull_request' && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
       - name: measure every check against test_corpus (isolated lab network)
-        run: LAB_SOURCE=${GITHUB_SHA::12} bash test_corpus/run.sh
-      - name: the committed gate file must match the measurement
         run: |
+          git show HEAD:packages/shared/accuracy.json > "$RUNNER_TEMP/committed-accuracy.json"
+          LAB_SOURCE=${GITHUB_SHA::12} bash test_corpus/run.sh
+      - name: gate (light lab vs the committed scorecard)
+        if: env.LAB_SKIP_HEAVY == '1'
+        run: python3 ops/ci/accuracy_gate.py "$RUNNER_TEMP/committed-accuracy.json" packages/shared/accuracy.json
+      - name: the committed gate file must match the full measurement
+        if: env.LAB_SKIP_HEAVY != '1'
+        run: |
+          python3 ops/ci/accuracy_gate.py "$RUNNER_TEMP/committed-accuracy.json" packages/shared/accuracy.json
           git diff --stat -- packages/shared/accuracy.json
           git diff --exit-code -- packages/shared/accuracy.json || {
-            echo "packages/shared/accuracy.json is stale: run 'bash test_corpus/run.sh' and commit the result"; exit 1; }
+            echo "packages/shared/accuracy.json is stale: before merging, run the full lab on the branch (workflow_dispatch) and commit that run's accuracy-scorecards artifact"; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: accuracy-scorecards
+          # a light run's files cover fewer targets: never commit them as the scorecard
+          name: ${{ env.LAB_SKIP_HEAVY == '1' && 'accuracy-light-not-a-scorecard' || 'accuracy-scorecards' }}
           path: |
             docs/accuracy
             packages/shared/accuracy.json
@@ -143,6 +158,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [scanner]
     timeout-minutes: 45
+    env:
+      # heavy apps only on pushes to main / manual runs (pull requests: SKIPPED in the summary)
+      LAB_SKIP_HEAVY: ${{ github.event_name == 'pull_request' && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
