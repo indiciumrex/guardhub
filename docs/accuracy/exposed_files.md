@@ -1,10 +1,10 @@
 # `exposed_files` accuracy
 
-Lab source revision `709c7f0ecbd3`. Verdict: **meets the gate**.
+Lab source revision `8c94317d417a`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100.0% | 100.0% | 100.0% | 8 | 0 | 0 | 0 | 0 | 110 | 102 | 0 |
+| 100.0% | 100.0% | 100.0% | 8 | 0 | 0 | 0 | 0 | 115 | 107 | 0 |
 
 ## By finding
 

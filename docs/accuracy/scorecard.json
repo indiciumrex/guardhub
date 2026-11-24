@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "709c7f0ecbd3",
+  "source": "8c94317d417a",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -86,6 +86,11 @@
     "js-moment",
     "js-renamed",
     "juice-shop",
+    "ks-github",
+    "ks-inline",
+    "ks-privkey",
+    "ks-public",
+    "ks-testkey",
     "leaky",
     "phpmyadmin",
     "rp-clean",
@@ -133,8 +138,8 @@
   "checks": [
     {
       "check_id": "content_signals",
-      "targets": 110,
-      "clean_runs": 105,
+      "targets": 115,
+      "clean_runs": 110,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -200,8 +205,8 @@
     },
     {
       "check_id": "cookie_depth",
-      "targets": 110,
-      "clean_runs": 105,
+      "targets": 115,
+      "clean_runs": 110,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -262,8 +267,8 @@
     },
     {
       "check_id": "default_creds",
-      "targets": 110,
-      "clean_runs": 106,
+      "targets": 115,
+      "clean_runs": 111,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -537,8 +542,8 @@
     },
     {
       "check_id": "dns_depth",
-      "targets": 110,
-      "clean_runs": 90,
+      "targets": 115,
+      "clean_runs": 95,
       "tp": 20,
       "fp": 0,
       "fn": 0,
@@ -729,8 +734,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 110,
-      "clean_runs": 101,
+      "targets": 115,
+      "clean_runs": 106,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -840,8 +845,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 110,
-      "clean_runs": 109,
+      "targets": 115,
+      "clean_runs": 114,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -895,8 +900,8 @@
     },
     {
       "check_id": "exposed_files",
-      "targets": 110,
-      "clean_runs": 102,
+      "targets": 115,
+      "clean_runs": 107,
       "tp": 8,
       "fp": 0,
       "fn": 0,
@@ -995,8 +1000,8 @@
     },
     {
       "check_id": "header_quality",
-      "targets": 110,
-      "clean_runs": 98,
+      "targets": 115,
+      "clean_runs": 103,
       "tp": 21,
       "fp": 0,
       "fn": 0,
@@ -1173,8 +1178,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 110,
-      "clean_runs": 104,
+      "targets": 115,
+      "clean_runs": 109,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1256,8 +1261,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 110,
-      "clean_runs": 104,
+      "targets": 115,
+      "clean_runs": 109,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -1371,8 +1376,8 @@
     },
     {
       "check_id": "js_libraries",
-      "targets": 110,
-      "clean_runs": 104,
+      "targets": 115,
+      "clean_runs": 109,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -1442,9 +1447,65 @@
       ]
     },
     {
+      "check_id": "js_secrets",
+      "targets": 115,
+      "clean_runs": 111,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "secret_in_javascript": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0
+        },
+        "test_secret_in_javascript": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "ks-github",
+          "key": "secret_in_javascript",
+          "location": "https://ks-github.lab.test/static/app.js#github_pat",
+          "why": "gitleaks v8.21.2 default rules (local lab run 2026-11-23): github-pat in /static/app.js line 1 (the planted GitHub personal access token)."
+        },
+        {
+          "target": "ks-inline",
+          "key": "secret_in_javascript",
+          "location": "https://ks-inline.lab.test/#stripe_live_secret",
+          "why": "gitleaks v8.21.2 default rules (local lab run 2026-11-23): stripe-access-token, sk_live_ prefix, in the home page's inline script (line 2)."
+        },
+        {
+          "target": "ks-privkey",
+          "key": "secret_in_javascript",
+          "location": "https://ks-privkey.lab.test/static/config.js#private_key",
+          "why": "gitleaks v8.21.2 default rules (local lab run 2026-11-23): private-key in /static/config.js (the planted RSA private key in a template literal)."
+        },
+        {
+          "target": "ks-testkey",
+          "key": "test_secret_in_javascript",
+          "location": "https://ks-testkey.lab.test/static/pay.js#stripe_test_secret",
+          "why": "gitleaks v8.21.2 default rules (local lab run 2026-11-23): stripe-access-token, sk_test_ prefix, in /static/pay.js line 1."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "open_admin",
-      "targets": 110,
-      "clean_runs": 107,
+      "targets": 115,
+      "clean_runs": 112,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -1638,8 +1699,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 110,
-      "clean_runs": 103,
+      "targets": 115,
+      "clean_runs": 108,
       "tp": 16,
       "fp": 0,
       "fn": 0,
@@ -1776,8 +1837,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 110,
-      "clean_runs": 104,
+      "targets": 115,
+      "clean_runs": 109,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1844,8 +1905,8 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 110,
-      "clean_runs": 48,
+      "targets": 115,
+      "clean_runs": 53,
       "tp": 62,
       "fp": 0,
       "fn": 0,
@@ -2268,8 +2329,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 110,
-      "clean_runs": 104,
+      "targets": 115,
+      "clean_runs": 109,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -2374,8 +2435,8 @@
     },
     {
       "check_id": "tls_depth",
-      "targets": 110,
-      "clean_runs": 105,
+      "targets": 115,
+      "clean_runs": 110,
       "tp": 5,
       "fp": 0,
       "fn": 0,
