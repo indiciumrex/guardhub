@@ -34,12 +34,19 @@ func mustURL(t *testing.T, raw string) *url.URL {
 
 func TestScopeCheck(t *testing.T) {
 	s := mustScope(t, "https://Shop.example.com", "/admin", "/api/internal/")
-	ok := []string{"https://shop.example.com/", "https://SHOP.example.com/search?q=1", "https://shop.example.com:443/a", "https://shop.example.com/administrator"}
+	ok := []string{"https://shop.example.com/", "https://SHOP.example.com/search?q=1", "https://shop.example.com:443/a", "https://shop.example.com/administrator",
+		"https://shop.example.com/x/../administrator", "https://shop.example.com/a;b/c"}
 	bad := []string{
 		"http://shop.example.com/", "https://shop.example.com:8443/", "https://evil.example.com/",
 		"https://sub.shop.example.com/", "https://shop.example.com.evil.test/", "https://user@shop.example.com/",
 		"https://shop.example.com/admin", "https://shop.example.com/Admin/users", "https://shop.example.com//admin/x",
 		"https://shop.example.com/api/internal/x", "https://shop.example.com/admin%2Fusers",
+		// forms a server resolves to an excluded path
+		"https://shop.example.com/x/../admin", "https://shop.example.com/x/%2e%2e/admin/users",
+		"https://shop.example.com/x/%2E%2E/%2E%2E/admin", "https://shop.example.com/./admin",
+		"https://shop.example.com/admin;jsessionid=1", "https://shop.example.com/admin;x/users",
+		"https://shop.example.com/%5Cadmin", "https://shop.example.com/x%5C..%5Cadmin",
+		"https://shop.example.com/api/./internal/x",
 	}
 	for _, raw := range ok {
 		if err := s.Check(mustURL(t, raw)); err != nil {

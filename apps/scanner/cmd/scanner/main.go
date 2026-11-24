@@ -82,6 +82,9 @@ func run() int {
 	if len(os.Args) > 1 && os.Args[1] == "activelab" {
 		return runActiveLab(cfg, logger, os.Args[2:])
 	}
+	if len(os.Args) > 1 && os.Args[1] == "activeproof" {
+		return runActiveProof(cfg, logger, os.Args[2:])
+	}
 
 	ropts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
