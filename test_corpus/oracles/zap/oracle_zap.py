@@ -134,6 +134,8 @@ def main() -> int:
                 "location": f"{u.scheme}://{u.netloc}{u.path}"
                 + (f"?{param}" if param else ""),
                 "evidence": (a.get("evidence") or "")[:200],
+                "attack": (a.get("attack") or "")[:200],
+                "other": (a.get("other") or "")[:400],
             }
         )
     notes.append(f"spidered {seen} URLs")

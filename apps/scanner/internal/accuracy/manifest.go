@@ -41,6 +41,10 @@ type Manifest struct {
 	// target's discovery starts besides "/": the lab's route list for pages no
 	// link reaches (a single-page app's API, a login-only lesson).
 	Start []string `yaml:"start,omitempty"`
+	// Exclude lists path prefixes the active scan must never request: the
+	// scope's excluded paths a customer sets (ADR-0008 §2), e.g. a page that
+	// answers 500 to any unexpected value.
+	Exclude []string `yaml:"exclude,omitempty"`
 	// OracleDisputed lists independent-oracle alerts judged wrong, each with
 	// its evidence (Gate M's ZAP comparison, test_corpus/oracles/zap). It never
 	// changes the scanner's score; it only explains a disagreement.

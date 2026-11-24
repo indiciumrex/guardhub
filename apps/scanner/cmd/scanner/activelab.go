@@ -65,7 +65,7 @@ func runActiveLab(cfg config.Config, logger *slog.Logger, args []string) int {
 			logger.Error("cannot read lab sessions", "target", m.Target, "err", err)
 			return 1
 		}
-		scope, err := active.NewScope(m.Origin, nil)
+		scope, err := active.NewScope(m.Origin, m.Exclude)
 		if err != nil {
 			logger.Error("bad origin", "target", m.Target, "err", err)
 			return 1

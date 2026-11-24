@@ -21,3 +21,10 @@ expect:
     key: sql_injection
     location: http://av-sqli.lab.test/order?id
     why: "id is concatenated into WHERE id = ...; errors are hidden, found and missing differ only in text (blind)."
+oracle_disputed: # ZAP verdicts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_sqli
+    location: http://av-sqli.lab.test/search?q
+    why: >-
+      ZAP's evidence: results differ between "apple%" and "appleXYZABCDEFGHIJ". /search binds q
+      as a parameter of LIKE (avlab.py site_sqli): % is LIKE's own wildcard inside the bound
+      value, not SQL syntax; no quote, condition or expression reaches the query.

@@ -10,8 +10,9 @@ expectations that are not `outside`, for every check ZAP has a rule for (active_
 its expectations are listed as manifest-only truth, never compared). Not counted either: an SSRF
 alert at a location where ZAP also reports an External Redirect (ZAP's scan requests follow
 redirects, so its callback is fetched by ZAP itself, not by the server; the redirect is counted as
-active_redirect), and an alert a manifest disputes (`oracle_disputed`: check, location and the
-evidence that the alert is wrong). Every alert not counted is listed in the summary. An
+active_redirect), and an oracle verdict a manifest disputes (`oracle_disputed`: check, location
+and the evidence that ZAP's alert is wrong or that ZAP misses a vulnerability the source shows;
+such an entry is excluded from both sides of the comparison, never from the scanner's score). Every alert not counted is listed in the summary. An
 `outside` expectation (beyond what the checks declare, e.g. reachable only from JavaScript) is
 listed with whether the oracle reached it; it never fails the run. A target with no oracle output
 is UNMEASURED and fails. Writes OUT_DIR/summary.md and summary.json; exit 1 on any mismatch.
@@ -78,11 +79,14 @@ def main() -> int:
         disp = frozenset(
             (d["check"], d["location"]) for d in m.get("oracle_disputed") or []
         )
-        want = {
-            (e["check"], e["location"])
-            for e in m.get("expect") or []
-            if not e.get("outside") and e["check"] in ORACLE_CHECKS
-        }
+        want = (
+            {
+                (e["check"], e["location"])
+                for e in m.get("expect") or []
+                if not e.get("outside") and e["check"] in ORACLE_CHECKS
+            }
+            - disp
+        )  # an expectation the oracle demonstrably misses is disputed the same way
         no_oracle = sorted(
             [e["check"], e["location"]]
             for e in m.get("expect") or []

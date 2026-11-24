@@ -26,3 +26,11 @@ expect:
     location: http://av-redirect.lab.test/jump?dest
     outside: true # meta refresh in the HTML body: active_redirect declares the Location and Refresh headers only
     why: "dest goes into a meta refresh URL (encoded for HTML, never checked)."
+oracle_disputed: # ZAP verdicts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_redirect
+    location: http://av-redirect.lab.test/login?next
+    why: >-
+      ZAP misses it at attack strength HIGH (Gate M run 45446632581 and a local rerun) although its
+      rule has a "//host" payload. The source accepts any next starting with "/", and
+      GET /login?next=//gh-canary.invalid/ answers 302 Location: //gh-canary.invalid/, which every
+      browser follows to that other host (a protocol-relative URL).
