@@ -257,10 +257,13 @@ jobs:
           committed=$(git show HEAD:docs/accuracy-active/scorecard.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["source"])')
           git merge-base --is-ancestor "$committed" HEAD || {
             echo "docs/accuracy-active names source $committed, which HEAD does not descend from"; exit 1; }
-          sed -i "s/${GITHUB_SHA::12}/$committed/g" docs/accuracy-active/*
-          git status --porcelain -- docs/accuracy-active
-          test -z "$(git status --porcelain -- docs/accuracy-active)" || {
-            git diff -- docs/accuracy-active | head -60
+          # compare on copies: the artifact keeps this run's own source label
+          t=$(mktemp -d); mkdir -p "$t/committed" "$t/measured"
+          git archive HEAD docs/accuracy-active | tar -x -C "$t/committed"
+          cp -r docs/accuracy-active "$t/measured/"
+          sed -i "s/${GITHUB_SHA::12}/$committed/g" "$t"/measured/accuracy-active/*
+          diff -ru "$t/committed/docs/accuracy-active" "$t/measured/accuracy-active" | head -80
+          diff -rq "$t/committed/docs/accuracy-active" "$t/measured/accuracy-active" >/dev/null || {
             echo "docs/accuracy-active is stale: commit this run's active-lab artifact"; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
