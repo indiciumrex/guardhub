@@ -1,10 +1,16 @@
 # `active_cors` accuracy
 
-Lab source revision `1a339b2b15bb`. Verdict: **NOT measured well enough: too few ground-truth findings to measure; precision below the gate; recall below the gate**.
+Lab source revision `eaf1cdf4ef20`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|
-| n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 | 8 | 8 | 0 |
+| 100.0% | 100.0% | 100.0% | 3 | 0 | 0 | 0 | 0 | 16 | 15 | 0 |
+
+## By finding
+
+| Finding key | TP | FP | FN |
+|---|---|---|---|
+| `cors_origin_reflected` | 3 | 0 | 0 |
 
 ## False positives (0)
 
@@ -14,7 +20,9 @@ None.
 
 None.
 
-## True positives (0)
+## True positives (3)
 
-None.
+- `av-cors` / `cors_origin_reflected` at `http://av-cors.lab.test/api/me`: Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true.
+- `av-cors` / `cors_origin_reflected` at `http://av-cors.lab.test/api/orders`: Origin null is granted with Access-Control-Allow-Credentials true.
+- `av-cors` / `cors_origin_reflected` at `http://av-cors.lab.test/api/settings`: Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true.
 

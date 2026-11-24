@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "1a339b2b15bb",
+  "source": "eaf1cdf4ef20",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -13,6 +13,14 @@
     "active-ef-dump",
     "active-hh-csp-weak",
     "active-hq-eval",
+    "av-clean",
+    "av-cors",
+    "av-cors-safe",
+    "av-idor",
+    "av-redirect",
+    "av-sqli",
+    "av-ssrf",
+    "av-xss",
     "dvwa",
     "juice-shop",
     "webgoat"
@@ -20,55 +28,135 @@
   "checks": [
     {
       "check_id": "active_cors",
-      "targets": 8,
-      "clean_runs": 8,
-      "tp": 0,
+      "targets": 16,
+      "clean_runs": 15,
+      "tp": 3,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
       "max_requests": 46,
-      "precision": null,
-      "recall": null,
-      "recall_all": null,
-      "meets_gate": false,
-      "gate_notes": [
-        "too few ground-truth findings to measure",
-        "precision below the gate",
-        "recall below the gate"
-      ],
-      "by_key": {},
-      "true_positives": null,
-      "false_positives": null,
-      "false_negatives": null
-    },
-    {
-      "check_id": "active_redirect",
-      "targets": 8,
-      "clean_runs": 7,
-      "tp": 1,
-      "fp": 0,
-      "fn": 0,
-      "fn_outside": 0,
-      "tolerated": 0,
-      "errors": 0,
-      "max_requests": 13,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "meets_gate": false,
-      "gate_notes": [
-        "too few ground-truth findings to measure"
-      ],
+      "meets_gate": true,
       "by_key": {
-        "open_redirect": {
-          "tp": 1,
+        "cors_origin_reflected": {
+          "tp": 3,
           "fp": 0,
           "fn": 0
         }
       },
       "true_positives": [
+        {
+          "target": "av-cors",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors.lab.test/api/me",
+          "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors.lab.test/api/orders",
+          "why": "Origin null is granted with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors.lab.test/api/settings",
+          "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "active_idor",
+      "targets": 16,
+      "clean_runs": 15,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 16,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "idor_cross_account_read": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "av-idor",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor.lab.test/invoice",
+          "why": "/invoice?id= returns any invoice to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor.lab.test/message",
+          "why": "/message?msg_id= returns any message to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor.lab.test/profile/1001",
+          "why": "/profile/\u003cid\u003e returns any profile to any signed-in account (no owner check)."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "active_redirect",
+      "targets": 16,
+      "clean_runs": 13,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 21,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.6666666666666666,
+      "meets_gate": true,
+      "by_key": {
+        "open_redirect": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 2
+        }
+      },
+      "true_positives": [
+        {
+          "target": "av-redirect",
+          "key": "open_redirect",
+          "location": "http://av-redirect.lab.test/go?url",
+          "why": "url goes into Location unchecked."
+        },
+        {
+          "target": "av-redirect",
+          "key": "open_redirect",
+          "location": "http://av-redirect.lab.test/login?next",
+          "why": "next only has to start with a slash, so //other-host/ is accepted (protocol-relative)."
+        },
+        {
+          "target": "av-redirect",
+          "key": "open_redirect",
+          "location": "http://av-redirect.lab.test/out?to",
+          "why": "to goes into the Refresh header unchecked."
+        },
         {
           "target": "dvwa",
           "key": "open_redirect",
@@ -77,34 +165,64 @@
         }
       ],
       "false_positives": null,
-      "false_negatives": null
+      "false_negatives": [
+        {
+          "target": "av-redirect",
+          "key": "open_redirect",
+          "location": "http://av-redirect.lab.test/jump?dest",
+          "outside": true,
+          "why": "dest goes into a meta refresh URL (encoded for HTML, never checked)."
+        },
+        {
+          "target": "juice-shop",
+          "key": "open_redirect",
+          "location": "http://juice-shop.lab.test:3000/redirect?to",
+          "outside": true,
+          "why": "Allow-listed Redirect challenge: /redirect accepts any URL that merely contains an allow-listed one (substring check)."
+        }
+      ]
     },
     {
       "check_id": "active_sqli",
-      "targets": 8,
-      "clean_runs": 6,
-      "tp": 2,
+      "targets": 16,
+      "clean_runs": 12,
+      "tp": 6,
       "fp": 0,
       "fn": 0,
       "fn_outside": 1,
       "tolerated": 0,
       "errors": 0,
-      "max_requests": 45,
+      "max_requests": 78,
       "precision": 1,
       "recall": 1,
-      "recall_all": 0.6666666666666666,
-      "meets_gate": false,
-      "gate_notes": [
-        "too few ground-truth findings to measure"
-      ],
+      "recall_all": 0.8571428571428571,
+      "meets_gate": true,
       "by_key": {
         "sql_injection": {
-          "tp": 2,
+          "tp": 6,
           "fp": 0,
           "fn": 1
         }
       },
       "true_positives": [
+        {
+          "target": "av-sqli",
+          "key": "sql_injection",
+          "location": "http://av-sqli.lab.test/account?uid",
+          "why": "uid is concatenated into a quoted WHERE string; found answers 200, missing 404 (blind)."
+        },
+        {
+          "target": "av-sqli",
+          "key": "sql_injection",
+          "location": "http://av-sqli.lab.test/item?id",
+          "why": "id is concatenated into WHERE id = ... and the SQLite error is printed."
+        },
+        {
+          "target": "av-sqli",
+          "key": "sql_injection",
+          "location": "http://av-sqli.lab.test/order?id",
+          "why": "id is concatenated into WHERE id = ...; errors are hidden, found and missing differ only in text (blind)."
+        },
         {
           "target": "dvwa",
           "key": "sql_injection",
@@ -116,45 +234,123 @@
           "key": "sql_injection",
           "location": "http://dvwa.lab.test/vulnerabilities/sqli_blind/?id",
           "why": "sqli_blind low.php puts $_GET['id'] into a quoted SQL string; the page says whether a row exists (boolean-based)."
+        },
+        {
+          "target": "juice-shop",
+          "key": "sql_injection",
+          "location": "http://juice-shop.lab.test:3000/rest/products/search?q",
+          "why": "Login-less SQLi challenge family: /rest/products/search builds a SQLite query from q by string concatenation (SQLITE_ERROR on a lone quote)."
         }
       ],
       "false_positives": null,
       "false_negatives": [
         {
-          "target": "juice-shop",
+          "target": "webgoat",
           "key": "sql_injection",
-          "location": "http://juice-shop.lab.test:3000/rest/products/search?q",
+          "location": "http://webgoat.lab.test:8080/WebGoat/SqlInjectionMitigations/servers?column",
           "outside": true,
-          "why": "/rest/products/search builds a SQLite query from q by string concatenation (SQLITE_ERROR on a lone quote)."
+          "why": "SQL Injection (mitigation) lesson 12: column is concatenated into ORDER BY."
         }
       ]
     },
     {
-      "check_id": "active_xss",
-      "targets": 8,
-      "clean_runs": 7,
-      "tp": 1,
+      "check_id": "active_ssrf",
+      "targets": 16,
+      "clean_runs": 14,
+      "tp": 5,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
-      "max_requests": 15,
+      "max_requests": 9,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
-      "meets_gate": false,
-      "gate_notes": [
-        "too few ground-truth findings to measure"
-      ],
+      "meets_gate": true,
       "by_key": {
-        "reflected_xss": {
-          "tp": 1,
+        "ssrf_confirmed": {
+          "tp": 5,
           "fp": 0,
           "fn": 0
         }
       },
       "true_positives": [
+        {
+          "target": "av-ssrf",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf.lab.test/fetch?url",
+          "why": "the server fetches url."
+        },
+        {
+          "target": "av-ssrf",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf.lab.test/hook?callback",
+          "why": "the server fetches callback."
+        },
+        {
+          "target": "av-ssrf",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf.lab.test/img?u",
+          "why": "the server fetches u (its default value is a URL)."
+        },
+        {
+          "target": "av-ssrf",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf.lab.test/preview?src",
+          "why": "the server fetches src."
+        },
+        {
+          "target": "dvwa",
+          "key": "ssrf_confirmed",
+          "location": "http://dvwa.lab.test/vulnerabilities/fi/?page",
+          "why": "fi low.php includes $_GET['page']; Apache's PHP includes remote URLs, so the server fetches any URL it is given."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "active_xss",
+      "targets": 16,
+      "clean_runs": 13,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 2,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 39,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.6666666666666666,
+      "meets_gate": true,
+      "by_key": {
+        "reflected_xss": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 2
+        }
+      },
+      "true_positives": [
+        {
+          "target": "av-xss",
+          "key": "reflected_xss",
+          "location": "http://av-xss.lab.test/greet?who",
+          "why": "who is written into a single-quoted title attribute without encoding."
+        },
+        {
+          "target": "av-xss",
+          "key": "reflected_xss",
+          "location": "http://av-xss.lab.test/profile?name",
+          "why": "name is written into a double-quoted value attribute without encoding."
+        },
+        {
+          "target": "av-xss",
+          "key": "reflected_xss",
+          "location": "http://av-xss.lab.test/search?q",
+          "why": "q is written into the page text without encoding."
+        },
         {
           "target": "dvwa",
           "key": "reflected_xss",
@@ -163,7 +359,22 @@
         }
       ],
       "false_positives": null,
-      "false_negatives": null
+      "false_negatives": [
+        {
+          "target": "av-xss",
+          "key": "reflected_xss",
+          "location": "http://av-xss.lab.test/lang?l",
+          "outside": true,
+          "why": "l is written into a JavaScript string inside a script element without encoding."
+        },
+        {
+          "target": "webgoat",
+          "key": "reflected_xss",
+          "location": "http://webgoat.lab.test:8080/WebGoat/CrossSiteScripting/attack5a?field1",
+          "outside": true,
+          "why": "Cross Site Scripting lesson 7: field1 comes back in the JSON feedback that the lesson page renders as HTML."
+        }
+      ]
     }
   ]
 }
