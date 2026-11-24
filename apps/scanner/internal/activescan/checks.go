@@ -29,6 +29,9 @@ type Env struct {
 	OOBWait time.Duration
 	// SessionA/SessionB: two consented test accounts (nil: IDOR is not run).
 	SessionA, SessionB *active.Session
+	// Start: the start URLs discovery began with (the origin's "/" first);
+	// IDOR's own discovery as account A uses them too.
+	Start []*url.URL
 }
 
 // Check is one active check.
@@ -83,7 +86,7 @@ func (XSS) ID() string { return evidence.CheckActiveXss }
 func (c XSS) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 	var out []evidence.Finding
 	for _, pt := range env.Points {
-		for _, pid := range []string{"xss.marker.tag", "xss.marker.attr"} {
+		for _, pid := range []string{"xss.marker.tag", "xss.marker.attr", "xss.marker.attr1"} {
 			resp, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, payload(pid)))
 			if err != nil {
 				return out, err

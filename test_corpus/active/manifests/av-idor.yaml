@@ -1,0 +1,24 @@
+target: av-idor
+origin: http://av-idor.lab.test
+active: true
+sessions: av-idor-session.json # written by test_corpus/active/login-avidor.sh (lab only)
+description: >
+  Gate M purpose-built site (avlab.py, site_idor), logged in as its two lab accounts: objects
+  any signed-in account reads by id (query or path), next to an owner-checked receipt, a public
+  post, a team shared by both accounts and a settings page that ignores its id. Ground truth:
+  the VULN lines of avlab.py. OWASP ZAP has no IDOR rule: the manifest is the only truth for
+  active_idor (noted in the oracle output); ZAP still confirms no other check fires here.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor.lab.test/invoice
+    why: "/invoice?id= returns any invoice to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor.lab.test/profile/1001
+    why: "/profile/<id> returns any profile to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor.lab.test/message
+    why: "/message?msg_id= returns any message to any signed-in account (no owner check)."

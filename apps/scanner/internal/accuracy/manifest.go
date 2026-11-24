@@ -37,6 +37,10 @@ type Manifest struct {
 	// test accounts, JSON {"a":{...},"b":{...}}), relative to the manifests.
 	Active   bool   `yaml:"active,omitempty"`
 	Sessions string `yaml:"sessions,omitempty"`
+	// Start lists same-origin paths (with their query) where an active
+	// target's discovery starts besides "/": the lab's route list for pages no
+	// link reaches (a single-page app's API, a login-only lesson).
+	Start []string `yaml:"start,omitempty"`
 }
 
 // Expectation names one finding. Location, when set, must match exactly;

@@ -1,11 +1,29 @@
 target: webgoat
 origin: http://webgoat.lab.test:8080
 active: true
+sessions: webgoat-session.json # written by test_corpus/active/login-webgoat.sh (lab only)
 description: >
-  OWASP WebGoat (the lab's pinned image), anonymous. / redirects to /WebGoat/login, a POST
-  login form; every lesson is behind that login and driven by JavaScript and POST requests.
-  Nothing a GET-only, link-and-form discovery reaches is vulnerable, so no active check may
-  report anything here (false-positive control on a real application). Confirmed by the
-  pinned OWASP ZAP oracle.
-checks: [active_xss, active_sqli, active_redirect, active_cors]
-expect: []
+  OWASP WebGoat (the lab's pinned image), logged in as two throwaway lab accounts (A and B,
+  registered through WebGoat's own sign-up form). Lessons are driven by JavaScript and mostly
+  POST requests, so discovery starts from a route list (start below: GET endpoints the lesson
+  pages call). Ground truth: WebGoat's documented lessons for these routes, confirmed by the
+  pinned OWASP ZAP oracle (same session, same route list). WebGoat keeps no objects one lab
+  account could read of another's through these routes (IDOR false-positive control); its IDOR
+  lesson uses its own fixture users behind a lesson login, not cross-account objects.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+start:
+  - /WebGoat/start.mvc
+  - /WebGoat/service/lessonmenu.mvc
+  - /WebGoat/SqlInjectionMitigations/servers?column=hostname
+  - /WebGoat/CrossSiteScripting/attack5a?QTY1=1&QTY2=1&QTY3=1&QTY4=1&field1=4128+3214+0002+1999&field2=111
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://webgoat.lab.test:8080/WebGoat/SqlInjectionMitigations/servers?column
+    outside: true # ORDER BY injection: active_sqli declares conditions (error text or a true/false answer); here neither changes (Spring hides the error)
+    why: "SQL Injection (mitigation) lesson 12: column is concatenated into ORDER BY."
+  - check: active_xss
+    key: reflected_xss
+    location: http://webgoat.lab.test:8080/WebGoat/CrossSiteScripting/attack5a?field1
+    outside: true # reflected into a JSON answer the lesson's JavaScript inserts into the page: active_xss declares HTML responses only
+    why: "Cross Site Scripting lesson 7: field1 comes back in the JSON feedback that the lesson page renders as HTML."

@@ -193,7 +193,7 @@ func (s *Service) runActiveScan(jobCtx context.Context, job Job) error {
 // the lab harness, cmd/scanner activelab).
 func runActiveChecks(ctx context.Context, client *active.Client, scope active.Scope, ids []string,
 	sessions activeSessions, collab active.Collaborator) ([]evidence.Finding, []CheckResult) {
-	findings, outs := activescan.Run(ctx, client, scope, ids, sessions.A, sessions.B, collab)
+	findings, outs := activescan.Run(ctx, client, scope, ids, sessions.A, sessions.B, collab, nil)
 	results := make([]CheckResult, 0, len(outs))
 	for _, o := range outs {
 		switch {

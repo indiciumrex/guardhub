@@ -1,0 +1,27 @@
+target: av-ssrf
+origin: http://av-ssrf.lab.test
+active: true
+description: >
+  Gate M purpose-built site (avlab.py, site_ssrf): parameters whose URL the server fetches
+  (url, src, callback, and u, whose default value is a URL), next to an own-host allow-list,
+  a page that only shows the URL, and one that only parses it. Ground truth: the VULN lines of
+  avlab.py, confirmed by ZAP's SSRF rule (40046, pinned ascanrulesBeta) through ZAP's own
+  callback listener on the lab network; GuardHub confirms through the lab collaborator.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf.lab.test/fetch?url
+    why: "the server fetches url."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf.lab.test/preview?src
+    why: "the server fetches src."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf.lab.test/hook?callback
+    why: "the server fetches callback."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf.lab.test/img?u
+    why: "the server fetches u (its default value is a URL)."

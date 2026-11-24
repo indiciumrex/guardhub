@@ -1,0 +1,27 @@
+target: av-xss
+origin: http://av-xss.lab.test
+active: true
+description: >
+  Gate M purpose-built site (test_corpus/active/avlab/avlab.py, site_xss): reflected XSS in
+  text, a double-quoted and a single-quoted attribute, next to look-alikes that encode their
+  input, answer JSON (nosniff), or only count it. Ground truth: the VULN lines of avlab.py,
+  confirmed by the pinned OWASP ZAP oracle.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss.lab.test/search?q
+    why: "q is written into the page text without encoding."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss.lab.test/profile?name
+    why: "name is written into a double-quoted value attribute without encoding."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss.lab.test/greet?who
+    why: "who is written into a single-quoted title attribute without encoding."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss.lab.test/lang?l
+    outside: true # script context: active_xss declares HTML element/attribute contexts only (docs/checks/active_xss.md)
+    why: "l is written into a JavaScript string inside a script element without encoding."

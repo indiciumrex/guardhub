@@ -1,0 +1,10 @@
+target: av-clean
+origin: http://av-clean.lab.test
+active: true
+description: >
+  False-positive control with real parameters (avlab.py, site_clean): pagination, a
+  bound-parameter product page, an allow-listed sort column, an allow-listed download name,
+  a search that echoes its input encoded, a same-site-only redirect and a share link shown as
+  text. Nothing is vulnerable; confirmed by ZAP.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect: []

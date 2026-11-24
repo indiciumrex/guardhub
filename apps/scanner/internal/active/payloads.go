@@ -44,6 +44,11 @@ var Payloads = []Payload{
 		Why: "breaks out of a quoted attribute into an inert data- attribute; nothing executes",
 	},
 	{
+		ID: "xss.marker.attr1", Module: "active_xss", In: InQuery,
+		Value: `gh7b' data-gh7a='1`, Control: `gh7bplain`,
+		Why: "the same inert data- attribute break-out for a single-quoted attribute; nothing executes",
+	},
+	{
 		ID: "sqli.quote", Module: "active_sqli", In: InQuery,
 		Value: `gh'`, Control: `gh''`,
 		Why: "a single quote (error-based): reading only; the doubled quote is the same length and valid SQL",

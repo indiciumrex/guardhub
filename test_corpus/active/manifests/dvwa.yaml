@@ -3,13 +3,16 @@ origin: http://dvwa.lab.test
 active: true
 sessions: dvwa-session.json # written by test_corpus/active/login-dvwa.sh (lab only)
 description: >
-  DVWA (the lab's pinned image), logged in as its documented lab account, security level
-  "low". Ground truth: DVWA's own source for each module at "low"
+  DVWA (the lab's pinned image), logged in as its documented lab accounts (admin as A,
+  gordonb as B), security level "low". Ground truth: DVWA's own source for each module at "low"
   (vulnerabilities/<module>/source/low.php in the pinned image), confirmed by the pinned
   OWASP ZAP oracle (test_corpus/oracles/zap). Active tests are GET-only (ADR-0008 §4):
   POST-only modules (xss_s, exec, upload, captcha, csp, weak_id) are outside what the checks
   declare, and state-changing GET forms (csrf, brute) are never requested (do-no-harm).
-checks: [active_xss, active_sqli, active_redirect, active_cors]
+  SSRF: fi includes $_GET['page'], but the image's PHP has allow_url_include=0, so a URL is
+  never fetched (no SSRF). IDOR: DVWA keeps no per-account objects; every module page shows
+  the viewing account, so B never sees A's account line (false-positive control).
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
 expect:
   - check: active_xss
     key: reflected_xss

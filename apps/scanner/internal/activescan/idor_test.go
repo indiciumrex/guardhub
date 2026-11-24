@@ -252,7 +252,7 @@ func TestChecksProbeAsSessionA(t *testing.T) {
 	} {
 		env := idorEnv(t, srv, &active.RequestLog{})
 		scope, _ := active.NewScope(srv.URL, nil)
-		fs, outs := Run(context.Background(), env.Client, scope, []string{"active_xss"}, tc.sess, nil, nil)
+		fs, outs := Run(context.Background(), env.Client, scope, []string{"active_xss"}, tc.sess, nil, nil, nil)
 		for _, o := range outs {
 			if o.Err != nil {
 				t.Fatalf("%s: %s: %v", tc.name, o.CheckID, o.Err)
@@ -291,7 +291,7 @@ func TestSQLiBooleanByStatus(t *testing.T) {
 	t.Cleanup(srv.Close)
 	env := idorEnv(t, srv, &active.RequestLog{})
 	scope, _ := active.NewScope(srv.URL, nil)
-	fs, _ := Run(context.Background(), env.Client, scope, []string{"active_sqli"}, nil, nil, nil)
+	fs, _ := Run(context.Background(), env.Client, scope, []string{"active_sqli"}, nil, nil, nil, nil)
 	if len(fs) != 1 || fs[0].Params["path"] != "/user" || fs[0].Params["technique"] != "boolean" {
 		t.Fatalf("findings = %+v, want exactly one boolean finding on /user", fs)
 	}
@@ -318,5 +318,40 @@ func TestLinkPointsBeyondPageCap(t *testing.T) {
 	}
 	if !keys["/go?redirect"] || keys["/logout?next"] {
 		t.Fatalf("points = %v: the link's parameter must be kept, the logout link's never", keys)
+	}
+}
+
+// Start URLs (the lab's route list) reach pages no link points to: their parameters are tested,
+// a single-quoted attribute reflection is found by the single-quote marker, and a start URL on
+// another origin is dropped before any request.
+func TestStartURLsAndSingleQuotedAttribute(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body>no links</body></html>`))
+	})
+	mux.HandleFunc("/hidden", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body><div title='" + r.URL.Query().Get("who") + "'>hi</div></body></html>"))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	log := &active.RequestLog{}
+	env := idorEnv(t, srv, log)
+	scope, _ := active.NewScope(srv.URL, nil)
+	hidden, _ := url.Parse(srv.URL + "/hidden?who=friend")
+	foreign, _ := url.Parse("http://other.example.test/x?y=1")
+	fs, _ := Run(context.Background(), env.Client, scope, []string{"active_xss"}, nil, nil, nil, []*url.URL{hidden, foreign})
+	if len(fs) != 1 || fs[0].Params["path"] != "/hidden" || fs[0].Params["context"] != "attribute" {
+		t.Fatalf("findings = %+v, want one attribute XSS on /hidden", fs)
+	}
+	for _, e := range log.Entries() {
+		if e.Path == "/x" {
+			t.Fatalf("a foreign start URL was requested: %+v", e)
+		}
+	}
+	none, _ := Run(context.Background(), env.Client, scope, []string{"active_xss"}, nil, nil, nil, nil)
+	if len(none) != 0 {
+		t.Fatalf("without the start URL nothing is reachable, got %+v", none)
 	}
 }

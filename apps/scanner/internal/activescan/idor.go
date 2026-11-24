@@ -61,7 +61,7 @@ func (c IDOR) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 	if a == nil || b == nil || a.Validate() != nil || b.Validate() != nil || a.Marker == b.Marker {
 		return nil, nil
 	}
-	_, pages, err := DiscoverAs(ctx, env.Client, env.Origin, nil, DiscoveryLimits{}, a)
+	_, pages, err := DiscoverAs(ctx, env.Client, env.Origin, env.Start, DiscoveryLimits{}, a)
 	if err != nil && IsFatal(err) {
 		return nil, err
 	}

@@ -12,15 +12,17 @@ A query parameter whose value comes back as HTML elements or attributes, not tex
 
 ## How it works
 
-Each discovered parameter gets two catalogue markers (`xss.marker.tag`: an unknown
-`<ghx7>` element; `xss.marker.attr`: an attribute break-out). The response is parsed with the
+Each discovered parameter gets up to three catalogue markers (`xss.marker.tag`: an unknown
+`<ghx7>` element; `xss.marker.attr` and `xss.marker.attr1`: break-outs of a double- and a
+single-quoted attribute). The response is parsed with the
 same HTML tokenizer browsers follow (`golang.org/x/net/html`); a finding needs the marker to
 appear as a real element or attribute. Markers have no script, no event handler and no URL.
 
 ## Not reported (false-positive discipline)
 
 - the marker reflected as text or HTML-encoded;
-- reflection inside comments or `<script>`/`<textarea>` text;
+- reflection inside comments or `<script>`/`<textarea>` text (a script-context reflection is a real
+  XSS this check does not declare: Gate M lists it as outside the declared scope);
 - non-HTML responses;
 - DOM-only XSS (nothing reflected by the server) and POST forms (outside the declared scope).
 

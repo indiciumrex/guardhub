@@ -3,6 +3,7 @@ package activescan
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/active"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
@@ -18,12 +19,14 @@ type Outcome struct {
 }
 
 // Run is the one active-scan path (the queue's active_scan job and the lab
-// harness): discovery from the origin's "/" (as session A when given), then
+// harness): discovery from the origin's "/" (as session A when given) plus any
+// start URLs (a route list: same-origin pages links do not reach, e.g. a
+// single-page app's API; nil in production today), then
 // each requested check in order. A fatal stop (kill switch, breaker, budget,
 // deadline) fails the running check and every later one with the same error;
 // findings so far are kept.
 func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []string,
-	sessA, sessB *active.Session, collab active.Collaborator) ([]evidence.Finding, []Outcome) {
+	sessA, sessB *active.Session, collab active.Collaborator, start []*url.URL) ([]evidence.Finding, []Outcome) {
 	byID := map[string]Check{}
 	for _, c := range All() {
 		byID[c.ID()] = c
@@ -31,12 +34,13 @@ func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []s
 	findings := []evidence.Finding{}
 	outs := make([]Outcome, 0, len(ids))
 	var stop error
-	points, pages, err := DiscoverAs(ctx, client, scope.Origin(), nil, DiscoveryLimits{}, sessA)
+	start = withRoot(scope.Origin(), start)
+	points, pages, err := DiscoverAs(ctx, client, scope.Origin(), start, DiscoveryLimits{}, sessA)
 	if err != nil {
 		stop = err
 	}
 	env := Env{Client: client, Origin: scope.Origin(), Points: points, Pages: pages, Collab: collab,
-		SessionA: sessA, SessionB: sessB}
+		SessionA: sessA, SessionB: sessB, Start: start}
 	for _, id := range ids {
 		if stop != nil {
 			outs = append(outs, Outcome{id, stop})
@@ -57,4 +61,16 @@ func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []s
 		outs = append(outs, Outcome{id, nil})
 	}
 	return findings, outs
+}
+
+// withRoot returns the origin's "/" followed by the same-origin start URLs
+// (others are dropped: the scope guard would refuse them anyway).
+func withRoot(origin *url.URL, start []*url.URL) []*url.URL {
+	out := []*url.URL{origin.ResolveReference(&url.URL{Path: "/"})}
+	for _, u := range start {
+		if u != nil && sameOrigin(origin, u) {
+			out = append(out, u)
+		}
+	}
+	return out
 }

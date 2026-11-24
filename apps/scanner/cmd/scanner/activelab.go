@@ -19,7 +19,8 @@ import (
 )
 
 // runActiveLab implements `scanner activelab` (ADR-0008 §9, Gate M): the
-// production active path (activescan.Run: discovery from "/", every fence)
+// production active path (activescan.Run: discovery from "/" plus the
+// manifest's start paths, every fence)
 // against the lab's active manifests, scored like `scanner lab`. Only
 // *.lab.test origins are accepted. Exit: 0 scored, 1 failure, 2 usage.
 func runActiveLab(cfg config.Config, logger *slog.Logger, args []string) int {
@@ -79,7 +80,17 @@ func runActiveLab(cfg config.Config, logger *slog.Logger, args []string) int {
 			return 1
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), queue.MaxActiveDeadline)
-		findings, outs := activescan.Run(ctx, client, scope, m.Checks, sessA, sessB, collab)
+		var start []*url.URL
+		for _, p := range m.Start {
+			s, err := u.Parse(p)
+			if err != nil || !strings.HasPrefix(p, "/") || s.Host != u.Host {
+				cancel()
+				logger.Error("start must be a path on the origin", "target", m.Target, "start", p)
+				return 1
+			}
+			start = append(start, s)
+		}
+		findings, outs := activescan.Run(ctx, client, scope, m.Checks, sessA, sessB, collab, start)
 		cancel()
 		run := accuracy.TargetRun{Target: m.Target, Origin: m.Origin, Findings: findings, Failed: map[string]string{},
 			Requests: map[string]int{}}

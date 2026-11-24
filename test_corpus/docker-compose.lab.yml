@@ -347,6 +347,20 @@ services:
     image: webgoat/webgoat:v2023.8@sha256:01672eb9aeba60d042ae1131d6de683b98fa64e9da60fa5d3daad2642a6795dd
     networks: { lab: { aliases: [webgoat.lab.test] } }
 
+  # ---- Gate M (ADR-0008 §9): purpose-built active-test sites + the lab's OOB collaborator ----
+  avlab: # test_corpus/active/avlab/avlab.py: known VULN lines next to safe look-alikes
+    image: python:3.12-alpine3.22@sha256:a190708a2dec1bd18b1decb539f8e8f5407abaa9bf39cacda583f7f8c11db322
+    command: ["python3", "-I", "/app/avlab.py", "80"]
+    read_only: true
+    volumes: [./active/avlab:/app:ro]
+    networks: { lab: { aliases: [av-xss.lab.test, av-sqli.lab.test, av-redirect.lab.test, av-cors.lab.test, av-cors-safe.lab.test, av-ssrf.lab.test, av-idor.lab.test, av-clean.lab.test] } }
+  oob: # records hits for /t/<token>; the scanner asks it for its own tokens only
+    image: guardhub-lab-tools:local
+    depends_on: { pki: { condition: service_completed_successfully } }
+    command: ["laboob", "--listen", ":80"]
+    read_only: true
+    networks: { lab: { aliases: [oob.lab.test] } }
+
   # ---- repository targets (ADR-0006 §10): GitHub API + OSV stand-in ----
   # Serves test_corpus/repos as lab/<dir> (planted secrets filled from {{secret:...}}
   # templates at request time) and replays the OSV answers recorded in test_corpus/osv;

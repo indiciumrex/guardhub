@@ -1,0 +1,22 @@
+target: av-cors
+origin: http://av-cors.lab.test
+active: true
+description: >
+  Gate M purpose-built site (avlab.py, site_cors): API endpoints that grant credentialed
+  cross-origin reads to any Origin they are sent, or to the "null" origin. Ground truth: the
+  VULN lines of avlab.py, confirmed by ZAP's CORS rule (40040, pinned ascanrulesBeta) at risk
+  High (credentialed). Its look-alikes are the av-cors-safe target.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors.lab.test/api/me
+    why: "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors.lab.test/api/orders
+    why: "Origin null is granted with Access-Control-Allow-Credentials true."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors.lab.test/api/settings
+    why: "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."

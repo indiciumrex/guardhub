@@ -159,10 +159,26 @@ Turning any of it on for a real or external target is the founder's decision, af
 Each active module follows ADR-0007's method:
 
 - **Lab:** it is measured on DVWA, OWASP Juice Shop and WebGoat (pinned images), plus small
-  look-alike negatives.
+  look-alike negatives, plus purpose-built lab sites (`test_corpus/active/avlab`, amended
+  2026-11-24): the three apps together hold fewer than the gate's minimum of three known
+  vulnerabilities for CORS, SSRF and IDOR, and almost no safe look-alikes with real parameters.
+  Each av-* site puts known vulnerable lines next to safe look-alikes (encoded, bound, allow-
+  listed, owner-checked).
+- **Logged in, two accounts:** DVWA, WebGoat and av-idor are measured with two lab accounts
+  (ADR-0008 §5), so IDOR and every check behind a login are measured too.
+- **Route lists (lab only):** a manifest may list start paths (`start:`) for pages no link
+  reaches (Juice Shop's API, WebGoat's lesson endpoints). The oracle gets the same list.
+  Production discovery still starts from "/" only; a customer route list would be a later,
+  separate decision.
 - **Truth:** each app's own documented vulnerability list (DVWA modules, Juice Shop challenges,
-  WebGoat lessons), confirmed by an independent tool run unmodified in the lab (OWASP ZAP's
-  active scan, pinned).
+  WebGoat lessons; for av-* sites the lines marked VULN in their source), confirmed by an
+  independent tool run unmodified in the lab (OWASP ZAP's active scan, pinned, with the pinned
+  `ascanrulesBeta` add-on for its CORS and SSRF rules; SSRF is confirmed through ZAP's own
+  callback listener on the lab network). ZAP has no IDOR rule: for `active_idor` the documented
+  list is the only truth, and the Gate M summary says so.
+- **Declared scope:** a real vulnerability a check does not declare (e.g. XSS in a script
+  context, a meta-refresh redirect, an allow-list bypass, ORDER BY injection) is listed as
+  `outside`: it lowers "recall (all)" in the scorecard, not the gated recall.
 - **Gate:** ≥ 95% precision and ≥ 80% recall within each module's declared scope, plus the payload
   review (§5).
 - **Measured, not enabled:** a module that passes may be merged and deployed. It stays disabled.
