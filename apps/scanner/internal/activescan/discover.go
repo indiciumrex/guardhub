@@ -96,11 +96,11 @@ func DiscoverAs(ctx context.Context, c *active.Client, origin *url.URL, start []
 			continue
 		}
 		seenPage[pageKey] = true
+		if unsafeLink(it.u) {
+			continue // neither requested nor probed
+		}
 		for k := range it.u.Query() {
 			addPoint(it.u, k)
-		}
-		if unsafeLink(it.u) {
-			continue
 		}
 		resp, err := c.Send(ctx, active.AsSession(active.Baseline("discovery", it.u), sess))
 		if err != nil {
@@ -117,6 +117,7 @@ func DiscoverAs(ctx context.Context, c *active.Client, origin *url.URL, start []
 			continue
 		}
 		links, forms := parseLinks(resp.URL, resp.Body)
+		forms = safeForms(forms) // state-changing forms are neither requested nor probed
 		for _, f := range forms {
 			for _, in := range f.inputs {
 				addPoint(f.action, in)
@@ -147,6 +148,25 @@ func fatal(err error) bool {
 type form struct {
 	action *url.URL
 	inputs []string
+	// unsafe: a password field or a submit control that names a change
+	// (e.g. DVWA's GET password-change form). Never requested, never probed.
+	unsafe bool
+}
+
+// mutatingSubmits are submit names/values that mark a GET form as changing
+// state. Search-like submits ("Submit", "Search", "Go") stay allowed.
+var mutatingSubmits = []string{"change", "update", "save", "delete", "remove", "add", "create", "edit",
+	"set", "send", "post", "upload", "buy", "pay", "order", "register", "subscribe", "transfer",
+	"confirm", "apply", "reset", "login", "logout", "sign", "vote", "rate", "comment", "publish"}
+
+func mutatingSubmit(nameOrValue string) bool {
+	v := strings.ToLower(nameOrValue)
+	for _, w := range mutatingSubmits {
+		if strings.Contains(v, w) {
+			return true
+		}
+	}
+	return false
 }
 
 // parseLinks returns same-document links and GET forms (action with the
@@ -201,7 +221,15 @@ func parseLinks(base *url.URL, body []byte) ([]*url.URL, []form) {
 				}
 				name := attr("name")
 				typ := strings.ToLower(attr("type"))
-				if name == "" || typ == "file" || typ == "password" {
+				lname := strings.ToLower(name)
+				if typ == "password" || strings.Contains(lname, "password") || strings.Contains(lname, "passwd") || lname == "pass" || lname == "pwd" {
+					cur.unsafe = true
+					continue
+				}
+				if (typ == "submit" || typ == "button" || tok.Data == "button") && (mutatingSubmit(name) || mutatingSubmit(attr("value"))) {
+					cur.unsafe = true
+				}
+				if name == "" || typ == "file" {
 					continue
 				}
 				q := cur.action.Query()
@@ -223,6 +251,18 @@ func parseLinks(base *url.URL, body []byte) ([]*url.URL, []form) {
 		forms = append(forms, *cur)
 	}
 	return links, forms
+}
+
+// safeForms drops forms that look state-changing (form.unsafe) or whose
+// action is an unsafe link.
+func safeForms(fs []form) []form {
+	out := fs[:0]
+	for _, f := range fs {
+		if !f.unsafe && !unsafeLink(f.action) {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 func sameOrigin(a, b *url.URL) bool {

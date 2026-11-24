@@ -172,3 +172,44 @@ func TestUnsafeLink(t *testing.T) {
 		}
 	}
 }
+
+// A DVWA-style GET password-change form must never be requested or probed:
+// submitting it with empty passwords would set the account's password.
+func TestDiscoverSkipsStateChangingForms(t *testing.T) {
+	var changed atomic.Int32
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body>
+<form action="/csrf/" method="GET">
+  <input type="password" name="password_new"><input type="password" name="password_conf">
+  <input type="submit" value="Change" name="Change">
+</form>
+<form action="/profile" method="GET"><input name="nickname"><input type="submit" value="Update profile"></form>
+<form action="/search" method="GET"><input name="q"><input type="submit" value="Search"></form>
+</body></html>`))
+	})
+	mux.HandleFunc("/csrf/", func(http.ResponseWriter, *http.Request) { changed.Add(1) })
+	mux.HandleFunc("/profile", func(http.ResponseWriter, *http.Request) { changed.Add(1) })
+	mux.HandleFunc("/search", func(w http.ResponseWriter, _ *http.Request) { w.Header().Set("Content-Type", "text/html") })
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	origin, _ := url.Parse(srv.URL)
+	scope, _ := active.NewScope(srv.URL, nil)
+	cl, _ := active.NewClient(active.Options{Scope: scope, Kill: &active.StaticKill{}, Log: &active.RequestLog{},
+		Timeout: 3 * time.Second, AllowPrivateHosts: []string{"127.0.0.1"}})
+	pts, _, err := Discover(context.Background(), cl, origin, nil, DiscoveryLimits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.Load() != 0 {
+		t.Fatal("a state-changing GET form was requested")
+	}
+	keys := map[string]bool{}
+	for _, p := range pts {
+		keys[p.Key()] = true
+	}
+	if keys["/csrf/?Change"] || keys["/profile?nickname"] || !keys["/search?q"] {
+		t.Fatalf("points = %v: change forms must be dropped, the search form kept", keys)
+	}
+}
