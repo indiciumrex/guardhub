@@ -61,6 +61,7 @@ const (
 	CheckExposedFiles      = "exposed_files"
 	CheckJsLibraries       = "js_libraries"
 	CheckContentSignals    = "content_signals"
+	CheckJsSecrets         = "js_secrets"
 	CheckDependencyVulns   = "dependency_vulns"
 	CheckRepoSecrets       = "repo_secrets"
 )
@@ -182,6 +183,10 @@ var FindingKeys = map[string]map[string]Severity{
 		"mixed_content_active":  SeverityMedium,
 		"mixed_content_passive": SeverityLow,
 		"sri_missing":           SeverityInfo,
+	},
+	"js_secrets": {
+		"secret_in_javascript":      SeverityHigh,
+		"test_secret_in_javascript": SeverityLow,
 	},
 	"dependency_vulns": {
 		"vulnerable_dependency_high":   SeverityHigh,

@@ -152,6 +152,10 @@ CHECK_FINDING_KEYS: dict[str, dict[str, Severity]] = {
         'mixed_content_passive': 'low',
         'sri_missing': 'info',
     },
+    'js_secrets': {
+        'secret_in_javascript': 'high',
+        'test_secret_in_javascript': 'low',
+    },
     'dependency_vulns': {
         'vulnerable_dependency_high': 'high',
         'vulnerable_dependency_medium': 'medium',

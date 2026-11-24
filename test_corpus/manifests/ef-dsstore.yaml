@@ -2,6 +2,6 @@ target: ef-dsstore
 origin: https://ef-dsstore.lab.test
 description: >
   clean.lab.test's headers and TLS; macOS .DS_Store at /.DS_Store (positive: ds_store_exposed) (test_corpus/ef-init.sh).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: exposed_files, key: ds_store_exposed, location: "https://ef-dsstore.lab.test/.DS_Store", why: "Files oracle (curl + libmagic, lab run 2026-11-23): /.DS_Store: libmagic 'Apple Desktop Services Store'."}

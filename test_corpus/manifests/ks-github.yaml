@@ -1,0 +1,7 @@
+target: ks-github
+origin: https://ks-github.lab.test
+description: >
+  clean.lab.test's headers and TLS; a GitHub personal access token in a same-origin script (positive: secret_in_javascript) (test_corpus/ks/github).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
+expect:
+  - {check: js_secrets, key: secret_in_javascript, location: "https://ks-github.lab.test/static/app.js#github_pat", why: "gitleaks v8.21.2 default rules (local lab run 2026-11-23): github-pat in /static/app.js line 1 (the planted GitHub personal access token)."}

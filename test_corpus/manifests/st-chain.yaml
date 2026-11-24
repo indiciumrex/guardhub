@@ -2,7 +2,7 @@ target: st-chain
 origin: http://chainpos.st.lab.test
 description: >
   CT lists cdn.chainpos: CNAME to edge.chainpos (own zone), CNAME to a deleted S3 website bucket (test_corpus/dns/st.lab.test.db, ct/, nginx/providers.conf; verified with dig against dns-res and curl inside the lab).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: tls_cert, key: https_unavailable, why: "Plain HTTP only (dns-web): nothing listens on 443."}
   - {check: subdomain_takeover, key: unclaimed_resource, location: "http://cdn.chainpos.st.lab.test/", why: "dig: cdn.chainpos -> edge.chainpos.st.lab.test -> chainpos-media.s3-website-eu-west-1.amazonaws.com; curl http://cdn.chainpos.st.lab.test/ -> 404 NoSuchBucket."}

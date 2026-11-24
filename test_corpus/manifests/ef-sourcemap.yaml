@@ -2,6 +2,6 @@ target: ef-sourcemap
 origin: https://ef-sourcemap.lab.test
 description: >
   clean.lab.test's headers and TLS; home page script with a source map embedding its sources (positive: source_map_exposed) (test_corpus/ef-init.sh).
-checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals]
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
 expect:
   - {check: exposed_files, key: source_map_exposed, location: "https://ef-sourcemap.lab.test/static/app.js.map", why: "Files oracle (curl + Python html.parser, lab run 2026-11-23): home page script /static/app.js -> /static/app.js.map: HTTP 200, version 3, 2 sources, 2 embedded (sourcesContent)."}

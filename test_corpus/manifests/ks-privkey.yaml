@@ -1,0 +1,7 @@
+target: ks-privkey
+origin: https://ks-privkey.lab.test
+description: >
+  clean.lab.test's headers and TLS; a private key in a template literal of a same-origin script (positive: secret_in_javascript) (test_corpus/ks/privkey).
+checks: [exposed_env, security_headers, tls_cert, open_admin, default_creds, info_leak, tls_config, http_hardening, dns_email, subdomain_takeover, tls_depth, header_quality, dns_depth, cookie_depth, exposed_files, js_libraries, content_signals, js_secrets]
+expect:
+  - {check: js_secrets, key: secret_in_javascript, location: "https://ks-privkey.lab.test/static/config.js#private_key", why: "gitleaks v8.21.2 default rules (local lab run 2026-11-23): private-key in /static/config.js (the planted RSA private key in a template literal)."}

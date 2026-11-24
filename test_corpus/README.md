@@ -50,7 +50,7 @@ jar, prefix security "strict"), and the `ck-*` expectations cite what it refused
 path of the check's documented list is fetched, PHP source, archives and `.DS_Store` are recognised by
 libmagic's signatures, dumps need data rows (after zcat), and source maps are found with Python's HTML
 parser. `oracles/headers/run.sh` runs it next to the header oracle (third-party apps one at a time),
-and `compare.py` compares all five checks.
+and `compare.py` compares all six checks.
 
 **JS oracle (`oracles/js/`).** `js_libraries` truth comes from retire.js 6.1.1 (its own matchers,
 unmodified) with its vulnerability repository pinned to a commit and checked by sha256. Same-origin
@@ -63,7 +63,13 @@ OSV replay holds an answer for every library version the lab loads (`osv/site-qu
 itself (Playwright 1.65.1, Microsoft's image pinned by digest): each home page is loaded and the
 DevTools Audits domain reports the browser's own decisions (blocked = active, upgraded or warned =
 passive). Its `sri_missing` truth is Mozilla HTTP Observatory's subresource-integrity test, run by the
-header oracle for pages that name a script on another host. Its only change to the tools'
+header oracle for pages that name a script on another host.
+
+**Secrets oracle (`oracles/secrets/`).** `js_secrets` truth is gitleaks v8.21.2 with its default
+rules on the home page and every same-origin script (curl, Python's HTML parser); its findings count
+only for the credential kinds the check declares (publishable browser keys and the generic rule are
+out of scope). The planted secrets are templates filled at lab start (`ks-init`: `labrepo
+materialize`), so none is committed. Its only change to the tools'
 setup: an empty HSTS preload list, which the Observatory loads at start-up but its CSP
 verdicts do not read. CI's `header-truth` job runs `oracles/headers/run.sh` on every
 push: light targets together, then each third-party app alone (start, wait, measure,
@@ -92,6 +98,7 @@ check may derive a finding.
 | `ef-*` | `clean`'s headers and TLS with one forgotten file each (content from `ef-init.sh`, nginx `ef.conf`); `ef-schema`, `ef-phprun` and `ef-mapnames` are look-alike negatives | `exposed_files` (truth: `oracles/files`) |
 | `js-*` | `clean`'s headers and TLS with real library files from npm (`jslab/`, nginx `js.conf`): jQuery 1.12.4, Bootstrap 3.3.7, Moment 2.18.1, jQuery UI 1.12.1 from code.jquery.com; `js-current`, `js-renamed` and `js-mention` are look-alike negatives | `js_libraries` (truth: `oracles/js`) |
 | `cs-*` | `clean`'s headers and TLS, one page each (`cs/`, nginx `cs.conf`; the CSP allows exactly the test hosts): an http:// script, stylesheet and image, a cross-site script without integrity; `cs-sriok` and `cs-markup` are look-alike negatives | `content_signals` (truth: `oracles/content`, Observatory) |
+| `ks-*` | `clean`'s headers and TLS, planted credentials filled at lab start (`ks/`, nginx `ks.conf`): a GitHub token in a script, a Stripe live key inline, a private key, a Stripe test key; `ks-public` holds publishable keys, placeholders and labels only | `js_secrets` (truth: `oracles/secrets`, gitleaks) |
 | `leaky` | a careless static deployment (.env, .git, .aws, autoindex) | `exposed_env`, `info_leak` |
 | `juice-shop` | OWASP Juice Shop (SPA: 200 for every path) | soft-404 trap, `info_leak`, `open_admin` |
 | `dvwa` | DVWA + MariaDB | headers, versions, cookies |

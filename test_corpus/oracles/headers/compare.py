@@ -1,4 +1,4 @@
-"""Compare the oracles' output with the manifests' header_quality, cookie_depth, exposed_files, js_libraries and content_signals expectations.
+"""Compare the oracles' output with the manifests' header_quality, cookie_depth, exposed_files, js_libraries, content_signals and js_secrets expectations.
 
     python3 compare.py OUT_DIR
 
@@ -28,7 +28,7 @@ import yaml
 HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFESTS = os.path.join(HERE, "..", "..", "manifests")
 # check -> the oracle output field holding its keys
-CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys", "exposed_files": "file_keys", "js_libraries": "js_keys", "content_signals": "content_keys"}
+CHECKS = {"header_quality": "keys", "cookie_depth": "cookie_keys", "exposed_files": "file_keys", "js_libraries": "js_keys", "content_signals": "content_keys", "js_secrets": "secret_keys"}
 COOKIE_KEYS = {"cookie_response_cacheable", "cookie_prefix_invalid", "cookie_domain_too_broad"}
 
 
@@ -71,6 +71,15 @@ def load_truth(out: str) -> dict[str, dict]:
                 entry = truth.setdefault(origin, {"keys": [], "notes": []})
                 entry["content_keys"] = sorted(set(entry.get("content_keys", [])) | set(t["content_keys"]))
                 entry["notes"] = entry.get("notes", []) + t["notes"]
+    # js_secrets truth (oracles/secrets, gitleaks): merged the same way
+    for path in sorted(glob.glob(os.path.join(out, "secrets-*.json"))):
+        with open(path, encoding="utf-8") as f:
+            for origin, t in json.load(f).items():
+                entry = truth.setdefault(origin, {"keys": [], "notes": []})
+                entry["secret_keys"] = t["secret_keys"]
+                entry["notes"] = entry.get("notes", []) + [n for n in t["notes"] if not n.startswith("GET / ->")]
+                if any(n.startswith("fetch failed") for n in t["notes"]):
+                    entry["notes"].append("fetch failed (secrets oracle)")
     relaxed = os.path.join(out, "light-relaxed.json")
     if os.path.exists(relaxed):
         with open(relaxed, encoding="utf-8") as f:
@@ -82,6 +91,8 @@ def load_truth(out: str) -> dict[str, dict]:
                     t["notes"] += [n for n in before.get("notes", []) if not n.startswith("fetch failed")]
                 if "js_keys" in before:  # nor does the js oracle (it reads with TLS relaxed)
                     t["js_keys"] = before["js_keys"]
+                if "secret_keys" in before:  # nor the secrets oracle (curl -k)
+                    t["secret_keys"] = before["secret_keys"]
                 # Chromium's mixed-content keys survive; Observatory's sri_missing is re-read relaxed
                 t["content_keys"] = sorted(set(t.get("content_keys", [])) | {k for k in before.get("content_keys", []) if k != "sri_missing"})
                 truth[origin] = t
@@ -96,7 +107,7 @@ def expected_keys(manifest: dict, check: str) -> set[str]:
         loc = e.get("location") or ""
         if check == "exposed_files" and loc:
             keys.add(f"{e['key']}:{urlparse(loc).path or '/'}")
-        elif check == "js_libraries" and loc:
+        elif check in ("js_libraries", "js_secrets") and loc:
             keys.add(f"{e['key']}:{loc}")
         elif e["key"] in COOKIE_KEYS and "#set-cookie=" in loc:
             keys.add(f"{e['key']}:{loc.split('#set-cookie=', 1)[1]}")
@@ -141,7 +152,7 @@ def main() -> int:
     bad = [r for r in rows if r["status"] not in ("ok", "SKIPPED")]
     n_skip = sum(r["status"] == "SKIPPED" for r in rows)
     lines = [
-        "# header_quality, cookie_depth, exposed_files, js_libraries and content_signals ground truth vs manifests",
+        "# header_quality, cookie_depth, exposed_files, js_libraries, content_signals and js_secrets ground truth vs manifests",
         "",
         f"{len(rows)} target/check pairs, {len(rows) - len(bad) - n_skip} agree, {len(bad)} do not"
         + (f", {n_skip} skipped (heavy apps, light run)." if n_skip else "."),
