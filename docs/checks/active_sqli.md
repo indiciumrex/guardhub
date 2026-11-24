@@ -13,14 +13,15 @@ A query parameter that reaches a SQL statement unescaped.
 ## How it works
 
 Error-based: a lone quote (`sqli.quote`) produces a known database error that the
-doubled quote (control) does not. Boolean-based: a true condition (`1' AND '7'='7` or `1 AND
-7=7`) answers like the original while the false control differs. Only quotes and read-only
+doubled quote (control) does not, and the unmodified page does not show either. Boolean-based:
+a true condition (`1' AND '7'='7` or `1 AND 7=7`) and its false control (`'7'='8`, `7=8`) answer
+differently, the true one with HTTP 200, and each answers the same when sent a second time. Only quotes and read-only
 comparisons are sent: no UNION, no stacked statements, no writes, no delays.
 
 ## Not reported (false-positive discipline)
 
 - an error that the control triggers too, or that the page shows anyway;
-- boolean differences that the baseline itself shows between two identical requests;
+- true/false differences that do not repeat (each condition is sent twice);
 - time-based injection (never sent: it would slow the customer's database).
 
 ## Safety (every active check, ADR-0008)
