@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "source": "1a339b2b15bb",
+  "gate": {
+    "min_precision": 0.95,
+    "min_recall": 0.8,
+    "min_positives": 3,
+    "min_clean_runs": 1
+  },
+  "targets": [
+    "active-ck-secure",
+    "active-clean",
+    "active-ef-dump",
+    "active-hh-csp-weak",
+    "active-hq-eval",
+    "dvwa",
+    "juice-shop",
+    "webgoat"
+  ],
+  "checks": [
+    {
+      "check_id": "active_cors",
+      "targets": 8,
+      "clean_runs": 8,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 46,
+      "precision": null,
+      "recall": null,
+      "recall_all": null,
+      "meets_gate": false,
+      "gate_notes": [
+        "too few ground-truth findings to measure",
+        "precision below the gate",
+        "recall below the gate"
+      ],
+      "by_key": {},
+      "true_positives": null,
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "active_redirect",
+      "targets": 8,
+      "clean_runs": 7,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 13,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": false,
+      "gate_notes": [
+        "too few ground-truth findings to measure"
+      ],
+      "by_key": {
+        "open_redirect": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "dvwa",
+          "key": "open_redirect",
+          "location": "http://dvwa.lab.test/vulnerabilities/open_redirect/source/low.php?redirect",
+          "why": "open_redirect low.php sends header('location: ' . $_GET['redirect']) for any value."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
+      "check_id": "active_sqli",
+      "targets": 8,
+      "clean_runs": 6,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 1,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 45,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 0.6666666666666666,
+      "meets_gate": false,
+      "gate_notes": [
+        "too few ground-truth findings to measure"
+      ],
+      "by_key": {
+        "sql_injection": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 1
+        }
+      },
+      "true_positives": [
+        {
+          "target": "dvwa",
+          "key": "sql_injection",
+          "location": "http://dvwa.lab.test/vulnerabilities/sqli/?id",
+          "why": "sqli low.php puts $_GET['id'] into a quoted SQL string and prints mysqli_error() on failure."
+        },
+        {
+          "target": "dvwa",
+          "key": "sql_injection",
+          "location": "http://dvwa.lab.test/vulnerabilities/sqli_blind/?id",
+          "why": "sqli_blind low.php puts $_GET['id'] into a quoted SQL string; the page says whether a row exists (boolean-based)."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": [
+        {
+          "target": "juice-shop",
+          "key": "sql_injection",
+          "location": "http://juice-shop.lab.test:3000/rest/products/search?q",
+          "outside": true,
+          "why": "/rest/products/search builds a SQLite query from q by string concatenation (SQLITE_ERROR on a lone quote)."
+        }
+      ]
+    },
+    {
+      "check_id": "active_xss",
+      "targets": 8,
+      "clean_runs": 7,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 15,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": false,
+      "gate_notes": [
+        "too few ground-truth findings to measure"
+      ],
+      "by_key": {
+        "reflected_xss": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "dvwa",
+          "key": "reflected_xss",
+          "location": "http://dvwa.lab.test/vulnerabilities/xss_r/?name",
+          "why": "xss_r low.php echoes $_GET['name'] into the page without encoding."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    }
+  ]
+}
