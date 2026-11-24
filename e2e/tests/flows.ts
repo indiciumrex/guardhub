@@ -51,11 +51,19 @@ export async function readField(page: Page, label: string): Promise<string> {
 
 /** Registers on the current /account/register page and completes the mandatory 2FA setup. */
 export async function registerWith2fa(page: Page, address: string): Promise<string> {
-  await fill(page.getByLabel("Email address"), address);
-  await fill(page.getByLabel("Password", { exact: true }), PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
-
-  await page.waitForURL(/\/account\/2fa/);
+  const email = page.getByLabel("Email address");
+  const password = page.getByLabel("Password", { exact: true });
+  // A late re-render can clear a field that was already filled and checked (seen in CI: the
+  // e-mail field empty at submit, so the browser blocked the form and nothing happened). Retry
+  // the whole form until the 2FA step is reached; a submit that went through is never repeated.
+  await expect(async () => {
+    if (/\/account\/2fa/.test(page.url())) return;
+    await fill(email, address);
+    await fill(password, PASSWORD);
+    await expect(email).toHaveValue(address, { timeout: 1_000 });
+    await page.getByRole("button", { name: "Create account" }).click();
+    await page.waitForURL(/\/account\/2fa/, { timeout: 15_000 });
+  }).toPass({ timeout: 60_000 });
   await expect(page.getByRole("img", { name: /QR code/ })).toBeVisible();
   const secret = (await page.locator("code").first().innerText()).trim();
   expect(secret).toMatch(/^[A-Z2-7]{16,}$/);
