@@ -34,10 +34,18 @@ guardhub.dev runs on a **shared** Ubuntu host next to other projects. Rules: tou
 upstream in `/opt/guardhub/shared/nginx-upstream.conf`, which `guardhub-ctl.sh` rewrites; the
 active colour and versions are in `/opt/guardhub/state/`.
 
-From a clean checkout on a workstation with Docker and SSH access:
+**Continuous delivery (ADR-0009).** Nothing is built on a workstation or on the server.
+- CI's `release` job (main only, after every gate) pushes signed images to GHCR.
+- On the server, `/etc/cron.d/guardhub-cd` runs `/opt/guardhub/cd/cd.sh tick` every 3 minutes.
+  It verifies the signatures, runs `activate` under probes, then gates E, C, F, H, J, G and K.
+- On any red gate it rolls back and **halts**. Log: `/var/log/guardhub-cd.log`; reports in
+  `/opt/guardhub/state/cd/runs/`.
 
 ```bash
-ops/deploy/deploy.sh root@<host>     # build images here, ship release + images, activate
+bash /opt/guardhub/cd/cd.sh status    # serving release, last result, halt reason
+bash /opt/guardhub/cd/cd.sh verify    # re-run the gates against the serving colour (no switch)
+bash /opt/guardhub/cd/cd.sh resume    # after reading the report: allow deploys again
+ops/deploy/deploy.sh root@<host> [sha|status]   # from a workstation: trigger the same CD deploy
 ```
 
 `activate <sha>`:

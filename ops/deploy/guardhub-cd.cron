@@ -1,0 +1,7 @@
+# GuardHub only: CD agent (ADR-0009). Every 3 minutes, deploy the newest main commit whose CI run
+# is fully green and whose images carry a valid Sigstore signature for that commit; nothing while
+# halted (a red gate rolled back and stopped CD: read /var/log/guardhub-cd.log, then
+# `bash /opt/guardhub/cd/cd.sh resume`). Installed as /etc/cron.d/guardhub-cd; cd.sh keeps it and
+# /opt/guardhub/cd/cd.sh in step with the live release after every successful deploy.
+SHELL=/bin/bash
+*/3 * * * * root bash /opt/guardhub/cd/cd.sh tick >> /var/log/guardhub-cd.log 2>&1
