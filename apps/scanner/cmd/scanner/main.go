@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/hksolutions/guardhub/apps/scanner/internal/active"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/checks"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/config"
 	"github.com/hksolutions/guardhub/apps/scanner/internal/egressproxy"
@@ -115,6 +117,7 @@ func run() int {
 		Repo:             queue.RepoScanConfig{GitHubAPI: cfg.GitHubAPIURL, Transport: egress, Timeout: 120 * time.Second, Limits: repo.DefaultLimits()},
 		NewScanProbe:     func() *probe.Client { return probe.New(scanOpts) },
 		NewVerifyProbe:   func() *probe.Client { return probe.New(base) },
+		Active:           activeConfig(cfg),
 		Workers:          cfg.Workers,
 		CheckConcurrency: cfg.CheckConcurrency,
 		VerifyDeadline:   cfg.VerifyDeadline,
@@ -129,13 +132,25 @@ func run() int {
 	logger.Info("scanner starting",
 		"workers", cfg.Workers, "check_concurrency", cfg.CheckConcurrency,
 		"host_rps", cfg.HostRPS, "max_requests_per_scan", cfg.MaxRequestsPerScan,
-		"request_timeout", cfg.RequestTimeout.String(), "checks", svc.Registry.IDs())
+		"request_timeout", cfg.RequestTimeout.String(), "checks", svc.Registry.IDs(),
+		"active_enabled", cfg.ActiveEnabled)
 	if err := svc.Run(ctx); err != nil {
 		logger.Error("scanner stopped with error", "err", err)
 		return 1
 	}
 	logger.Info("scanner stopped")
 	return 0
+}
+
+// activeConfig builds the active-scan configuration (ADR-0008). Disabled
+// unless SCANNER_ACTIVE_ENABLED=true; SSRF only with a collaborator URL.
+func activeConfig(cfg config.Config) queue.ActiveConfig {
+	ac := queue.ActiveConfig{Enabled: cfg.ActiveEnabled, AllowPrivateHosts: cfg.AllowPrivateHosts}
+	if cfg.ActiveOOBURL != "" {
+		ac.Collab = active.HTTPCollaborator{Base: cfg.ActiveOOBURL,
+			HTTP: &http.Client{Transport: probe.NewEgressTransport(cfg.RequestTimeout, cfg.AllowPrivateHosts), Timeout: cfg.RequestTimeout}}
+	}
+	return ac
 }
 
 // runSelfScan implements `scanner selfscan <origin> <token>` (dogfooding gate).

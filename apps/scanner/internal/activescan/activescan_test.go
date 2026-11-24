@@ -10,7 +10,22 @@ import (
 	"time"
 
 	"github.com/hksolutions/guardhub/apps/scanner/internal/active"
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
 )
+
+// Every active check in the catalogue (target "active") runs here, and only those.
+func TestAllMatchesCatalog(t *testing.T) {
+	ids := map[string]bool{}
+	for _, c := range All() {
+		if !evidence.ActiveChecks[c.ID()] || ids[c.ID()] {
+			t.Fatalf("%s is not an active catalogue check, or is listed twice", c.ID())
+		}
+		ids[c.ID()] = true
+	}
+	if len(ids) != len(evidence.ActiveChecks) {
+		t.Fatalf("All() has %d checks, the catalogue %d", len(ids), len(evidence.ActiveChecks))
+	}
+}
 
 // labServer is a deliberately imperfect test target: one endpoint reflects a
 // parameter into HTML without encoding, one surfaces a database error on an
