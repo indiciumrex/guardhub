@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "2f16aaca7c6a",
+  "source": "709c7f0ecbd3",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -16,6 +16,12 @@
     "ck-hostpath",
     "ck-secure",
     "clean",
+    "cs-img",
+    "cs-markup",
+    "cs-script",
+    "cs-sri",
+    "cs-sriok",
+    "cs-style",
     "dd-broken",
     "dd-dkim1024",
     "dd-dkim512",
@@ -126,9 +132,76 @@
   ],
   "checks": [
     {
+      "check_id": "content_signals",
+      "targets": 110,
+      "clean_runs": 105,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "fn_outside": 0,
+      "tolerated": 0,
+      "errors": 0,
+      "max_requests": 0,
+      "precision": 1,
+      "recall": 1,
+      "recall_all": 1,
+      "meets_gate": true,
+      "by_key": {
+        "mixed_content_active": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "mixed_content_passive": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "sri_missing": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "true_positives": [
+        {
+          "target": "cs-img",
+          "key": "mixed_content_passive",
+          "location": "https://cs-img.lab.test/",
+          "why": "Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): MixedContentAutomaticallyUpgraded, Image http://cs-assets.lab.test/logo.png."
+        },
+        {
+          "target": "cs-script",
+          "key": "mixed_content_active",
+          "location": "https://cs-script.lab.test/",
+          "why": "Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): MixedContentBlocked, Script http://cs-assets.lab.test/app.js."
+        },
+        {
+          "target": "cs-sri",
+          "key": "sri_missing",
+          "location": "https://cs-sri.lab.test/",
+          "why": "Mozilla HTTP Observatory 1.4.8 subresource-integrity test (local lab run 2026-11-23): sri-not-implemented-but-external-scripts-loaded-securely; https://cdn.example.test/lib.js without integrity."
+        },
+        {
+          "target": "cs-style",
+          "key": "mixed_content_active",
+          "location": "https://cs-style.lab.test/",
+          "why": "Chromium (Playwright 1.65.1 image, DevTools Audits MixedContentIssue, local lab run 2026-11-23): MixedContentBlocked, Stylesheet http://cs-assets.lab.test/site.css."
+        },
+        {
+          "target": "js-cdn",
+          "key": "sri_missing",
+          "location": "https://js-cdn.lab.test/",
+          "why": "Mozilla HTTP Observatory 1.4.8 subresource-integrity test (CI header-truth run 45163435593, 2026-11-23): sri-not-implemented-but-external-scripts-loaded-securely; https://code.jquery.com/ui/1.12.1/jquery-ui.min.js without integrity. Missing from this manifest at first; the oracle surfaced it."
+        }
+      ],
+      "false_positives": null,
+      "false_negatives": null
+    },
+    {
       "check_id": "cookie_depth",
-      "targets": 104,
-      "clean_runs": 99,
+      "targets": 110,
+      "clean_runs": 105,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -189,8 +262,8 @@
     },
     {
       "check_id": "default_creds",
-      "targets": 104,
-      "clean_runs": 100,
+      "targets": 110,
+      "clean_runs": 106,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -464,8 +537,8 @@
     },
     {
       "check_id": "dns_depth",
-      "targets": 104,
-      "clean_runs": 84,
+      "targets": 110,
+      "clean_runs": 90,
       "tp": 20,
       "fp": 0,
       "fn": 0,
@@ -656,8 +729,8 @@
     },
     {
       "check_id": "dns_email",
-      "targets": 104,
-      "clean_runs": 95,
+      "targets": 110,
+      "clean_runs": 101,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -767,8 +840,8 @@
     },
     {
       "check_id": "exposed_env",
-      "targets": 104,
-      "clean_runs": 103,
+      "targets": 110,
+      "clean_runs": 109,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -822,8 +895,8 @@
     },
     {
       "check_id": "exposed_files",
-      "targets": 104,
-      "clean_runs": 96,
+      "targets": 110,
+      "clean_runs": 102,
       "tp": 8,
       "fp": 0,
       "fn": 0,
@@ -922,8 +995,8 @@
     },
     {
       "check_id": "header_quality",
-      "targets": 104,
-      "clean_runs": 92,
+      "targets": 110,
+      "clean_runs": 98,
       "tp": 21,
       "fp": 0,
       "fn": 0,
@@ -1100,8 +1173,8 @@
     },
     {
       "check_id": "http_hardening",
-      "targets": 104,
-      "clean_runs": 98,
+      "targets": 110,
+      "clean_runs": 104,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1183,8 +1256,8 @@
     },
     {
       "check_id": "info_leak",
-      "targets": 104,
-      "clean_runs": 98,
+      "targets": 110,
+      "clean_runs": 104,
       "tp": 10,
       "fp": 0,
       "fn": 0,
@@ -1298,8 +1371,8 @@
     },
     {
       "check_id": "js_libraries",
-      "targets": 104,
-      "clean_runs": 98,
+      "targets": 110,
+      "clean_runs": 104,
       "tp": 5,
       "fp": 0,
       "fn": 0,
@@ -1370,8 +1443,8 @@
     },
     {
       "check_id": "open_admin",
-      "targets": 104,
-      "clean_runs": 101,
+      "targets": 110,
+      "clean_runs": 107,
       "tp": 3,
       "fp": 0,
       "fn": 0,
@@ -1565,8 +1638,8 @@
     },
     {
       "check_id": "security_headers",
-      "targets": 104,
-      "clean_runs": 97,
+      "targets": 110,
+      "clean_runs": 103,
       "tp": 16,
       "fp": 0,
       "fn": 0,
@@ -1703,8 +1776,8 @@
     },
     {
       "check_id": "subdomain_takeover",
-      "targets": 104,
-      "clean_runs": 98,
+      "targets": 110,
+      "clean_runs": 104,
       "tp": 6,
       "fp": 0,
       "fn": 0,
@@ -1771,8 +1844,8 @@
     },
     {
       "check_id": "tls_cert",
-      "targets": 104,
-      "clean_runs": 42,
+      "targets": 110,
+      "clean_runs": 48,
       "tp": 62,
       "fp": 0,
       "fn": 0,
@@ -2195,8 +2268,8 @@
     },
     {
       "check_id": "tls_config",
-      "targets": 104,
-      "clean_runs": 98,
+      "targets": 110,
+      "clean_runs": 104,
       "tp": 9,
       "fp": 0,
       "fn": 0,
@@ -2301,8 +2374,8 @@
     },
     {
       "check_id": "tls_depth",
-      "targets": 104,
-      "clean_runs": 99,
+      "targets": 110,
+      "clean_runs": 105,
       "tp": 5,
       "fp": 0,
       "fn": 0,
