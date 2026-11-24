@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     # checkpoint (live scope-guard/kill-switch proof, reviewed consent text, OOB infrastructure).
     # Off by default; the scanner has its own switch (SCANNER_ACTIVE_ENABLED) as well.
     active_testing_approved: bool = False
+    # Admin "recent errors" from Sentry (optional): a READ-ONLY API token (project:read), the org and
+    # project slugs, and the egress proxy the API must use to reach sentry.io (the API container has
+    # no internet route of its own, ADR-0006). Unset: the panel shows GuardHub's own error records.
+    sentry_api_token: SecretStr | None = None
+    sentry_org: str = ""
+    sentry_project: str = ""
+    sentry_api_url: str = "https://sentry.io"
+    sentry_api_proxy: str = ""
 
     session_ttl_seconds: int = 8 * 3600
     pre_mfa_ttl_seconds: int = 10 * 60

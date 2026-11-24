@@ -132,7 +132,7 @@ def _progress(scan: Scan, live: dict[str, str], locale: str) -> list[ProgressIte
         if scan.status == "done":
             state = state if state in ("done", "failed") else "done"
         elif state not in _CHECK_STATUSES:
-            state = "failed" if scan.status == "failed" else "queued"
+            state = "failed" if scan.status in ("failed", "cancelled") else "queued"
         items.append(ProgressItem(check_id=check_id, name=check_name(check_id, locale), status=state))
     return items
 

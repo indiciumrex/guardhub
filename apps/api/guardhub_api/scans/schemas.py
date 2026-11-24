@@ -15,7 +15,7 @@ class ChallengeRequest(BaseModel):
     target_url: str = Field(min_length=1, max_length=2048)
 
 
-ScanStatus = Literal["queued", "running", "done", "failed"]
+ScanStatus = Literal["queued", "running", "done", "failed", "cancelled"]
 ScanTrigger = Literal["manual", "scheduled", "ci"]
 CheckStatus = Literal["queued", "running", "done", "failed"]
 

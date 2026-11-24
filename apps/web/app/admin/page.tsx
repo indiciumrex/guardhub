@@ -1,240 +1,226 @@
 /**
- * Minimal admin panel (§8.3 MVP): module toggles, users, scans, system health and the
- * AI seam status. Each section loads independently, so one failing endpoint doesn't hide
- * the others.
+ * Admin overview (§8.3): scans, findings by severity, module success rates, system health
+ * (API, database, Redis, scanner, queue), recent admin actions and recent errors.
+ * Each block loads independently, so one failing endpoint doesn't hide the others.
  */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
-import { ModuleToggle } from "@/components/admin/ModuleToggle";
+import { ErrorList } from "@/components/admin/ErrorList";
+import { Badge, Section, Stat, pct } from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
-import {
-  listItems,
-  type AdminModule,
-  type AiStatus,
-  type HealthCheck,
-  type HealthResponse,
-  type ListPayload,
-  type ScanSummary,
-  type User,
-} from "@/lib/types";
+import type { AiStatus } from "@/lib/types";
+import type { Overview } from "@/lib/admin-types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin");
   return { title: t("title") };
 }
 
-const PAGE = { limit: 50, offset: 0 };
-
 function settled<T>(result: PromiseSettledResult<T>): T | null {
   return result.status === "fulfilled" ? result.value : null;
 }
 
-export default async function AdminPage() {
-  const [modulesR, usersR, scansR, healthR, moduleHealthR, aiR] = await loadProtected(() =>
+const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
+
+export default async function AdminOverviewPage() {
+  const [overviewR, aiR] = await loadProtected(() =>
     Promise.allSettled([
-      serverApiFetch<AdminModule[]>("/admin/modules"),
-      serverApiFetch<ListPayload<User>>("/admin/users", { query: PAGE }),
-      serverApiFetch<ListPayload<ScanSummary>>("/admin/scans", { query: PAGE }),
-      serverApiFetch<HealthResponse>("/health"),
-      serverApiFetch<ListPayload<HealthCheck>>("/admin/health"),
+      serverApiFetch<Overview>("/admin/overview"),
       serverApiFetch<AiStatus>("/admin/ai"),
     ]),
   );
-  const modules = settled(modulesR);
-  const users = settled(usersR);
-  const scans = settled(scansR);
-  const health = settled(healthR);
-  const moduleHealth = settled(moduleHealthR);
+  const ov = settled(overviewR);
   const ai = settled(aiR);
-
-  const t = await getTranslations("admin");
-  const tTrusted = await getTranslations("trustedDomains");
+  const t = await getTranslations("adminCenter.overview");
+  const tc = await getTranslations("adminCenter.common");
+  const tAdmin = await getTranslations("admin");
   const tHealth = await getTranslations("health");
+  const tSev = await getTranslations("severity");
   const format = await getFormatter();
-  const formatDate = (value: string) =>
-    format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
-  const unavailable = <p className="gh-muted text-sm">{t("unavailable")}</p>;
-  const healthLabel = (status: string) => (tHealth.has(status) ? tHealth(status) : status);
+  const when = (v: string | null) =>
+    v
+      ? format.dateTime(new Date(v), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })
+      : "-";
+  const healthLabel = (s: string) => (tHealth.has(s) ? tHealth(s) : s);
+  const unavailable = <p className="gh-muted text-sm">{tAdmin("unavailable")}</p>;
 
   return (
     <div className="space-y-10">
-      <h1 className="text-3xl font-bold">{t("title")}</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{tAdmin("title")}</h1>
+        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
+      </div>
 
-      <section aria-labelledby="trusted-domains-heading" className="gh-card p-5">
-        <h2 id="trusted-domains-heading" className="text-lg font-semibold">
-          {tTrusted("title")}
-        </h2>
-        <p className="gh-muted mt-1 text-sm">{tTrusted("adminCardBody")}</p>
-        <Link href="/admin/trusted-domains" className="gh-link mt-3 inline-block text-sm">
-          {tTrusted("adminCardLink")}
-        </Link>
-      </section>
+      {!ov ? (
+        unavailable
+      ) : (
+        <>
+          <Section id="scans-h" title={t("scansHeading")}>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+              <Stat label={t("total")} value={ov.scans.total} />
+              <Stat label={t("last24h")} value={ov.scans.last_24h} />
+              <Stat label={tc("lifecycle.queued")} value={ov.scans.queued} />
+              <Stat label={tc("lifecycle.running")} value={ov.scans.running} />
+              <Stat label={tc("lifecycle.completed")} value={ov.scans.completed} />
+              <Stat label={tc("lifecycle.failed")} value={ov.scans.failed} />
+              <Stat label={tc("lifecycle.timed_out")} value={ov.scans.timed_out} />
+              <Stat label={tc("lifecycle.cancelled")} value={ov.scans.cancelled} />
+            </dl>
+            <Link href="/admin/scans" className="gh-link text-sm">
+              {t("toScans")}
+            </Link>
+          </Section>
 
-      <section aria-labelledby="health-heading" className="grid gap-4 md:grid-cols-2">
-        <div className="gh-card p-5">
-          <h2 id="health-heading" className="text-lg font-semibold">
-            {t("healthHeading")}
-          </h2>
-          {health ? (
-            <dl className="mt-3 space-y-1 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className="font-semibold">{t("overall")}</dt>
-                <dd>{healthLabel(health.status)}</dd>
-              </div>
-              {Object.entries(health.components).map(([name, status]) => (
-                <div key={name} className="flex justify-between gap-3">
-                  <dt>{name}</dt>
-                  <dd>{healthLabel(status)}</dd>
-                </div>
+          <Section id="findings-h" title={t("findingsHeading")} intro={t("findingsIntro")}>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <Stat label={t("total")} value={ov.findings.total} />
+              {SEVERITIES.map((s) => (
+                <Stat key={s} label={tSev(s)} value={ov.findings[s]} />
               ))}
             </dl>
-          ) : (
-            unavailable
-          )}
-        </div>
-        <div className="gh-card p-5">
-          <h2 className="text-lg font-semibold">{t("aiHeading")}</h2>
-          {ai ? (
-            <p className="mt-3 text-sm">
-              {ai.active ? t("aiActive", { provider: ai.provider ?? "-" }) : t("aiNotConfigured")}
-            </p>
-          ) : (
-            unavailable
-          )}
-        </div>
-      </section>
+            <Link href="/admin/findings" className="gh-link text-sm">
+              {t("toFindings")}
+            </Link>
+          </Section>
 
-      <section aria-labelledby="modules-heading">
-        <h2 id="modules-heading" className="text-xl font-semibold">
-          {t("modulesHeading")}
-        </h2>
-        <p className="gh-muted mt-1 text-sm">{t("modulesIntro")}</p>
-        {modules ? (
-          <div className="gh-card mt-4 overflow-x-auto">
-            <table className="gh-table">
-              <caption className="sr-only">{t("modulesHeading")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("colModule")}</th>
-                  <th scope="col">{t("colCategory")}</th>
-                  <th scope="col">{t("colPlan")}</th>
-                  <th scope="col">{t("colHealth")}</th>
-                  <th scope="col">{t("colEnabled")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {modules.map((module) => {
-                  const check = listItems(moduleHealth).find((h) => h.module_key === module.key);
-                  return (
-                    <tr key={module.key}>
-                      <th scope="row" className="font-medium">
-                        {module.name}
-                        <span className="gh-muted block font-mono text-xs font-normal">
-                          {module.key}
-                        </span>
-                      </th>
-                      <td>{module.category}</td>
-                      <td>{module.min_plan}</td>
-                      <td>
-                        {check ? (
-                          <>
-                            {healthLabel(check.status)}
-                            {check.latency_ms !== null ? (
-                              <span className="gh-muted block text-xs">
-                                {t("latency", { ms: check.latency_ms })}
-                              </span>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className="gh-muted">{t("noData")}</span>
-                        )}
-                      </td>
-                      <td>
-                        <ModuleToggle module={module} />
-                      </td>
+          <Section id="health-h" title={t("healthHeading")}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="gh-card p-5">
+                <h3 className="font-semibold">{t("components")}</h3>
+                <dl className="mt-3 space-y-1 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="font-semibold">{tAdmin("overall")}</dt>
+                    <dd>{healthLabel(ov.health.status)}</dd>
+                  </div>
+                  {Object.entries(ov.health.components).map(([name, status]) => (
+                    <div key={name} className="flex justify-between gap-3">
+                      <dt>{tc.has(`component.${name}`) ? tc(`component.${name}`) : name}</dt>
+                      <dd>{healthLabel(status)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div className="gh-card p-5">
+                <h3 className="font-semibold">{t("queue")}</h3>
+                {ov.queue.available ? (
+                  <dl className="mt-3 space-y-1 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <dt>{tc("queue.lag")}</dt>
+                      <dd className="tabular-nums">{ov.queue.lag ?? "-"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>{tc("queue.pending")}</dt>
+                      <dd className="tabular-nums">{ov.queue.pending ?? "-"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>{tc("queue.consumers")}</dt>
+                      <dd className="tabular-nums">{ov.queue.consumers ?? "-"}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  unavailable
+                )}
+              </div>
+              <div className="gh-card p-5">
+                <h3 className="font-semibold">{tAdmin("aiHeading")}</h3>
+                {ai ? (
+                  <p className="mt-3 text-sm">
+                    {ai.active
+                      ? tAdmin("aiActive", { provider: ai.provider ?? "-" })
+                      : tAdmin("aiNotConfigured")}
+                  </p>
+                ) : (
+                  unavailable
+                )}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="rates-h" title={t("ratesHeading")} intro={t("ratesIntro")}>
+            {ov.modules.length === 0 ? (
+              <p className="gh-muted text-sm">{t("noRuns")}</p>
+            ) : (
+              <div className="gh-card overflow-x-auto">
+                <table className="gh-table">
+                  <caption className="sr-only">{t("ratesHeading")}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">{tc("module")}</th>
+                      <th scope="col">{t("runs")}</th>
+                      <th scope="col">{t("couldNotRun")}</th>
+                      <th scope="col">{t("successRate")}</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          unavailable
-        )}
-      </section>
+                  </thead>
+                  <tbody>
+                    {ov.modules.map((m) => (
+                      <tr key={m.check_id}>
+                        <th scope="row" className="font-mono text-xs font-normal">
+                          {m.check_id}
+                        </th>
+                        <td className="tabular-nums">{m.runs}</td>
+                        <td className="tabular-nums">{m.failed}</td>
+                        <td>
+                          <Badge
+                            tone={
+                              m.success_rate === null
+                                ? "neutral"
+                                : m.success_rate >= 0.95
+                                  ? "good"
+                                  : m.success_rate >= 0.8
+                                    ? "warn"
+                                    : "bad"
+                            }
+                          >
+                            {pct(m.success_rate)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
 
-      <section aria-labelledby="users-heading">
-        <h2 id="users-heading" className="text-xl font-semibold">
-          {t("usersHeading")}
-        </h2>
-        {users ? (
-          <div className="gh-card mt-4 overflow-x-auto">
-            <table className="gh-table">
-              <caption className="sr-only">{t("usersHeading")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("colEmail")}</th>
-                  <th scope="col">{t("colRole")}</th>
-                  <th scope="col">{t("colTwoFactor")}</th>
-                  <th scope="col">{t("colLocale")}</th>
-                  <th scope="col">{t("colCreated")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listItems(users).map((user) => (
-                  <tr key={user.id}>
-                    <td className="break-all">{user.email}</td>
-                    <td>{t(`roles.${user.role}`)}</td>
-                    <td>{user.totp_enabled ? t("yes") : t("no")}</td>
-                    <td>{user.locale}</td>
-                    <td className="whitespace-nowrap">{formatDate(user.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Section id="audit-h" title={t("auditHeading")}>
+              <ul className="gh-card divide-y divide-slate-200 text-sm dark:divide-navy-700">
+                {ov.recent_audit.length === 0 ? (
+                  <li className="gh-muted p-3">{tc("none")}</li>
+                ) : (
+                  ov.recent_audit.map((a) => (
+                    <li key={a.id} className="p-3">
+                      <span className="font-mono text-xs">{a.action}</span>{" "}
+                      <span className="gh-muted">
+                        {a.actor_email ?? a.actor} · {when(a.at)}
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+              <Link href="/admin/audit" className="gh-link text-sm">
+                {t("toAudit")}
+              </Link>
+            </Section>
+            <Section id="errors-h" title={t("errorsHeading")}>
+              <ErrorList
+                items={[...ov.sentry.issues, ...ov.recent_errors].slice(0, 10)}
+                when={when}
+                none={tc("none")}
+              />
+              <p className="gh-muted text-xs">
+                {ov.sentry.configured
+                  ? ov.sentry.error
+                    ? t("sentryUnavailable")
+                    : t("sentryOn")
+                  : t("sentryOff")}
+              </p>
+            </Section>
           </div>
-        ) : (
-          unavailable
-        )}
-      </section>
-
-      <section aria-labelledby="scans-heading">
-        <h2 id="scans-heading" className="text-xl font-semibold">
-          {t("scansHeading")}
-        </h2>
-        {scans ? (
-          <div className="gh-card mt-4 overflow-x-auto">
-            <table className="gh-table">
-              <caption className="sr-only">{t("scansHeading")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("colTarget")}</th>
-                  <th scope="col">{t("colStatus")}</th>
-                  <th scope="col">{t("colScore")}</th>
-                  <th scope="col">{t("colCreated")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listItems(scans).map((scan) => (
-                  <tr key={scan.id}>
-                    <td className="break-all">{scan.target_url}</td>
-                    <td>
-                      <ScanStatusBadge status={scan.status} />
-                    </td>
-                    <td className="tabular-nums">{scan.score ?? "-"}</td>
-                    <td className="whitespace-nowrap">{formatDate(scan.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          unavailable
-        )}
-      </section>
+        </>
+      )}
     </div>
   );
 }

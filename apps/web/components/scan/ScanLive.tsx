@@ -167,12 +167,14 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
         </>
       ) : null}
 
-      {scan.status === "failed" ? (
+      {scan.status === "failed" || scan.status === "cancelled" ? (
         <>
           <Alert tone="error" label={t("failedLabel")}>
-            {t.has(`failureReason.${scan.error ?? "internal"}`)
-              ? t(`failureReason.${scan.error ?? "internal"}`)
-              : t("failureReason.internal")}
+            {scan.status === "cancelled"
+              ? t("failureReason.cancelled")
+              : t.has(`failureReason.${scan.error ?? "internal"}`)
+                ? t(`failureReason.${scan.error ?? "internal"}`)
+                : t("failureReason.internal")}
           </Alert>
           {scan.progress.length > 0 ? <ProgressList items={scan.progress} /> : null}
         </>

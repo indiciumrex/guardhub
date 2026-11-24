@@ -211,6 +211,8 @@ class Module(Base):
     enabled_global: Mapped[bool] = mapped_column(Boolean, default=False)
     min_plan: Mapped[str] = mapped_column(String, default="free")
     rolled_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # kept out of new scans without being switched off (migration 0017)
+    maintenance: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class AIConfig(Base):
@@ -243,6 +245,18 @@ class AuditLog(Base):
     target: Mapped[str] = mapped_column(Text, default="")
     metadata_: Mapped[dict[str, str]] = mapped_column("metadata", JSONB, default=dict)
     at: Mapped[datetime] = _now()
+
+
+class FindingTriage(Base):
+    """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
+
+    __tablename__ = "finding_triage"
+    fingerprint: Mapped[str] = mapped_column(Text, primary_key=True)
+    check_id: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String)  # verified | accepted | false_positive | resolved
+    note: Mapped[str] = mapped_column(Text, default="")
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    updated_at: Mapped[datetime] = _now()
 
 
 class ActiveConsent(Base):
