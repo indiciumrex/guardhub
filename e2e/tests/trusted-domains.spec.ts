@@ -40,7 +40,10 @@ test("trusted domains: hidden from non-admins, prove once, scan without a prompt
   ).toContain("is now 'admin'");
 
   await page.goto("/admin");
-  await page.getByRole("link", { name: "Manage trusted domains" }).click();
+  await page
+    .getByRole("navigation", { name: "Administration sections" })
+    .getByRole("link", { name: "Trusted domains" })
+    .click();
   await expect(page.getByRole("heading", { name: "Trusted domains", level: 1 })).toBeVisible();
   await fill(page.getByLabel("Website address"), DEMO_TARGET);
   await page.getByRole("button", { name: "Add domain" }).click();

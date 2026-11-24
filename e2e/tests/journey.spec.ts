@@ -156,10 +156,27 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
 
   expect((await page.goto("/admin"))?.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "Administration" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: email })).toBeVisible();
   await expect(
     page.getByText("Not configured. The core product runs fully without AI."),
   ).toBeVisible();
+  // the control centre's sections: users, then the Module Center
+  const nav = page.getByRole("navigation", { name: "Administration sections" });
+  await nav.getByRole("link", { name: "Users" }).click();
+  await expect(page.getByRole("cell", { name: email })).toBeVisible();
+  await nav.getByRole("link", { name: "Module Center" }).click();
+  await expect(page.getByRole("heading", { name: "Module Center", level: 1 })).toBeVisible();
+  // the gate rule is visible: active tests are locked with the reason, not switchable
+  await expect(page.getByText("No gate, no ON")).toBeVisible();
+  // scan orchestration (active testing reported off), findings & risk, audit & monitoring
+  await nav.getByRole("link", { name: "Scans" }).click();
+  await expect(page.getByRole("heading", { name: "Scan orchestration", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Active testing (Phase 4B)" })).toBeVisible();
+  await nav.getByRole("link", { name: "Findings & risk" }).click();
+  await expect(page.getByRole("heading", { name: "Findings & risk", level: 1 })).toBeVisible();
+  await nav.getByRole("link", { name: "Audit & monitoring" }).click();
+  await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "IP (hash)" })).toBeVisible();
+  await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,
   // so each step waits for the API to confirm before checking the persisted state

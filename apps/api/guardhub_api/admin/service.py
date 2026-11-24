@@ -1,4 +1,5 @@
-"""Minimal admin capabilities for the MVP (§8.3): lists, module toggles, health, audit, AI status.
+"""Admin basics (§8.3): lists, module toggles and config, health, kill switch, AI status. The control
+centre views (overview, orchestration, findings, audit, monitoring) are in admin/center.py.
 
 Runs under the 'admin' RLS context. Callers must already have passed `admin_session` (role
 re-read from the DB, MFA complete). It never exposes secrets: no password hashes, TOTP secrets
@@ -37,14 +38,6 @@ class AdminUserView(BaseModel):
     created_at: datetime
 
 
-class AuditView(BaseModel):
-    id: int
-    actor: str
-    action: str
-    target: str
-    at: datetime
-
-
 def _ctx(claims: SessionClaims) -> DbContext:
     return DbContext(role="admin", user_id=claims.user_id)
 
@@ -80,15 +73,18 @@ async def toggle_module(claims: SessionClaims, key: str, enabled: bool) -> regis
         return await registry.set_enabled(session, key=key, enabled=enabled, actor=f"admin:{claims.user_id}")
 
 
+async def module_config(
+    claims: SessionClaims, key: str, *, maintenance: bool | None, min_plan: str | None
+) -> registry.ModuleView:
+    async with db_session(_ctx(claims)) as session:
+        return await registry.set_config(
+            session, key=key, actor=f"admin:{claims.user_id}", maintenance=maintenance, min_plan=min_plan
+        )
+
+
 async def latest_health(claims: SessionClaims) -> list[health.HealthRow]:
     async with db_session(_ctx(claims)) as session:
         return await health.latest(session)
-
-
-async def audit_log(claims: SessionClaims, limit: int) -> list[AuditView]:
-    async with db_session(_ctx(claims)) as session:
-        rows = await audit.list_recent(session, limit)
-    return [AuditView(id=r.id, actor=r.actor, action=r.action, target=r.target, at=r.at) for r in rows]
 
 
 async def active_kill_state(scan_id: uuid.UUID | None) -> kill.KillState:

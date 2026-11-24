@@ -137,6 +137,12 @@ func run() int {
 		"host_rps", cfg.HostRPS, "max_requests_per_scan", cfg.MaxRequestsPerScan,
 		"request_timeout", cfg.RequestTimeout.String(), "checks", svc.Registry.IDs(),
 		"active_enabled", cfg.ActiveEnabled)
+	go svc.PublishInfo(ctx, queue.Info{
+		Version: os.Getenv("GUARDHUB_VERSION"), StartedAt: time.Now().UTC().Format(time.RFC3339),
+		Workers: cfg.Workers, CheckConcurrency: cfg.CheckConcurrency, HostRPS: cfg.HostRPS, HostBurst: cfg.HostBurst,
+		MaxRequestsPerScan: cfg.MaxRequestsPerScan, RequestTimeoutMS: cfg.RequestTimeout.Milliseconds(),
+		ActiveEnabled: cfg.ActiveEnabled, ActiveOOB: cfg.ActiveOOBURL != "", RepoScans: svc.RepoRegistry != nil,
+	})
 	if err := svc.Run(ctx); err != nil {
 		logger.Error("scanner stopped with error", "err", err)
 		return 1

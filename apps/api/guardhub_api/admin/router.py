@@ -6,12 +6,13 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from guardhub_api.active.kill import KillState
-from guardhub_api.admin import service
+from guardhub_api.admin import center, service
 from guardhub_api.ai.provider import AIStatus
 from guardhub_api.auth.deps import AdminSession
+from guardhub_api.common.redis import get_redis
 from guardhub_api.health.service import HealthRow
 from guardhub_api.modules.registry import ModuleView
 from guardhub_api.scans.schemas import ScanSummary
@@ -52,8 +53,19 @@ async def health(claims: AdminSession) -> list[HealthRow]:
 
 
 @router.get("/audit")
-async def audit(claims: AdminSession, limit: Limit = 100) -> list[service.AuditView]:
-    return await service.audit_log(claims, limit)
+async def audit(
+    claims: AdminSession,
+    *,
+    limit: Limit = 100,
+    offset: Offset = 0,
+    action: Annotated[str | None, Query(max_length=64)] = None,
+    actor: Annotated[str | None, Query(max_length=128)] = None,
+    target: Annotated[str | None, Query(max_length=256)] = None,
+) -> list[center.AuditDetail]:
+    """Newest first; `action` is a prefix (e.g. "module."), actor and target are exact."""
+    return await center.audit_log(
+        claims, limit=limit, offset=offset, action=action, actor=actor, target=target
+    )
 
 
 class ActiveKillRequest(BaseModel):
@@ -75,3 +87,99 @@ async def active_kill(body: ActiveKillRequest, claims: AdminSession) -> KillStat
 @router.get("/ai")
 async def ai(claims: AdminSession) -> AIStatus:
     return service.ai()
+
+
+# ---- admin control centre (GUARDHUB_STANDARDS §8.3) ----
+
+Locale = Annotated[str, Query(pattern=r"^[A-Za-z-]{2,8}$")]
+Lifecycle = Annotated[str | None, Query(pattern=r"^(queued|running|completed|failed|timed_out|cancelled)$")]
+
+
+class ModuleConfigRequest(BaseModel):
+    maintenance: bool | None = None
+    min_plan: str | None = Field(default=None, max_length=16)
+
+
+class TriageRequest(BaseModel):
+    status: str = Field(max_length=32)
+    note: str = Field(default="", max_length=500)
+
+
+@router.get("/overview")
+async def overview(claims: AdminSession) -> center.OverviewView:
+    return await center.overview(claims, get_redis())
+
+
+@router.get("/modules/stats")
+async def module_stats(claims: AdminSession) -> list[center.ModuleStats]:
+    return await center.module_stats(claims)
+
+
+@router.patch("/modules/{key}/config")
+async def module_config(key: str, body: ModuleConfigRequest, claims: AdminSession) -> ModuleView:
+    return await service.module_config(claims, key, maintenance=body.maintenance, min_plan=body.min_plan)
+
+
+@router.get("/modules/{key}/changelog")
+async def module_changelog(key: str, claims: AdminSession) -> list[center.AuditDetail]:
+    return await center.module_changelog(claims, key)
+
+
+@router.get("/orchestration")
+async def orchestration(claims: AdminSession) -> center.OrchestrationView:
+    return await center.orchestration(claims, get_redis())
+
+
+@router.get("/scans/detailed")
+async def scans_detailed(
+    claims: AdminSession, stage: Lifecycle = None, limit: Limit = 50, offset: Offset = 0
+) -> list[center.AdminScanView]:
+    return await center.list_scans(claims, stage=stage, limit=limit, offset=offset)
+
+
+@router.get("/scans/{scan_id}")
+async def scan_detail(scan_id: uuid.UUID, claims: AdminSession) -> center.AdminScanView:
+    return await center.get_scan(claims, scan_id)
+
+
+@router.post("/scans/{scan_id}/cancel")
+async def scan_cancel(scan_id: uuid.UUID, claims: AdminSession) -> center.AdminScanView:
+    return await center.cancel_scan(claims, get_redis(), scan_id)
+
+
+@router.post("/scans/{scan_id}/rerun")
+async def scan_rerun(scan_id: uuid.UUID, claims: AdminSession) -> center.AdminScanView:
+    return await center.rerun_scan(claims, get_redis(), scan_id)
+
+
+@router.get("/scans/{scan_id}/risk")
+async def scan_risk(scan_id: uuid.UUID, claims: AdminSession, locale: Locale = "en") -> center.RiskView:
+    return await center.scan_risk(claims, scan_id, locale)
+
+
+@router.get("/findings")
+async def findings(
+    claims: AdminSession,
+    *,
+    severity: Annotated[str | None, Query(pattern=r"^(critical|high|medium|low|info)$")] = None,
+    check_id: Annotated[str | None, Query(max_length=64)] = None,
+    triage: Annotated[str | None, Query(pattern=r"^(new|verified|accepted|false_positive|resolved)$")] = None,
+    limit: Limit = 50,
+    offset: Offset = 0,
+    locale: Locale = "en",
+) -> list[center.FindingGroupView]:
+    return await center.list_findings(
+        claims, severity=severity, check_id=check_id, triage=triage, limit=limit, offset=offset, locale=locale
+    )
+
+
+@router.put("/findings/{fingerprint}/triage")
+async def finding_triage(
+    fingerprint: Annotated[str, Field(max_length=128)], body: TriageRequest, claims: AdminSession
+) -> center.TriageView:
+    return await center.set_triage(claims, fingerprint, body.status, body.note)
+
+
+@router.get("/monitoring")
+async def monitoring(claims: AdminSession) -> center.MonitoringView:
+    return await center.monitoring(claims, get_redis())

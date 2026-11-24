@@ -156,7 +156,10 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         if scan is None:
             log.warning("event_for_unknown_scan", extra={"scan_id": str(scan_id)})
             return
-        if scan.status in ("done", "failed"):
+        if scan.status == "cancelled":
+            # an admin cancelled it (admin control centre): later scanner events never reopen it
+            log.info("event_for_cancelled_scan", extra={"scan_id": str(scan_id), "type": str(kind)})
+        elif scan.status in ("done", "failed"):
             # Idempotent: already final. A redelivered completion re-queues the alert job, in case
             # the first delivery committed the scan but failed to queue it (the job is idempotent).
             notify = kind == "scan.completed" and scan.status == "done" and scan.project_id is not None

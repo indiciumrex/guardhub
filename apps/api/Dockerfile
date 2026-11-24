@@ -16,6 +16,9 @@ RUN groupadd --system --gid 10001 guardhub \
 WORKDIR /app/apps/api
 COPY --from=build /app/apps/api /app/apps/api
 COPY packages/shared /app/packages/shared
+# the lab scorecards behind Gate L/M, shown in the admin's Module Center (modules/scorecards.py)
+COPY docs/accuracy/scorecard.json /app/docs/accuracy/scorecard.json
+COPY docs/accuracy-active/scorecard.json /app/docs/accuracy-active/scorecard.json
 COPY ops/migrations /app/ops/migrations
 USER 10001:10001
 EXPOSE 8000

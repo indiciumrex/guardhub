@@ -73,7 +73,9 @@ async def test_set_enabled_refuses_unmeasured_checks_but_always_allows_off(
     monkeypatch.setattr(registry.audit, "record", record)
 
     def module(key: str, on: bool) -> SimpleNamespace:
-        return SimpleNamespace(key=key, name=key, category="c", enabled_global=on, min_plan="free")
+        return SimpleNamespace(
+            key=key, name=key, category="c", enabled_global=on, min_plan="free", maintenance=False
+        )
 
     with pytest.raises(UnprocessableError) as exc:
         await registry.set_enabled(  # type: ignore[arg-type]

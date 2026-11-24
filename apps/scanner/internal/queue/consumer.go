@@ -227,6 +227,11 @@ func (s *Service) HandleMessage(ctx context.Context, msg redis.XMessage, claimed
 
 	log = log.With("job_id", job.JobID, "kind", job.Kind)
 	log.Info("job received", "target", job.Target, "claimed", claimed)
+	if job.Kind != KindVerify && s.cancelled(ctx, job.ScanID) {
+		log.Info("scan cancelled by an admin; skipped", "scan_id", job.ScanID)
+		s.ack(ctx, msg.ID, log)
+		return
+	}
 	var err error
 	switch job.Kind {
 	case KindScan:

@@ -7,8 +7,8 @@ import type { Evidence, Severity } from "./contract.gen";
 
 export type { Severity } from "./contract.gen";
 
-export type ScanStatus = "queued" | "running" | "done" | "failed";
-export type CheckRunStatus = ScanStatus;
+export type ScanStatus = "queued" | "running" | "done" | "failed" | "cancelled";
+export type CheckRunStatus = Exclude<ScanStatus, "cancelled">;
 export type FindingStatus = "open" | "fixed" | "ignored";
 export type Role = "user" | "admin";
 export type MfaState = "setup_required" | "required";

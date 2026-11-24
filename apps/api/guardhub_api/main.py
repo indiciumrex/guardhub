@@ -19,10 +19,13 @@ from guardhub_api.admin.router import router as admin_router
 from guardhub_api.admin.trusted_domains.router import router as trusted_domains_router
 from guardhub_api.alerts.router import router as alerts_router
 from guardhub_api.auth.router import router as auth_router
+from guardhub_api.common import audit
+from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.errors import install_error_handlers
 from guardhub_api.common.logging import configure_logging
 from guardhub_api.common.observability import init_observability
 from guardhub_api.common.redis import close_redis
+from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.github.router import router as github_router
@@ -72,6 +75,10 @@ def create_app() -> FastAPI:
     async def guard(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
         start = time.perf_counter()
+        # audit rows written while serving this request carry the client's keyed IP hash (§9.1)
+        audit.request_ip_hash.set(
+            keyed_hash(get_settings().hash_pepper.get_secret_value(), client_ip(request))[:16]
+        )
         # CSRF: a cross-site form can't set custom headers, and a cross-site fetch with one would
         # need a CORS preflight that this API never approves.
         if request.method not in SAFE_METHODS and request.headers.get(CSRF_HEADER) != "1":
