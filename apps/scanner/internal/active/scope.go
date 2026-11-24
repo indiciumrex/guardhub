@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -49,8 +50,11 @@ func (s Scope) Origin() *url.URL { u := *s.origin; return &u }
 
 // Check reports whether u may be requested: same scheme, same host
 // (case-insensitive, no subdomains), same effective port, no credentials,
-// and not under an excluded path prefix (compared on the decoded and on the
-// escaped path, so %2F tricks cannot slip past).
+// and not under an excluded path prefix. The prefix is compared on every
+// form a server may resolve the path to: the decoded and the escaped path,
+// and the decoded path with backslashes as slashes, ";" segment parameters
+// dropped and dot segments resolved, so %2F, /x/%2e%2e/admin, /admin;a=1 and
+// dmin cannot slip past an excluded prefix.
 func (s Scope) Check(u *url.URL) error {
 	if u == nil || u.User != nil || u.Opaque != "" {
 		return ErrOutOfScope
@@ -59,12 +63,28 @@ func (s Scope) Check(u *url.URL) error {
 		effectivePort(u) != effectivePort(s.origin) {
 		return ErrOutOfScope
 	}
+	forms := []string{u.Path, u.EscapedPath(), resolvedPath(u.Path)}
 	for _, p := range s.exclude {
-		if underPrefix(u.Path, p) || underPrefix(u.EscapedPath(), p) {
-			return ErrOutOfScope
+		for _, f := range forms {
+			if underPrefix(f, p) {
+				return ErrOutOfScope
+			}
 		}
 	}
 	return nil
+}
+
+// resolvedPath is the path as a lenient server would serve it: backslashes
+// are slashes, ";params" are dropped from each segment, dot segments resolve.
+func resolvedPath(p string) string {
+	p = strings.ReplaceAll(p, "\\", "/")
+	segs := strings.Split(p, "/")
+	for i, seg := range segs {
+		if j := strings.IndexByte(seg, ';'); j >= 0 {
+			segs[i] = seg[:j]
+		}
+	}
+	return path.Clean("/" + strings.Join(segs, "/"))
 }
 
 func underPrefix(path, prefix string) bool {

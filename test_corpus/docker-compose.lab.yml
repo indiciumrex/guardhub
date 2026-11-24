@@ -354,6 +354,10 @@ services:
     read_only: true
     volumes: [./active/avlab:/app:ro]
     networks: { lab: { aliases: [av-xss.lab.test, av-sqli.lab.test, av-redirect.lab.test, av-cors.lab.test, av-cors-safe.lab.test, av-ssrf.lab.test, av-idor.lab.test, av-clean.lab.test] } }
+  redis: # kill-switch keys for the activeproof step (ADR-0008 §3); nothing else uses it
+    image: redis:7.4.6-alpine@sha256:3b73847e72874be07e6657b129a94761662b79bc0f679273757d4218573b2a98
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks: { lab: { aliases: [redis.lab.test] } }
   oob: # records hits for /t/<token>; the scanner asks it for its own tokens only
     image: guardhub-lab-tools:local
     depends_on: { pki: { condition: service_completed_successfully } }

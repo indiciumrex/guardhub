@@ -575,10 +575,12 @@ class Handler(BaseHTTPRequestHandler):
 
     do_GET = do_POST = do_HEAD = do_OPTIONS = do_PUT = do_DELETE = handle_any  # noqa: N815
 
-    def log_message(
-        self, fmt: str, *args
-    ) -> None:  # quiet; the scanner's request log is the record
-        pass
+    def log_message(self, fmt: str, *args) -> None:
+        # the target's own access record (host, path, User-Agent): the activeproof step checks it
+        # for requests the scope guard must have refused (test_corpus/active/run.sh)
+        host = (self.headers.get("Host") or "-") if self.headers else "-"
+        ua = (self.headers.get("User-Agent") or "-") if self.headers else "-"
+        sys.stderr.write(f"avlab {host} {self.path} {ua}" + chr(10))
 
 
 if __name__ == "__main__":

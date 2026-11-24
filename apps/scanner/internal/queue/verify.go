@@ -168,3 +168,15 @@ func txtMatches(records []string, token string) bool {
 	}
 	return false
 }
+
+// VerifyOwnershipNow re-proves ownership of origin with token, as an active
+// scan does at its start (ADR-0008 §2; `scanner activeproof`). It returns the
+// method that proved it, or "" and the reason.
+func VerifyOwnershipNow(ctx context.Context, c *probe.Client, origin, token string) (method, reason string) {
+	u, err := checks.ParseOrigin(origin)
+	if err != nil {
+		return "", "invalid_origin"
+	}
+	out := verifyOwnership(ctx, c, u.Scheme+"://"+u.Host, strings.ToLower(u.Hostname()), token)
+	return out.method, out.errMsg
+}

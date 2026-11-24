@@ -240,6 +240,7 @@ func (c *Client) one(ctx context.Context, r Request, u *url.URL) (*Response, err
 		req.Header.Set("Origin", r.value())
 	}
 	start := time.Now()
+	entry.At = start.UTC() // a sent request is logged at the moment it left (after the rate limiter)
 	hr, err := c.http.Do(req)
 	lat := time.Since(start)
 	entry.LatencyMS = lat.Milliseconds()

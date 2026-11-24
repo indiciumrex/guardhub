@@ -61,6 +61,20 @@ tools -e SCANNER_ALLOW_PRIVATE_HOSTS="$hosts" guardhub-lab-tools:local \
   scanner activelab --manifests /a/manifests --out /docs/accuracy-active \
   --results /out/activelab-results.json --source "$LAB_SOURCE" --rps 5 --oob http://oob.lab.test
 
+# 3b. the founder-checkpoint proof, rehearsed in the lab (ADR-0008 §8.1): `scanner activeproof`
+#     at the production rate (1 request/s) with two excluded paths; the proof sets the scan's
+#     kill key after 8 sent requests. It must hold on both sides: the scanner's report (scope
+#     probes refused, stop ≤ 2 s after the kill, ≥ 0.9 s between requests) and the target's own
+#     access record (avlab logs host, path, User-Agent): nothing excluded or out of scope arrived,
+#     and exactly as many GuardHub-Active requests as the report says were sent.
+before=$("${LAB[@]}" logs --no-log-prefix avlab 2>/dev/null | wc -l)
+tools -e SCANNER_ALLOW_PRIVATE_HOSTS=av-xss.lab.test -e REDIS_URL=redis://redis.lab.test:6379/0 \
+  guardhub-lab-tools:local scanner activeproof --origin http://av-xss.lab.test --check active_xss \
+  --exclude /profile,/lang --kill-after 8 --out /out/activeproof-lab.json
+sleep 1
+"${LAB[@]}" logs --no-log-prefix avlab 2>/dev/null | tail -n +$((before + 1)) | grep '^avlab ' >"$OUT/activeproof-lab-access.log" || true
+python3 active/check_activeproof.py "$OUT/activeproof-lab.json" "$OUT/activeproof-lab-access.log" /profile /lang
+
 # 4. ground truth: ZAP on every origin, logged in as account A where the manifest has sessions,
 #    starting from the manifest's route list too
 beta="$OUT/zap-addon/ascanrulesBeta-beta-67.zap"
