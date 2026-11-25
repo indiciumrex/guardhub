@@ -1102,19 +1102,19 @@
       "off": "kapalı",
       "empty": "(boş)",
       "keys": {
-        "maintenance.enabled": "Bakım modu",
-        "maintenance.message": "Herkese açık sitede gösterilen mesaj",
-        "flags.public_scan": "Hesapsız taramalar",
-        "flags.registration": "Yeni kayıtlar",
-        "flags.scheduled_scans": "Zamanlanmış taramalar",
-        "scan.deadline_seconds": "Tarama süre sınırı (saniye)",
-        "scheduler.batch": "Çalışma başına alınan zamanlanmış tarama",
-        "scheduler.max_inflight": "Aynı anda çalışan zamanlanmış tarama",
-        "rate.challenge_per_ip_hour": "Adres başına sahiplik doğrulaması",
-        "rate.anon_scan_per_ip_hour": "Adres başına hesapsız tarama",
-        "rate.anon_scan_per_target_hour": "Site başına hesapsız tarama",
-        "rate.rescan_per_project_hour": "Proje başına elle yeniden tarama",
-        "rate.register_per_ip_hour": "Adres başına kayıt"
+        "maintenance_enabled": "Bakım modu",
+        "maintenance_message": "Herkese açık sitede gösterilen mesaj",
+        "flags_public_scan": "Hesapsız taramalar",
+        "flags_registration": "Yeni kayıtlar",
+        "flags_scheduled_scans": "Zamanlanmış taramalar",
+        "scan_deadline_seconds": "Tarama süre sınırı (saniye)",
+        "scheduler_batch": "Çalışma başına alınan zamanlanmış tarama",
+        "scheduler_max_inflight": "Aynı anda çalışan zamanlanmış tarama",
+        "rate_challenge_per_ip_hour": "Adres başına sahiplik doğrulaması",
+        "rate_anon_scan_per_ip_hour": "Adres başına hesapsız tarama",
+        "rate_anon_scan_per_target_hour": "Site başına hesapsız tarama",
+        "rate_rescan_per_project_hour": "Proje başına elle yeniden tarama",
+        "rate_register_per_ip_hour": "Adres başına kayıt"
       }
     },
     "alerts": {
