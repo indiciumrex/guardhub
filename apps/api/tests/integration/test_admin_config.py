@@ -33,9 +33,11 @@ async def clean_settings() -> AsyncIterator[None]:
 
 async def test_only_admins_see_or_change_configuration(client: httpx.AsyncClient) -> None:
     await signed_in(client)
-    assert (await client.get(CONFIG)).status_code == 403
+    # 404, not 403: the admin surface does not reveal that it exists (auth/deps.py)
+    assert (await client.get(CONFIG)).status_code == 404
     r = await client.put(f"{CONFIG}/settings/flags.registration", json={"value": False})
-    assert r.status_code == 403
+    assert r.status_code == 404
+    assert await service.flag("flags.registration") is True
     async with new_client("198.51.100.9") as anon:
         assert (await anon.get(CONFIG)).status_code == 401
 
