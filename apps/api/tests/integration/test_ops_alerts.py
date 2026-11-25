@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 import httpx
 import pytest
 from redis.asyncio import Redis
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 
 from guardhub_api.db.models import AuditLog, OpsAlert, OpsAlertRule, Scan
 from guardhub_api.db.session import DbContext, db_session
@@ -48,13 +48,25 @@ async def _only(kind: str, *, threshold: int, window: int = 30, escalate: int | 
     )
 
 
+_started: dict[str, datetime] = {}
+
+
+async def _close_open_alerts() -> None:
+    """The app role may not delete alerts (they are a record): resolve whatever is still open."""
+    async with db_session(DbContext.system()) as session:
+        await session.execute(
+            update(OpsAlert)
+            .where(OpsAlert.status != "resolved")
+            .values(status="resolved", resolved_at=datetime.now(UTC))
+        )
+
+
 @pytest.fixture(autouse=True)
 async def clean() -> AsyncIterator[None]:
-    async with db_session(DbContext.system()) as session:
-        await session.execute(delete(OpsAlert))
+    await _close_open_alerts()
+    _started["at"] = datetime.now(UTC)
     yield
-    async with db_session(DbContext.system()) as session:
-        await session.execute(delete(OpsAlert))
+    await _close_open_alerts()
     for kind, (threshold, window, escalate) in DEFAULTS.items():
         await _set_rule(
             kind,
@@ -83,7 +95,8 @@ async def _failed_scans(n: int) -> None:
 
 async def _alerts(kind: str) -> list[OpsAlert]:
     async with db_session(DbContext.system()) as session:
-        return list((await session.execute(select(OpsAlert).where(OpsAlert.kind == kind))).scalars().all())
+        stmt = select(OpsAlert).where(OpsAlert.kind == kind, OpsAlert.opened_at >= _started["at"])
+        return list((await session.execute(stmt)).scalars().all())
 
 
 async def test_one_alert_while_the_condition_holds_then_auto_resolve(
