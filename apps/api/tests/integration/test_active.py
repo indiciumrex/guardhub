@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -109,17 +109,16 @@ async def test_request_log_purged_after_30_days_only(redis: Redis) -> None:
     active_request_log_purge(); younger ones stay, and nothing else can delete or rewrite any."""
     scan_id = await new_scan()
     await handle_event(redis, log_event(scan_id, uuid.uuid4(), n=3))
-    # age two entries: recorded_at is set on insert, so old rows are inserted as the table owner
-    # would see them after 31 and 29 days (a fresh insert with an explicit recorded_at)
+    # two more entries, as if recorded 31 and 29 days ago (an explicit recorded_at on insert)
     async with db_session(DbContext.system()) as session:
         base = (await session.execute(select(ActiveRequestLog).where(ActiveRequestLog.scan_id == scan_id)
                                       .order_by(ActiveRequestLog.id).limit(1))).scalar_one()  # fmt: skip
-        for path, age in (("/old", "31 days"), ("/young", "29 days")):
+        for path, age in (("/old", timedelta(days=31)), ("/young", timedelta(days=29))):
             await session.execute(
                 text(
                     "INSERT INTO active_request_log (scan_id, consent_id, at, module, payload_id, method, path,"
                     " outcome, recorded_at) VALUES (:s, :c, now(), 'active_xss', 'xss.marker.tag', 'GET', :p,"
-                    " 'sent', now() - CAST(:age AS interval))"
+                    " 'sent', now() - :age)"
                 ),
                 {"s": scan_id, "c": base.consent_id, "p": path, "age": age},
             )
