@@ -160,9 +160,9 @@ class FailedSignIns(BaseModel):
 
 
 @router.get("/security/failed-sign-ins")
-async def failed_sign_ins(
-    claims: AdminSession, hours: Literal[1, 24, 168] = Query(default=24)
-) -> FailedSignIns:
+async def failed_sign_ins(claims: AdminSession, hours: int = Query(default=24)) -> FailedSignIns:
+    if hours not in (1, 24, 168):  # an int query: a Literal of ints rejects "24" from the URL
+        raise UnprocessableError("failed_sign_ins_hours_invalid", "Choose 1, 24 or 168 hours.")
     since = datetime.now(UTC) - timedelta(hours=hours)
     async with db_session(_ctx(claims)) as session:
         rows = (
