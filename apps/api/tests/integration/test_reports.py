@@ -6,9 +6,11 @@ from __future__ import annotations
 import csv
 import io
 import zipfile
+from collections.abc import AsyncIterator
 
 import httpx
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy import select, update
 
 from guardhub_api.db.models import AuditLog, ReportSchedule
@@ -19,6 +21,12 @@ from .conftest import new_client, signed_in
 from .test_active import make_admin
 
 REPORTS = "/api/v1/admin/reports"
+
+
+@pytest.fixture(autouse=True)
+async def _fresh_rate_limits(redis: Redis) -> AsyncIterator[None]:
+    """Every test registers users from the same test address: start each with fresh rate limits."""
+    yield
 
 
 async def test_reports_are_admin_only(client: httpx.AsyncClient) -> None:

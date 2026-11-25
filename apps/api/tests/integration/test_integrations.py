@@ -4,9 +4,12 @@ still required to scan; endpoint traffic recorded by route template."""
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 
 import httpx
+import pytest
+from redis.asyncio import Redis
 from sqlalchemy import select, update
 
 from guardhub_api.db.models import ApiKey, AuditLog
@@ -21,6 +24,12 @@ API = "/api/v1/integrations"
 
 def bearer(secret: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {secret}"}
+
+
+@pytest.fixture(autouse=True)
+async def _fresh_rate_limits(redis: Redis) -> AsyncIterator[None]:
+    """Every test registers users from the same test address: start each with fresh rate limits."""
+    yield
 
 
 async def _key(client: httpx.AsyncClient, scopes: list[str], days: int = 30) -> tuple[str, str]:
