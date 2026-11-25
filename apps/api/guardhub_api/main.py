@@ -103,11 +103,10 @@ def create_app() -> FastAPI:
                 raise
             if response.status_code >= 500:
                 await count_5xx(get_redis())
-            route = request.scope.get("route")
             await traffic.record(  # endpoint traffic (Prompt 2 §4); route templates only, never raises
                 get_redis(),
                 method=request.method,
-                route=getattr(route, "path", None) or "unmatched",
+                route=traffic.route_template(request.scope),
                 status=response.status_code,
                 latency_ms=(time.perf_counter() - start) * 1000,
             )

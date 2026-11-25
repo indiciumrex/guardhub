@@ -49,3 +49,31 @@ async def test_summary_and_p95() -> None:
 def test_latency_buckets() -> None:
     assert traffic._bucket(10) == "50" and traffic._bucket(50) == "50" and traffic._bucket(51) == "100"
     assert traffic._bucket(99999) == "inf"
+
+
+async def test_route_template_keeps_router_prefixes_and_drops_ids() -> None:
+    import httpx
+    from fastapi import APIRouter, FastAPI, Request
+
+    app = FastAPI()
+    seen: list[str] = []
+
+    @app.middleware("http")
+    async def mw(request: Request, call_next):  # type: ignore[no-untyped-def]
+        response = await call_next(request)
+        seen.append(traffic.route_template(request.scope))
+        return response
+
+    inner = APIRouter(prefix="/integrations")
+
+    @inner.get("/scans/{scan_id}")
+    async def scan(scan_id: str) -> dict[str, str]:
+        return {"id": scan_id}
+
+    api = APIRouter(prefix="/api/v1")
+    api.include_router(inner)
+    app.include_router(api)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        await c.get("/api/v1/integrations/scans/11111111-aaaa")
+        await c.get("/api/v1/nowhere/123")
+    assert seen == ["/api/v1/integrations/scans/{scan_id}", "unmatched"]
