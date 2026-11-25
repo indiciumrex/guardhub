@@ -11,7 +11,7 @@ import pytest
 
 from guardhub_api.common.errors import UnprocessableError
 from guardhub_api.config import get_settings
-from guardhub_api.modules import accuracy, registry
+from guardhub_api.modules import accuracy, registry, scorecards
 
 MEASURED = {"meets_gate": True, "precision": 1.0, "recall": 1.0, "recall_all": 1.0, "tp": 5, "fp": 0, "fn": 0,
             "fn_outside": 0, "targets": 9}  # fmt: skip
@@ -99,3 +99,46 @@ async def test_set_enabled_refuses_unmeasured_checks_but_always_allows_off(
     )
     assert view.enabled_global is True
     assert recorded == ["info_leak", "tls_cert", "trust_page"]
+
+
+# Active checks (ADR-0008 §9): judged by Gate M (docs/accuracy-active/scorecard.json), never by
+# the passive lab's accuracy.json. Still fail closed.
+
+
+@pytest.fixture
+def active_docs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, shared: Path) -> Path:
+    docs = tmp_path / "docs"
+    (docs / "accuracy-active").mkdir(parents=True)
+    monkeypatch.setattr(scorecards, "_docs_dir", lambda: docs)
+    scorecards._load.cache_clear()
+    yield docs / "accuracy-active"
+    scorecards._load.cache_clear()
+
+
+def write_gate_m(dir_: Path, checks: list[dict[str, object]]) -> None:
+    (dir_ / "scorecard.json").write_text(json.dumps({"source": "abc123", "checks": checks}), encoding="utf-8")
+    scorecards._load.cache_clear()
+
+
+def test_active_checks_follow_gate_m(active_docs: Path, shared: Path) -> None:
+    write_gate_m(
+        active_docs,
+        [
+            {"check_id": "active_xss", "tp": 11, "precision": 1.0, "recall": 1.0, "meets_gate": True},
+            {"check_id": "active_sqli", "tp": 3, "fp": 1, "precision": 0.75, "meets_gate": False},
+        ],
+    )
+    # the passive file saying "met" must not open an active check
+    write(shared, {"active_cors": MEASURED})
+    assert accuracy.may_enable("active_xss") is True
+    assert accuracy.may_enable("active_sqli") is False  # measured, below the gate
+    assert accuracy.may_enable("active_cors") is False  # not in Gate M
+    assert accuracy.may_enable("active_redirect") is False
+
+
+@pytest.mark.parametrize("content", [None, "not json", '{"checks": [{"check_id": 1}]}'])
+def test_active_gate_fails_closed_without_a_valid_scorecard(active_docs: Path, content: str | None) -> None:
+    if content is not None:
+        (active_docs / "scorecard.json").write_text(content, encoding="utf-8")
+    scorecards._load.cache_clear()
+    assert accuracy.may_enable("active_xss") is False
