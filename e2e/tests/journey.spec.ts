@@ -262,6 +262,22 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await unmuted;
   await expect(rules.getByText(/Muted until/)).toHaveCount(0);
 
+  // reports: customers are masked on screen and in the CSV export
+  await nav.getByRole("link", { name: "Reports" }).click();
+  await expect(page.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
+  await page.getByRole("link", { name: "Customers" }).click();
+  const report = page.getByRole("region", { name: /Customers · 30 days/ });
+  await expect(report.getByText("Masked")).toBeVisible();
+  await expect(report.getByRole("cell", { name: /\*\*\*@/ }).first()).toBeVisible();
+  await expect(report.getByRole("cell", { name: /@example\.com$/ })).toHaveCount(0);
+  const csvHref = await report.getByRole("link", { name: "Download CSV" }).getAttribute("href");
+  expect(csvHref).toBe("/api/v1/admin/reports/customers?days=30&format=csv");
+  const csv = await page.request.get(csvHref!);
+  expect(csv.ok()).toBe(true);
+  expect(csv.headers()["content-type"]).toContain("text/csv");
+  expect(await csv.text()).not.toMatch(/[a-z0-9-]+@example\.com/);
+  await shoot(page, "admin-reports");
+
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,

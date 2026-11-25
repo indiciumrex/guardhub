@@ -292,6 +292,17 @@ class OpsAlert(Base):
     escalated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class ReportSchedule(Base):
+    """A scheduled platform summary e-mail (migration 0021). Admin/system only."""
+
+    __tablename__ = "report_schedules"
+    frequency: Mapped[str] = mapped_column(Text, primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    updated_at: Mapped[datetime] = _now()
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

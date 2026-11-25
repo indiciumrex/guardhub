@@ -375,3 +375,34 @@ export interface OpsAlertsView {
   email_configured: boolean;
   admin_recipients: number;
 }
+
+// ---- reports (GET /admin/reports/{kind}, Prompt 2 §3) ----
+
+export const REPORT_KINDS = [
+  "platform",
+  "modules",
+  "scans",
+  "findings",
+  "customers",
+  "risk_trend",
+] as const;
+export type ReportKind = (typeof REPORT_KINDS)[number];
+export const REPORT_DAYS = [7, 30, 90] as const;
+
+export interface ReportView {
+  kind: ReportKind;
+  days: number;
+  columns: string[];
+  rows: (string | number | null)[][];
+  total_rows: number;
+  truncated: boolean;
+  masked: boolean;
+  generated_at: string;
+}
+
+export interface ReportSchedule {
+  frequency: "weekly" | "monthly";
+  enabled: boolean;
+  last_sent_at: string | null;
+  updated_at: string;
+}

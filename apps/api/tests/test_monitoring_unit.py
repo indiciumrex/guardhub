@@ -168,7 +168,9 @@ def test_worker_registration() -> None:
     assert names == {client.NOTIFY_SCAN, client.NOTIFY_PAUSED, client.SEND_TEST_NOTIFICATION}
     notify = next(f for f in worker.FUNCTIONS if f.name == client.NOTIFY_SCAN)
     assert notify.max_tries == 3
-    alerts, tick, recheck, purge = worker.CRON_JOBS
+    reports, alerts, tick, recheck, purge = worker.CRON_JOBS
+    assert reports.name == "cron:send_scheduled_reports" and reports.unique and not reports.run_at_startup
+    assert (reports.hour, reports.minute) == ({6}, {5})
     # Prompt 2 §2: admin operational alerts are evaluated every minute, one run at a time
     assert alerts.name == "cron:evaluate_ops_alerts" and alerts.unique and not alerts.run_at_startup
     assert alerts.second in (0, {0}) and alerts.minute is None  # every minute, at :00

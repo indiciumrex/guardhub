@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/admin/scans", key: "scans" },
   { href: "/admin/findings", key: "findings" },
   { href: "/admin/alerts", key: "alerts" },
+  { href: "/admin/reports", key: "reports" },
   { href: "/admin/audit", key: "audit" },
   { href: "/admin/users", key: "users" },
   { href: "/admin/trusted-domains", key: "trustedDomains" },
@@ -25,7 +26,7 @@ export function AdminNav() {
   const current = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
   return (
-    <nav aria-label={t("label")} className="mb-8 overflow-x-auto">
+    <nav aria-label={t("label")} className="mb-8 overflow-x-auto print:hidden">
       <ul className="flex min-w-max gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-navy-800 dark:bg-navy-900">
         {SECTIONS.map((s) => (
           <li key={s.href}>

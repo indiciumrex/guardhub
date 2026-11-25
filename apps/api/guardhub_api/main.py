@@ -36,6 +36,8 @@ from guardhub_api.opsalerts.router import router as alerts_admin_router
 from guardhub_api.platform.router import router as config_router
 from guardhub_api.platform.router import status_router as platform_status_router
 from guardhub_api.projects.router import router as projects_router
+from guardhub_api.reports.router import router as reports_router
+from guardhub_api.reports.router import schedules_router as report_schedules_router
 from guardhub_api.scans.router import public_router
 from guardhub_api.scans.router import router as scans_router
 
@@ -123,6 +125,8 @@ def create_app() -> FastAPI:
         trusted_domains_router,
         config_router,
         alerts_admin_router,
+        reports_router,
+        report_schedules_router,
         platform_status_router,
         alerts_router,
         github_router,

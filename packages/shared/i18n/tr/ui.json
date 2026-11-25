@@ -125,7 +125,10 @@
     "alert_not_found": "Bu uyarı yok.",
     "alert_resolved": "Bu uyarı zaten çözüldü.",
     "alert_rule_not_found": "Bu uyarı kuralı yok.",
-    "mute_invalid": "1 saat, 4 saat ya da 24 saat susturun veya susturmayı kaldırın."
+    "mute_invalid": "1 saat, 4 saat ya da 24 saat susturun veya susturmayı kaldırın.",
+    "report_unknown": "Bu rapor yok.",
+    "report_days_invalid": "7, 30 ya da 90 gün seçin.",
+    "report_schedule_unknown": "Yalnızca haftalık ya da aylık."
   },
   "severity": {
     "critical": "Kritik",
@@ -701,7 +704,8 @@
       "users": "Kullanıcılar",
       "trustedDomains": "Güvenilir alan adları",
       "config": "Yapılandırma",
-      "alerts": "Uyarılar"
+      "alerts": "Uyarılar",
+      "reports": "Raporlar"
     },
     "common": {
       "lifecycle": {
@@ -1184,6 +1188,83 @@
       "colValue": "Değer / eşik",
       "colOpened": "Açıldı",
       "colClosed": "Çözüldü"
+    },
+    "reports": {
+      "title": "Raporlar",
+      "intro": "Platform, modül, tarama, bulgu ve müşteri raporları ile risk eğilimi. Müşteri verisi ekranda ve her dışa aktarımda her zaman maskelidir. Dışa aktarımlar denetim kaydına yazılır.",
+      "kindLabel": "Rapor",
+      "daysLabel": "Dönem",
+      "days": "{days} gün",
+      "kind": {
+        "platform": "Platform",
+        "modules": "Modüller",
+        "scans": "Taramalar",
+        "findings": "Bulgular",
+        "customers": "Müşteriler",
+        "risk_trend": "Risk eğilimi"
+      },
+      "kindHelp": {
+        "platform": "Gün başına bir satır: sonuca göre taramalar, önem derecesine göre yeni bulgular, yeni hesaplar.",
+        "modules": "Kontrol başına bir satır: çalışma, çalışamama, önem derecesine göre bulgular, yanlış pozitifler.",
+        "scans": "Dönemdeki her tarama (en çok 5.000), siteler maskeli.",
+        "findings": "Kontrol ve önem derecesine göre bulgular, yöneticinin değerlendirmesiyle.",
+        "customers": "Müşteri hesabı başına bir satır (maskeli): projeler, taramalar ve ciddi bulgular.",
+        "risk_trend": "Hafta başına bir satır: tamamlanan taramalar, ortalama skorları, kritik ve yüksek bulgular."
+      },
+      "masked": "Maskeli",
+      "downloadCsv": "CSV indir",
+      "downloadXlsx": "XLSX indir",
+      "printPdf": "Yazdır / PDF olarak kaydet",
+      "generated": "Oluşturulma: {when} (UTC)",
+      "rowsShown": "{total} satırın {shown} tanesi gösteriliyor",
+      "truncated": "dışa aktarım sınıra kadar tüm satırları içerir",
+      "empty": "Bu dönemde veri yok.",
+      "columns": {
+        "date": "Tarih",
+        "scans": "Taramalar",
+        "scans_done": "Tamamlanan",
+        "scans_failed": "Başarısız",
+        "scans_cancelled": "İptal edilen",
+        "critical": "Kritik",
+        "high": "Yüksek",
+        "medium": "Orta",
+        "low": "Düşük",
+        "info": "Bilgi",
+        "new_users": "Yeni hesaplar",
+        "check_id": "Kontrol",
+        "runs": "Çalışma",
+        "could_not_run": "Çalışamadı",
+        "false_positive_groups": "Yanlış pozitif (grup)",
+        "created_at": "Oluşturulma",
+        "scan_id": "Tarama",
+        "trigger": "Tetikleyen",
+        "status": "Durum",
+        "score": "Skor",
+        "target": "Site (maskeli)",
+        "checks": "Kontroller",
+        "severity": "Önem",
+        "findings": "Bulgular",
+        "groups": "Gruplar",
+        "verified": "Doğrulandı",
+        "accepted": "Kabul edildi",
+        "false_positive": "Yanlış pozitif",
+        "resolved": "Çözüldü",
+        "customer": "Müşteri (maskeli)",
+        "joined": "Katılım",
+        "projects": "Projeler",
+        "critical_or_high": "Kritik ya da yüksek",
+        "last_scan": "Son tarama",
+        "week": "Hafta",
+        "completed_scans": "Tamamlanan taramalar",
+        "average_score": "Ortalama skor"
+      },
+      "schedulesTitle": "Zamanlanmış raporlar",
+      "schedulesIntro": "Her yöneticiye e-postayla gönderilen platform özeti: yalnızca sayılar ve bir bağlantı, asla satırlar.",
+      "schedule": {
+        "weekly": "Haftalık özet (pazartesi, 06:05 UTC)",
+        "monthly": "Aylık özet (ayın 1'i, 06:05 UTC)"
+      },
+      "lastSent": "Son gönderim: {when}"
     }
   },
   "platformBanner": {
