@@ -200,7 +200,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   const fixed = page.getByRole("region", { name: "Not editable here" });
   await expect(fixed).toContainText("The four active-testing locks");
   await expect(fixed).toContainText("Ownership proof (§9.2)");
-  await expect(page.getByRole("cell", { name: "jwt_secret" })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "jwt_secret" })).toBeVisible();
   await expect(
     page.getByRole("row", { name: /jwt_secret/ }).getByText("Secret configured"),
   ).toBeVisible();
