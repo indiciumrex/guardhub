@@ -149,7 +149,11 @@ its shape. Second review: founder, 2026-11-25.
   - outcome: `sent`, `scope_refused`, `killed`, `budget`, `breaker`.
 - **Who sees it:** the user sees it as "what GuardHub sent" for their scan, and the admin sees all
   of it.
-- **Retention:** 90 days.
+- **Retention:** 30 days (founder decision 2026-11-25; was 90 in the first draft). A daily job
+  (`purge_active_request_log`, 04:40 UTC) calls `active_request_log_purge()` (migration 0018),
+  the only way a row leaves the table: the trigger lets a DELETE through only inside that
+  function and only for rows recorded more than 30 days ago. Each purge that removes rows is
+  audited (`active_request_log.purged`).
 - **Masking:** response bodies are not stored. Evidence follows the existing masking rules.
 
 ### 8. What turns active testing on for a real target (founder's checkpoint)

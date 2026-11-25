@@ -1,7 +1,10 @@
 # Kapsam koruyucu (scope guard) + durdurma anahtarı (kill switch) canlı kanıt planı
 
-> **Durum: hazır, ÇALIŞTIRILMADI.** Kurucu "git" demeden hiçbir aktif istek gerçek bir hedefe
-> gitmez. "git" sonrası tek adım: §4'teki komut.
+> **Durum: ÇALIŞTIRILDI ve GEÇTİ (2026-11-25 11:27Z, kurucu onayıyla, yalnızca guardhub.dev).**
+> 34 kapsam denemesi ağa çıkmadan reddedildi; 8 istek gönderildi, nginx 8 gördü (hepsi GET,
+> en az 999 ms arayla, hariç yol yok); durdurma görüldükten sonra son istek 949 ms; genel
+> durdurma önceden kuruluyken 0 istek. Kanıt sunucuda: `/opt/guardhub/proof/20261125T112726Z/`.
+> İlk deneme (11:26Z) rapor dosyası yazılamadığı için (izin hatası, betik düzeltildi) sayılmadı.
 
 ## 1. Neyi kanıtlıyoruz (ADR-0008 §8.1)
 
@@ -90,5 +93,5 @@ Betik sırasıyla:
 
 Müşteri hedeflerinde aktif test için ayrıca gerekenler (her biri ayrı kurucu kararı):
 rıza metninin hukuk onayı (taslak kurucuya özel olarak iletildi; bu açık repoda değil), rıza arayüzü ve API'si, aynı origin'de
-tek aktif test kilidi, istek günlüğü 90 gün silme işi, SSRF için OOB sunucu
-(şartname ve maliyet kurucuya özel olarak iletildi).
+tek aktif test kilidi, SSRF için OOB sunucu
+(şartname ve maliyet kurucuya özel olarak iletildi). İstek günlüğü 30 gün saklanır ve günlük iş siler (kurucu kararı 2026-11-25, migration 0018).

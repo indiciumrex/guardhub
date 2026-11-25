@@ -38,6 +38,9 @@ token=$(tr -d '[:space:]' <"$ROOT/selfverify/guardhub-verify.txt") # public: ngi
 out="$ROOT/proof/$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$out"
 chmod 700 "$ROOT/proof"
+# the scanner image runs as nonroot (uid 65532, distroless): it writes its reports here.
+# The first live run (2026-11-25 11:26Z) lost both reports to "permission denied" without this.
+chown 65532:65532 "$out"
 here=$(cd "$(dirname "$0")" && pwd)
 
 # no deploy in flight (CD's lock), and none may start during the proof

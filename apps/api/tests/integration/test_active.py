@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -18,6 +18,7 @@ from redis.asyncio import Redis
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 
+from guardhub_api.active.jobs import purge_active_request_log
 from guardhub_api.admin.bootstrap import _set_role
 from guardhub_api.db.models import ActiveConsent, ActiveRequestLog, AuditLog, Module, Scan
 from guardhub_api.db.session import DbContext, db_session
@@ -101,6 +102,48 @@ async def test_request_log_stored_once_and_append_only(redis: Redis) -> None:
         with pytest.raises(DBAPIError, match=r"permission denied|append-only"):
             async with db_session(DbContext.system()) as session:
                 await session.execute(text(stmt), {"s": scan_id})
+
+
+async def test_request_log_purged_after_30_days_only(redis: Redis) -> None:
+    """ADR-0008 §7 (founder 2026-11-25): entries recorded more than 30 days ago are purged by
+    active_request_log_purge(); younger ones stay, and nothing else can delete or rewrite any."""
+    scan_id = await new_scan()
+    await handle_event(redis, log_event(scan_id, uuid.uuid4(), n=3))
+    # two more entries, as if recorded 31 and 29 days ago (an explicit recorded_at on insert)
+    async with db_session(DbContext.system()) as session:
+        base = (await session.execute(select(ActiveRequestLog).where(ActiveRequestLog.scan_id == scan_id)
+                                      .order_by(ActiveRequestLog.id).limit(1))).scalar_one()  # fmt: skip
+        for path, age in (("/old", timedelta(days=31)), ("/young", timedelta(days=29))):
+            await session.execute(
+                text(
+                    "INSERT INTO active_request_log (scan_id, consent_id, at, module, payload_id, method, path,"
+                    " outcome, recorded_at) VALUES (:s, :c, now(), 'active_xss', 'xss.marker.tag', 'GET', :p,"
+                    " 'sent', :recorded)"
+                ),
+                {"s": scan_id, "c": base.consent_id, "p": path, "recorded": datetime.now(UTC) - age},
+            )
+    # setting the purge flag by hand does not open a DELETE: the app role has no grant, and the
+    # trigger refuses rows younger than 30 days
+    with pytest.raises(DBAPIError, match=r"permission denied|append-only"):
+        async with db_session(DbContext.system()) as session:
+            await session.execute(text("SELECT set_config('guardhub.active_log_purge', 'on', true)"))
+            await session.execute(text("DELETE FROM active_request_log WHERE scan_id = :s"), {"s": scan_id})
+    assert await purge_active_request_log() >= 1
+    async with db_session(DbContext.system()) as session:
+        paths = set(
+            (await session.execute(select(ActiveRequestLog.path).where(ActiveRequestLog.scan_id == scan_id)))
+            .scalars()
+            .all()
+        )
+        audited = (
+            (await session.execute(select(AuditLog).where(AuditLog.action == "active_request_log.purged")))
+            .scalars()
+            .all()
+        )
+    assert "/old" not in paths
+    assert {"/young", "/p0", "/p1", "/p2"} <= paths
+    assert audited and audited[-1].metadata_["retention_days"] == "30"
+    assert await purge_active_request_log() == 0  # idempotent: nothing older is left
 
 
 async def test_consent_can_only_be_revoked() -> None:

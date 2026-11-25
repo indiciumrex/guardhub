@@ -3,7 +3,8 @@
 Registered work lives in two lists, one line per job:
 - `FUNCTIONS`: jobs that are enqueued (`notify_scan` by api-worker after a project scan completes,
   `notify_paused` by the scheduler, `send_test_notification` by the API);
-- `CRON_JOBS`: periodic jobs (`enqueue_due_scans` every 5 minutes). Cron jobs are `unique`: one
+- `CRON_JOBS`: periodic jobs (`enqueue_due_scans` every 5 minutes, daily trusted-domain re-proof
+  and active request log retention). Cron jobs are `unique`: one
   run per tick even with several workers (e.g. two colours during a blue/green switch).
 Jobs are JSON-serialised (no pickle), retries are bounded, and every job is idempotent.
 """
@@ -17,6 +18,7 @@ from arq import Retry, cron, func
 from arq.cron import CronJob
 from arq.worker import Function
 
+from guardhub_api.active.jobs import purge_active_request_log
 from guardhub_api.admin.trusted_domains.jobs import recheck_trusted_domains
 from guardhub_api.alerts import notifier
 from guardhub_api.common.logging import configure_logging
@@ -99,6 +101,16 @@ CRON_JOBS: list[CronJob] = [
         unique=True,
         run_at_startup=False,
         timeout=1800,
+    ),
+    # ADR-0008 §7: active request log entries are kept 30 days (founder decision 2026-11-25)
+    cron(
+        purge_active_request_log,
+        hour={4},
+        minute={40},
+        second=0,
+        unique=True,
+        run_at_startup=False,
+        timeout=600,
     ),
 ]
 
