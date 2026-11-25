@@ -166,6 +166,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(safety.getByText("Locked: awaiting founder approval")).toBeVisible();
   await expect(safety.getByText("Gate M (active checks)")).toBeVisible();
   await expect(page.getByText("Powered by").first()).toBeVisible(); // brand in the console, §8.1
+  await shoot(page, "admin-overview");
   // the control centre's sections: users, then the Module Center
   const nav = page.getByRole("navigation", { name: "Administration sections" });
   await nav.getByRole("link", { name: "Users" }).click();
@@ -174,6 +175,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(page.getByRole("heading", { name: "Module Center", level: 1 })).toBeVisible();
   // the gate rule is visible: active tests are locked with the reason, not switchable
   await expect(page.getByText("No gate, no ON")).toBeVisible();
+  await shoot(page, "admin-modules");
   // scan orchestration (active testing reported off), findings & risk, audit & monitoring
   await nav.getByRole("link", { name: "Scans" }).click();
   await expect(page.getByRole("heading", { name: "Scan orchestration", level: 1 })).toBeVisible();
@@ -181,11 +183,14 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   // owner-target active scan: the locks are listed and the form cannot start (nothing is on)
   await expect(page.getByText("Blocked by:")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start the active scan" })).toBeDisabled();
+  await shoot(page, "admin-scans");
   await nav.getByRole("link", { name: "Findings & risk" }).click();
   await expect(page.getByRole("heading", { name: "Findings & risk", level: 1 })).toBeVisible();
+  await shoot(page, "admin-findings");
   await nav.getByRole("link", { name: "Audit & monitoring" }).click();
   await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "IP (hash)" })).toBeVisible();
+  await shoot(page, "admin-audit");
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,
@@ -249,3 +254,12 @@ test("refuses internal addresses and never scans an unverified target", async ({
 });
 
 const signIn = (page: Page) => signInAs(page, email, totpSecret);
+
+/** Full-page screenshots of the admin console in light and dark (CI artifact admin-screenshots). */
+async function shoot(page: Page, name: string): Promise<void> {
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await page.screenshot({ path: `screenshots/${name}-${colorScheme}.png`, fullPage: true });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+}
