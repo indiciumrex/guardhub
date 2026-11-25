@@ -336,3 +336,42 @@ export interface ConfigView {
   history: ConfigChange[];
   cache_seconds: number;
 }
+
+// ---- operational alerts (GET /admin/alerts, Prompt 2 §2) ----
+
+export type OpsAlertKind = "critical_finding" | "scan_failures" | "worker_offline" | "api_errors";
+
+export interface OpsAlertRule {
+  kind: OpsAlertKind;
+  enabled: boolean;
+  threshold: number;
+  window_minutes: number;
+  email: boolean;
+  muted_until: string | null;
+  escalate_after_minutes: number | null;
+  updated_at: string;
+}
+
+export interface OpsAlert {
+  id: string;
+  kind: OpsAlertKind;
+  status: "open" | "acknowledged" | "resolved";
+  value: number;
+  threshold: number;
+  opened_at: string;
+  last_seen_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  resolved_automatically: boolean;
+  emailed_at: string | null;
+  escalated_at: string | null;
+  email_error: string | null;
+}
+
+export interface OpsAlertsView {
+  open: OpsAlert[];
+  recent: OpsAlert[];
+  rules: OpsAlertRule[];
+  email_configured: boolean;
+  admin_recipients: number;
+}

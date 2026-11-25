@@ -121,7 +121,11 @@
     "setting_invalid": "That value is outside the allowed range.",
     "setting_unknown": "This setting cannot be changed here.",
     "setting_not_revertible": "That earlier value is no longer allowed, so it cannot be restored.",
-    "change_not_found": "This change is not in the configuration history."
+    "change_not_found": "This change is not in the configuration history.",
+    "alert_not_found": "This alert does not exist.",
+    "alert_resolved": "This alert is already resolved.",
+    "alert_rule_not_found": "This alert rule does not exist.",
+    "mute_invalid": "Mute for 1 hour, 4 hours or 24 hours, or unmute."
   },
   "severity": {
     "critical": "Critical",
@@ -696,7 +700,8 @@
       "audit": "Audit & monitoring",
       "users": "Users",
       "trustedDomains": "Trusted domains",
-      "config": "Configuration"
+      "config": "Configuration",
+      "alerts": "Alerts"
     },
     "common": {
       "lifecycle": {
@@ -1107,6 +1112,78 @@
         "rate.rescan_per_project_hour": "Manual re-scans per project",
         "rate.register_per_ip_hour": "Sign-ups per address"
       }
+    },
+    "alerts": {
+      "title": "Alerts",
+      "intro": "Operational alerts for the platform: critical findings, failing scans, an offline scanner and API errors. Checked every minute.",
+      "openTitle": "Open alerts",
+      "openCount": "{count, plural, one {# open alert} other {# open alerts}}",
+      "noOpen": "No open alerts",
+      "allClear": "All clear: no rule is over its threshold.",
+      "resolveNote": "An alert resolves on its own when its condition clears. Resolving it by hand while the condition still holds opens a new one at the next check.",
+      "acknowledge": "Acknowledge",
+      "resolve": "Resolve",
+      "valueVsThreshold": "Now {value}, threshold {threshold}",
+      "openedAt": "Opened {when}",
+      "lastSeen": "last seen {when}",
+      "emailed": "E-mailed",
+      "emailFailed": "E-mail failed",
+      "escalated": "Escalated",
+      "status": {
+        "open": "Open",
+        "acknowledged": "Acknowledged",
+        "resolved": "Resolved",
+        "autoResolved": "Resolved (cleared)"
+      },
+      "kind": {
+        "critical_finding": "Critical findings",
+        "scan_failures": "Scan failures",
+        "worker_offline": "Scanner offline",
+        "api_errors": "API errors (5xx)"
+      },
+      "ruleHelp": {
+        "critical_finding": "Critical findings recorded in the window, across all scans.",
+        "scan_failures": "Scans that failed in the window.",
+        "worker_offline": "Minutes without a scanner reading the job queue.",
+        "api_errors": "API responses with a 5xx status in the window."
+      },
+      "thresholdLabel": {
+        "critical_finding": "Alert at (findings)",
+        "scan_failures": "Alert at (failed scans)",
+        "worker_offline": "Alert after (minutes)",
+        "api_errors": "Alert at (errors)"
+      },
+      "channelsTitle": "Channels",
+      "inAppOn": "In-app: always on",
+      "inAppDetail": "Every alert is recorded on this page.",
+      "emailOn": "E-mail: configured",
+      "emailOff": "E-mail: not configured (SMTP)",
+      "recipients": "{count, plural, one {# admin receives alert e-mails} other {# admins receive alert e-mails}}",
+      "rulesTitle": "Rules",
+      "rulesIntro": "Threshold and window per rule. Escalation sends one more e-mail when nobody acknowledged the alert in time. Muting keeps recording alerts but sends no e-mail.",
+      "ruleOn": "Rule on",
+      "ruleEnabled": "On",
+      "ruleDisabled": "Off",
+      "windowLabel": "Window (minutes)",
+      "escalateLabel": "Escalate after (minutes)",
+      "escalateOff": "off",
+      "emailChannel": "E-mail admins",
+      "saveRule": "Save rule",
+      "muteLabel": "Mute e-mails:",
+      "mute": {
+        "60": "1 hour",
+        "240": "4 hours",
+        "1440": "24 hours"
+      },
+      "unmute": "Unmute",
+      "mutedUntil": "Muted until {when}",
+      "recentTitle": "Recent alerts",
+      "noRecent": "No alerts yet.",
+      "colKind": "Alert",
+      "colStatus": "Status",
+      "colValue": "Value / threshold",
+      "colOpened": "Opened",
+      "colClosed": "Resolved"
     }
   },
   "platformBanner": {

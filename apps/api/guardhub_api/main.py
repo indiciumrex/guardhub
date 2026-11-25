@@ -24,13 +24,15 @@ from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.errors import install_error_handlers
 from guardhub_api.common.logging import configure_logging
 from guardhub_api.common.observability import init_observability
-from guardhub_api.common.redis import close_redis
+from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.github.router import router as github_router
 from guardhub_api.health.router import router as health_router
 from guardhub_api.jobs.client import close_arq
+from guardhub_api.opsalerts.counters import count_5xx
+from guardhub_api.opsalerts.router import router as alerts_admin_router
 from guardhub_api.platform.router import router as config_router
 from guardhub_api.platform.router import status_router as platform_status_router
 from guardhub_api.projects.router import router as projects_router
@@ -89,7 +91,13 @@ def create_app() -> FastAPI:
                 status_code=403,
             )
         else:
-            response = await call_next(request)
+            try:
+                response = await call_next(request)
+            except Exception:
+                await count_5xx(get_redis())  # the api_errors alert rule; never raises
+                raise
+            if response.status_code >= 500:
+                await count_5xx(get_redis())
         response.headers.update(SECURITY_HEADERS)
         response.headers["X-Request-Id"] = request_id[:64]
         log.info(
@@ -114,6 +122,7 @@ def create_app() -> FastAPI:
         admin_router,
         trusted_domains_router,
         config_router,
+        alerts_admin_router,
         platform_status_router,
         alerts_router,
         github_router,

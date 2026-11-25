@@ -168,7 +168,10 @@ def test_worker_registration() -> None:
     assert names == {client.NOTIFY_SCAN, client.NOTIFY_PAUSED, client.SEND_TEST_NOTIFICATION}
     notify = next(f for f in worker.FUNCTIONS if f.name == client.NOTIFY_SCAN)
     assert notify.max_tries == 3
-    tick, recheck, purge = worker.CRON_JOBS
+    alerts, tick, recheck, purge = worker.CRON_JOBS
+    # Prompt 2 §2: admin operational alerts are evaluated every minute, one run at a time
+    assert alerts.name == "cron:evaluate_ops_alerts" and alerts.unique and not alerts.run_at_startup
+    assert alerts.second in (0, {0}) and alerts.minute is None  # every minute, at :00
     assert tick.name == "cron:enqueue_due_scans" and tick.unique and not tick.run_at_startup
     assert tick.minute == set(range(0, 60, 5))
     # ADR-0003: trusted domains are re-proven once a day, one run across all workers/colours

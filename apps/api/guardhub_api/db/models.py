@@ -257,6 +257,41 @@ class PlatformSetting(Base):
     updated_at: Mapped[datetime] = _now()
 
 
+class OpsAlertRule(Base):
+    """An operational alert rule for admins (migration 0020). Admin/system only."""
+
+    __tablename__ = "ops_alert_rules"
+    kind: Mapped[str] = mapped_column(Text, primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    threshold: Mapped[int] = mapped_column(Integer)
+    window_minutes: Mapped[int] = mapped_column(Integer)
+    email: Mapped[bool] = mapped_column(Boolean, default=True)
+    muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    escalate_after_minutes: Mapped[int | None] = mapped_column(Integer)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    updated_at: Mapped[datetime] = _now()
+
+
+class OpsAlert(Base):
+    """One operational alert (migration 0020): at most one unresolved per kind."""
+
+    __tablename__ = "ops_alerts"
+    id: Mapped[uuid.UUID] = _pk()
+    kind: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, default="open")
+    value: Mapped[int] = mapped_column(Integer)
+    threshold: Mapped[int] = mapped_column(Integer)
+    detail: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    opened_at: Mapped[datetime] = _now()
+    last_seen_at: Mapped[datetime] = _now()
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    acknowledged_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

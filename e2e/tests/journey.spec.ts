@@ -229,6 +229,39 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await reverted;
   await expect(history.getByRole("row", { name: /Reverted/ }).first()).toContainText("8 → default");
 
+  // alerts: four rules, a threshold change that persists, and a mute that shows until undone
+  await nav.getByRole("link", { name: "Alerts" }).click();
+  await expect(page.getByRole("heading", { name: "Alerts", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Open alerts" })).toBeVisible();
+  const rules = page.getByRole("region", { name: "Rules" });
+  await expect(rules.getByRole("form")).toHaveCount(4);
+  const apiRule = rules.getByRole("form", { name: "API errors (5xx)" });
+  await apiRule.getByLabel("Alert at (errors)").fill("25");
+  const ruleSaved = page.waitForResponse(
+    (r) => r.url().endsWith("/admin/alerts/rules/api_errors") && r.ok(),
+  );
+  await apiRule.getByRole("button", { name: "Save rule" }).click();
+  await ruleSaved;
+  await page.reload();
+  await expect(
+    rules.getByRole("form", { name: "API errors (5xx)" }).getByLabel("Alert at (errors)"),
+  ).toHaveValue("25");
+  const muted = page.waitForResponse((r) => r.url().endsWith("/api_errors/mute") && r.ok());
+  await rules
+    .getByRole("form", { name: "API errors (5xx)" })
+    .getByRole("button", { name: "1 hour" })
+    .click();
+  await muted;
+  await expect(rules.getByText(/Muted until/)).toBeVisible();
+  await shoot(page, "admin-alerts");
+  const unmuted = page.waitForResponse((r) => r.url().endsWith("/api_errors/mute") && r.ok());
+  await rules
+    .getByRole("form", { name: "API errors (5xx)" })
+    .getByRole("button", { name: "Unmute" })
+    .click();
+  await unmuted;
+  await expect(rules.getByText(/Muted until/)).toHaveCount(0);
+
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,
