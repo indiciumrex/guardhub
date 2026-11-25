@@ -170,7 +170,27 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   // the control centre's sections: users, then the Module Center
   const nav = page.getByRole("navigation", { name: "Administration sections" });
   await nav.getByRole("link", { name: "Users" }).click();
-  await expect(page.getByRole("cell", { name: email })).toBeVisible();
+  const meRow = page.getByRole("row", { name: new RegExp(email.replace(/[.+]/g, "\\$&")) });
+  await expect(meRow).toBeVisible();
+  await expect(meRow.getByRole("button", { name: /^Disable/ })).toHaveCount(0); // never yourself
+  await expect(page.getByRole("region", { name: "Security policy" })).toContainText(
+    "Two-factor sign-in is required for every account",
+  );
+  // an admin invitation: the link is shown once, then it can be revoked
+  const inviteForm = page.getByRole("form", { name: "Invite an admin" });
+  await inviteForm.getByLabel("E-mail address").fill("e2e-new-admin@example.com");
+  await inviteForm.getByRole("button", { name: "Create invitation" }).click();
+  await expect(page.getByLabel("Invitation link")).toContainText(
+    "/account/admin-invite?token=ghi_",
+  );
+  await page.getByRole("button", { name: "Done" }).click();
+  await shoot(page, "admin-users");
+  await page
+    .getByRole("button", { name: "Revoke the invitation for e2e-new-admin@example.com" })
+    .click();
+  await expect(
+    page.getByRole("row", { name: /e2e-new-admin@example\.com/ }).getByText("Revoked"),
+  ).toBeVisible();
   await nav.getByRole("link", { name: "Module Center" }).click();
   await expect(page.getByRole("heading", { name: "Module Center", level: 1 })).toBeVisible();
   // the gate rule is visible: active tests are locked with the reason, not switchable
