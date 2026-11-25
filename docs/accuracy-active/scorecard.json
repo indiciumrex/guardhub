@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "eaf1cdf4ef20",
+  "source": "e31b3c017884",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -16,11 +16,21 @@
     "av-clean",
     "av-cors",
     "av-cors-safe",
+    "av-cors-safe2",
+    "av-cors2",
+    "av-cors3",
     "av-idor",
+    "av-idor2",
     "av-redirect",
+    "av-redirect-safe2",
+    "av-redirect2",
+    "av-redirect3",
     "av-sqli",
+    "av-sqli2",
     "av-ssrf",
+    "av-ssrf2",
     "av-xss",
+    "av-xss2",
     "dvwa",
     "juice-shop",
     "webgoat"
@@ -28,9 +38,9 @@
   "checks": [
     {
       "check_id": "active_cors",
-      "targets": 16,
-      "clean_runs": 15,
-      "tp": 3,
+      "targets": 26,
+      "clean_runs": 23,
+      "tp": 9,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -43,7 +53,7 @@
       "meets_gate": true,
       "by_key": {
         "cors_origin_reflected": {
-          "tp": 3,
+          "tp": 9,
           "fp": 0,
           "fn": 0
         }
@@ -66,6 +76,42 @@
           "key": "cors_origin_reflected",
           "location": "http://av-cors.lab.test/api/settings",
           "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors2",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors2.lab.test/v1/notifications",
+          "why": "Any Origin is echoed with Access-Control-Allow-Credentials true, on a 401 answer."
+        },
+        {
+          "target": "av-cors2",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors2.lab.test/v1/profile",
+          "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors2",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors2.lab.test/v1/tokens",
+          "why": "Origin null is granted with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors3",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors3.lab.test/data/export",
+          "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true (HTML)."
+        },
+        {
+          "target": "av-cors3",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors3.lab.test/data/feed",
+          "why": "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+        },
+        {
+          "target": "av-cors3",
+          "key": "cors_origin_reflected",
+          "location": "http://av-cors3.lab.test/data/stats",
+          "why": "The allow-list admits Origin null, granted with Access-Control-Allow-Credentials true."
         }
       ],
       "false_positives": null,
@@ -73,22 +119,22 @@
     },
     {
       "check_id": "active_idor",
-      "targets": 16,
-      "clean_runs": 15,
-      "tp": 3,
+      "targets": 26,
+      "clean_runs": 24,
+      "tp": 8,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
       "tolerated": 0,
       "errors": 0,
-      "max_requests": 16,
+      "max_requests": 25,
       "precision": 1,
       "recall": 1,
       "recall_all": 1,
       "meets_gate": true,
       "by_key": {
         "idor_cross_account_read": {
-          "tp": 3,
+          "tp": 8,
           "fp": 0,
           "fn": 0
         }
@@ -111,6 +157,36 @@
           "key": "idor_cross_account_read",
           "location": "http://av-idor.lab.test/profile/1001",
           "why": "/profile/\u003cid\u003e returns any profile to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor2",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor2.lab.test/address",
+          "why": "/address?addr_no= returns any address to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor2",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor2.lab.test/api/orders/5001",
+          "why": "/api/orders/\u003cid\u003e returns any order as JSON to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor2",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor2.lab.test/download",
+          "why": "/download?doc_id=\u003cuuid\u003e returns any document to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor2",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor2.lab.test/statement",
+          "why": "/statement?account_key= returns any statement to any signed-in account (no owner check)."
+        },
+        {
+          "target": "av-idor2",
+          "key": "idor_cross_account_read",
+          "location": "http://av-idor2.lab.test/ticket",
+          "why": "/ticket?ref= returns any ticket to any signed-in account (no owner check)."
         }
       ],
       "false_positives": null,
@@ -118,22 +194,22 @@
     },
     {
       "check_id": "active_redirect",
-      "targets": 16,
-      "clean_runs": 13,
-      "tp": 4,
+      "targets": 26,
+      "clean_runs": 21,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
       "tolerated": 0,
       "errors": 0,
-      "max_requests": 21,
+      "max_requests": 24,
       "precision": 1,
       "recall": 1,
-      "recall_all": 0.6666666666666666,
+      "recall_all": 0.8461538461538461,
       "meets_gate": true,
       "by_key": {
         "open_redirect": {
-          "tp": 4,
+          "tp": 11,
           "fp": 0,
           "fn": 2
         }
@@ -156,6 +232,48 @@
           "key": "open_redirect",
           "location": "http://av-redirect.lab.test/out?to",
           "why": "to goes into the Refresh header unchecked."
+        },
+        {
+          "target": "av-redirect2",
+          "key": "open_redirect",
+          "location": "http://av-redirect2.lab.test/auth/callback?redirect_uri",
+          "why": "redirect_uri goes into Location; only javascript: is refused."
+        },
+        {
+          "target": "av-redirect2",
+          "key": "open_redirect",
+          "location": "http://av-redirect2.lab.test/r301?u",
+          "why": "u goes into Location (301) unchecked."
+        },
+        {
+          "target": "av-redirect2",
+          "key": "open_redirect",
+          "location": "http://av-redirect2.lab.test/r303?continue",
+          "why": "continue goes into Location (303) unchecked."
+        },
+        {
+          "target": "av-redirect2",
+          "key": "open_redirect",
+          "location": "http://av-redirect2.lab.test/r307?return",
+          "why": "return goes into Location (307) unchecked."
+        },
+        {
+          "target": "av-redirect3",
+          "key": "open_redirect",
+          "location": "http://av-redirect3.lab.test/bye?returnTo",
+          "why": "returnTo goes into Location unchecked."
+        },
+        {
+          "target": "av-redirect3",
+          "key": "open_redirect",
+          "location": "http://av-redirect3.lab.test/r?next",
+          "why": "next loses a leading http:// or https:// once; //other-host/ is not touched (protocol-relative)."
+        },
+        {
+          "target": "av-redirect3",
+          "key": "open_redirect",
+          "location": "http://av-redirect3.lab.test/to?url",
+          "why": "url goes into the Refresh header (0;URL='...') unchecked."
         },
         {
           "target": "dvwa",
@@ -184,24 +302,24 @@
     },
     {
       "check_id": "active_sqli",
-      "targets": 16,
-      "clean_runs": 12,
-      "tp": 6,
+      "targets": 26,
+      "clean_runs": 21,
+      "tp": 12,
       "fp": 0,
-      "fn": 0,
+      "fn": 2,
       "fn_outside": 1,
       "tolerated": 0,
       "errors": 0,
       "max_requests": 78,
       "precision": 1,
-      "recall": 1,
-      "recall_all": 0.8571428571428571,
+      "recall": 0.8571428571428571,
+      "recall_all": 0.8,
       "meets_gate": true,
       "by_key": {
         "sql_injection": {
-          "tp": 6,
+          "tp": 12,
           "fp": 0,
-          "fn": 1
+          "fn": 3
         }
       },
       "true_positives": [
@@ -222,6 +340,42 @@
           "key": "sql_injection",
           "location": "http://av-sqli.lab.test/order?id",
           "why": "id is concatenated into WHERE id = ...; errors are hidden, found and missing differ only in text (blind)."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/item?id",
+          "why": "id is concatenated into WHERE id = (...); errors are hidden, found answers 200, missing 404 (blind)."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/price?max",
+          "why": "max is concatenated into WHERE price \u003c= ... and the SQLite message is shown."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/sorted?order",
+          "why": "order is concatenated into ORDER BY and the SQLite message is shown."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/stock?sku",
+          "why": "sku is concatenated into WHERE (id = ...); errors are hidden, found and missing differ only in text (blind)."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/tag?name",
+          "why": "name is concatenated into a quoted LIKE pattern and the SQLite message is shown as SQLITE_ERROR."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/user?name",
+          "why": "name is concatenated into a quoted WHERE string and the SQLite message is shown."
         },
         {
           "target": "dvwa",
@@ -245,6 +399,18 @@
       "false_positives": null,
       "false_negatives": [
         {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/lookup?email",
+          "why": "email is concatenated into a quoted WHERE string; errors are hidden and the linked value is an e-mail address (blind)."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/review?id",
+          "why": "id is concatenated into WHERE id = ...; errors are hidden and the linked value is 3, so a condition must keep 3 to answer like the page (blind)."
+        },
+        {
           "target": "webgoat",
           "key": "sql_injection",
           "location": "http://webgoat.lab.test:8080/WebGoat/SqlInjectionMitigations/servers?column",
@@ -255,9 +421,9 @@
     },
     {
       "check_id": "active_ssrf",
-      "targets": 16,
-      "clean_runs": 14,
-      "tp": 5,
+      "targets": 26,
+      "clean_runs": 23,
+      "tp": 10,
       "fp": 0,
       "fn": 0,
       "fn_outside": 0,
@@ -270,7 +436,7 @@
       "meets_gate": true,
       "by_key": {
         "ssrf_confirmed": {
-          "tp": 5,
+          "tp": 10,
           "fp": 0,
           "fn": 0
         }
@@ -301,6 +467,36 @@
           "why": "the server fetches src."
         },
         {
+          "target": "av-ssrf2",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf2.lab.test/api/webhook-test?webhook",
+          "why": "the server fetches webhook."
+        },
+        {
+          "target": "av-ssrf2",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf2.lab.test/proxy?target",
+          "why": "the server fetches target."
+        },
+        {
+          "target": "av-ssrf2",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf2.lab.test/rss?feed",
+          "why": "the server fetches feed."
+        },
+        {
+          "target": "av-ssrf2",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf2.lab.test/share?q",
+          "why": "the server fetches q (a link preview; the parameter name says nothing, its value is a URL)."
+        },
+        {
+          "target": "av-ssrf2",
+          "key": "ssrf_confirmed",
+          "location": "http://av-ssrf2.lab.test/thumb?image_url",
+          "why": "the server fetches image_url."
+        },
+        {
           "target": "dvwa",
           "key": "ssrf_confirmed",
           "location": "http://dvwa.lab.test/vulnerabilities/fi/?page",
@@ -312,9 +508,9 @@
     },
     {
       "check_id": "active_xss",
-      "targets": 16,
-      "clean_runs": 13,
-      "tp": 4,
+      "targets": 26,
+      "clean_runs": 22,
+      "tp": 11,
       "fp": 0,
       "fn": 0,
       "fn_outside": 2,
@@ -323,11 +519,11 @@
       "max_requests": 39,
       "precision": 1,
       "recall": 1,
-      "recall_all": 0.6666666666666666,
+      "recall_all": 0.8461538461538461,
       "meets_gate": true,
       "by_key": {
         "reflected_xss": {
-          "tp": 4,
+          "tp": 11,
           "fp": 0,
           "fn": 2
         }
@@ -350,6 +546,48 @@
           "key": "reflected_xss",
           "location": "http://av-xss.lab.test/search?q",
           "why": "q is written into the page text without encoding."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/err?code",
+          "why": "code is written unencoded into an HTTP 400 error page."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/find?term",
+          "why": "term passes a blocklist that removes script tags only; other elements are written unencoded."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/hello?name",
+          "why": "name passes a home-made escape that encodes \u0026 only."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/json-html?q",
+          "why": "q is written unencoded into a JSON body served as text/html."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/list?dir",
+          "why": "dir is written unencoded into a double-quoted href attribute."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/page?ref",
+          "why": "ref is written unencoded into the page text (id, the other parameter, is validated)."
+        },
+        {
+          "target": "av-xss2",
+          "key": "reflected_xss",
+          "location": "http://av-xss2.lab.test/tag?label",
+          "why": "label has its quotes encoded but not \u003c and \u003e, inside page text."
         },
         {
           "target": "dvwa",
