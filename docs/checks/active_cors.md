@@ -12,7 +12,9 @@ A discovered endpoint that echoes a foreign `Origin` (or `null`) together with `
 
 ## How it works
 
-Every discovered page other than `/` (which `http_hardening` covers) is requested with
+Every discovered page other than `/` (which `http_hardening` covers), including endpoints that
+answer 401 or 403 to the anonymous scan (an API behind a login still sends its CORS headers), is
+requested with
 `Origin: https://gh-canary.invalid` and `Origin: null`, until three findings are reported in one
 scan.
 

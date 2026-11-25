@@ -81,7 +81,9 @@ reach a target that has not been fenced in.
 
 - **Rates and budgets:**
   - 1 request per second per host by default, burst 1;
-  - at most 300 requests per scan and 100 per module;
+  - at most 300 requests per scan and 100 per module. A spent scan budget stops the scan; a spent
+    module budget ends only that check, reported as incomplete (`budget_exceeded`), and the next
+    check runs within what is left of the scan budget;
   - one active scan per origin at a time.
 - **Backoff on stress:** any 429 or 503 backs off. `Retry-After` is honoured up to 30 s; above
   that, the scan stops.

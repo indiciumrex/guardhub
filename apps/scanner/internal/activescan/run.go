@@ -22,9 +22,10 @@ type Outcome struct {
 // harness): discovery from the origin's "/" (as session A when given) plus any
 // start URLs (a route list: same-origin pages links do not reach, e.g. a
 // single-page app's API; nil in production today), then
-// each requested check in order. A fatal stop (kill switch, breaker, budget,
-// deadline) fails the running check and every later one with the same error;
-// findings so far are kept.
+// each requested check in order. A fatal stop (kill switch, breaker, the
+// scan's budget, deadline) fails the running check and every later one with
+// the same error; a check that spends its own module budget fails alone and
+// the next check runs. Findings so far are kept.
 func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []string,
 	sessA, sessB *active.Session, collab active.Collaborator, start []*url.URL) ([]evidence.Finding, []Outcome) {
 	byID := map[string]Check{}
@@ -36,7 +37,7 @@ func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []s
 	var stop error
 	start = withRoot(scope.Origin(), start)
 	points, pages, err := DiscoverAs(ctx, client, scope.Origin(), start, DiscoveryLimits{}, sessA)
-	if err != nil {
+	if err != nil && IsFatal(err) { // discovery's own budget spent: the checks use what it found
 		stop = err
 	}
 	env := Env{Client: client, Origin: scope.Origin(), Points: points, Pages: pages, Collab: collab,
@@ -53,8 +54,10 @@ func Run(ctx context.Context, client *active.Client, scope active.Scope, ids []s
 		}
 		fs, err := c.Run(ctx, env)
 		findings = append(findings, fs...)
-		if err != nil {
-			stop = err
+		if err != nil { // the check failed or ran out of its own budget: findings so far are kept
+			if IsFatal(err) {
+				stop = err
+			}
 			outs = append(outs, Outcome{id, err})
 			continue
 		}

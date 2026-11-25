@@ -24,10 +24,10 @@ Second sample (more variants per class, more look-alikes; each site fits one sca
                 attribute, &-only escaping, one of two parameters; encoded/text-plain look-alikes
   av-sqli2      string/number/parenthesised/LIKE, shown or hidden errors, blind on values other
                 than 1 (review, lookup), ORDER BY (outside); WAF, cast, ever-changing look-alikes
-  av-redirect2  301/303/307, javascript:-only and prefix-strip filters, Refresh URL=; table,
-                signed, interstitial and fixed look-alikes
+  av-redirect2/3  301/303/307, javascript:-only and prefix-strip filters, Refresh URL=
+  av-redirect-safe2  table, signed, interstitial (links only http(s)/own paths) and fixed look-alikes
   av-cors2/3    credentialed echo (JSON, HTML, 401, any header), null trusted
-  av-cors-safe2 "True", "*" with credentials, parsed subdomain allow-list, credentials false
+  av-cors-safe2 "True", "*" with credentials, one named https subdomain, credentials false
   av-ssrf2      webhook test, thumbnail, feed, proxy, link preview; allow-list, cache, pattern
   av-idor2      JSON path id, UUID, number, 24-hex key, ref; 404-checked, public, ignored id,
                 200 refusal and shared look-alikes (sessions: the av-idor accounts)
@@ -760,15 +760,30 @@ def sign(u: str) -> str:
     return hmac.new(SIGN_KEY, u.encode(), hashlib.sha256).hexdigest()[:16]
 
 
+# three hosts, so that each stays inside one scan's budget (every same-origin hop of a redirect is
+# a request too): av-redirect2 and av-redirect3 hold the VULN routes, av-redirect-safe2 the
+# look-alikes
+REDIRECT2_ROUTES = {
+    "av-redirect2": lambda: ["/r301?u=/home", "/r307?return=/home", "/r303?continue=/home",
+                             "/auth/callback?redirect_uri=/home"],
+    "av-redirect3": lambda: ["/bye?returnTo=/home", "/r?next=/home", "/to?url=/home"],
+    "av-redirect-safe2": lambda: ["/r-safe?u=home", f"/r-signed?u=/home&sig={sign('/home')}", "/r-leave?u=/home",
+                                  "/r-static?u=/home"],
+}  # fmt: skip
+# an absolute http(s) URL or an own path, without spaces, quotes, angle brackets or backslashes
+SAFE_LINK = re.compile(r"(https?://|/(?!/))[^\s\"'<>\\]*")
+
+
 def site_redirect2(path: str, a: dict, h: "Handler") -> Resp:
     v = lambda k, d="": a.get(k, d)  # noqa: E731
+    host = (h.headers.get("Host") or "").split(":")[0].removesuffix(".lab.test")
+    routes = REDIRECT2_ROUTES[host]()
     if path == "/":
-        return Resp(body=page("av-redirect2", links("/r301?u=/home", "/r307?return=/home", "/r303?continue=/home",
-                                                    "/auth/callback?redirect_uri=/home", "/bye?returnTo=/home", "/r?next=/home",
-                                                    "/to?url=/home", "/r-safe?u=home", f"/r-signed?u=/home&sig={sign('/home')}",
-                                                    "/r-leave?u=/home", "/r-static?u=/home")))  # fmt: skip
+        return Resp(body=page(host, links(*routes)))
     if path == "/home":
         return Resp(body=page("Home", "<p>Welcome.</p>"))
+    if path not in {r.split("?")[0] for r in routes}:
+        return Resp(404, page("Not found", ""))
     if path == "/r301":  # VULN: any URL, permanent redirect
         return redirect(v("u", "/"), 301)
     if path == "/r307":  # VULN: any URL, 307
@@ -794,10 +809,15 @@ def site_redirect2(path: str, a: dict, h: "Handler") -> Resp:
     if path == "/r-signed":  # only destinations the site itself signed
         u = v("u", "/")
         return redirect(u if hmac.compare_digest(sign(u), v("sig")) else "/")
-    if path == "/r-leave":  # an interstitial page: the link is shown, nothing redirects
+    if (
+        path == "/r-leave"
+    ):  # an interstitial: nothing redirects; only http(s) or own paths become a link
+        u = v("u")
+        if not SAFE_LINK.fullmatch(u):
+            return Resp(body=page("Leaving", f"<p>You are leaving for: {E(u)}</p>"))
         return Resp(
             body=page(
-                "Leaving", f'<p>You are leaving. <a href="{E(v("u"))}">Continue</a></p>'
+                "Leaving", f'<p>You are leaving. <a href="{E(u)}">Continue</a></p>'
             )
         )
     if path == "/r-static":  # the parameter is ignored
@@ -921,10 +941,12 @@ def site_cors_safe2(path: str, a: dict, h: "Handler") -> Resp:
         )
     if (
         path == "/api/sub"
-    ):  # only this site's own subdomains, checked on the parsed host
+    ):  # one named subdomain over https, compared on the parsed origin
         s = urllib.parse.urlsplit(origin)
-        ok = s.scheme in ("http", "https") and (s.hostname or "").endswith(
-            ".av-cors-safe2.lab.test"
+        ok = (s.scheme, s.hostname, s.port) == (
+            "https",
+            "app.av-cors-safe2.lab.test",
+            None,
         )
         hd = (
             {
@@ -1093,7 +1115,8 @@ def site_idor2(path: str, a: dict, h: "Handler") -> Resp:
 SITES = {"av-xss": site_xss, "av-sqli": site_sqli, "av-redirect": site_redirect, "av-cors": site_cors,
          "av-cors-safe": site_cors_safe, "av-ssrf": site_ssrf, "av-idor": site_idor, "av-clean": site_clean,
          "av-xss2": site_xss2, "av-sqli2": site_sqli2, "av-redirect2": site_redirect2, "av-cors2": site_cors2,
-         "av-cors3": site_cors3, "av-cors-safe2": site_cors_safe2, "av-ssrf2": site_ssrf2, "av-idor2": site_idor2}  # fmt: skip
+         "av-cors3": site_cors3, "av-cors-safe2": site_cors_safe2, "av-ssrf2": site_ssrf2, "av-idor2": site_idor2,
+         "av-redirect3": site_redirect2, "av-redirect-safe2": site_redirect2}  # fmt: skip
 
 
 class Handler(BaseHTTPRequestHandler):

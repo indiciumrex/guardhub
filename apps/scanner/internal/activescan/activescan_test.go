@@ -2,6 +2,7 @@ package activescan
 
 import (
 	"context"
+	"errors"
 	"html"
 	"net/http"
 	"net/http/httptest"
@@ -203,7 +204,8 @@ func TestSSRFNeedsCollaborator(t *testing.T) {
 }
 
 // CORS: a foreign or null origin granted with credentials, where "credentials" means exactly
-// "true" (Fetch's CORS check is byte for byte; browsers refuse "True"), never "*".
+// "true" (Fetch's CORS check is byte for byte; browsers refuse "True"), never "*"; an endpoint
+// that answers 401 to the anonymous scan is still tested.
 func TestCORSCredentialsMustBeExactlyTrue(t *testing.T) {
 	echo := func(acac string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -218,11 +220,16 @@ func TestCORSCredentialsMustBeExactlyTrue(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte(`<a href="/api/true?v=1">a</a><a href="/api/upper?v=1">b</a><a href="/api/false?v=1">c</a><a href="/api/star?v=1">d</a>`))
+		_, _ = w.Write([]byte(`<a href="/api/true?v=1">a</a><a href="/api/upper?v=1">b</a><a href="/api/false?v=1">c</a><a href="/api/star?v=1">d</a><a href="/api/gated?v=1">e</a>`))
 	})
 	mux.HandleFunc("/api/true", echo("true"))
 	mux.HandleFunc("/api/upper", echo("True"))
 	mux.HandleFunc("/api/false", echo("false"))
+	mux.HandleFunc("/api/gated", func(w http.ResponseWriter, r *http.Request) { // 401 to an anonymous scan
+		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.WriteHeader(http.StatusUnauthorized)
+	})
 	mux.HandleFunc("/api/star", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -233,7 +240,38 @@ func TestCORSCredentialsMustBeExactlyTrue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(fs) != 1 || fs[0].Evidence.Location != srv.URL+"/api/true" {
-		t.Fatalf("want exactly /api/true, got %+v", fs)
+	got := map[string]bool{}
+	for _, f := range fs {
+		got[f.Evidence.Location] = true
+	}
+	if len(fs) != 2 || !got[srv.URL+"/api/true"] || !got[srv.URL+"/api/gated"] {
+		t.Fatalf("want exactly /api/true and /api/gated (401), got %+v", fs)
+	}
+}
+
+// A check that spends its own module budget ends alone (incomplete, ErrModuleBudget); the next
+// check still runs within the scan's budget. Only a fatal stop ends the scan.
+func TestModuleBudgetEndsOnlyThatCheck(t *testing.T) {
+	srv := labServer(t)
+	scope, err := active.NewScope(srv.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lim := active.DefaultLimits()
+	lim.RPS, lim.ModuleBudget = 1000, 4 // XSS needs more than 4 requests on the lab server
+	cl, err := active.NewClient(active.Options{Scope: scope, Kill: &active.StaticKill{}, Log: &active.RequestLog{},
+		Limits: lim, Timeout: 3 * time.Second, AllowPrivateHosts: []string{"127.0.0.1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, outs := Run(context.Background(), cl, scope, []string{evidence.CheckActiveXss, evidence.CheckActiveSqli}, nil, nil, nil, nil)
+	if len(outs) != 2 || !errors.Is(outs[0].Err, active.ErrModuleBudget) {
+		t.Fatalf("xss must end on its module budget: %+v", outs)
+	}
+	if outs[1].Err != nil && !errors.Is(outs[1].Err, active.ErrModuleBudget) {
+		t.Fatalf("sqli did not run after xss's module budget: %+v", outs[1])
+	}
+	if cl.Sent() <= 4+4 { // discovery's 4 + xss's 4: sqli must have sent requests of its own
+		t.Fatalf("sqli sent nothing: %d requests in total", cl.Sent())
 	}
 }

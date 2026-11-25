@@ -11,9 +11,14 @@ import (
 // stress: the scan stops (ADR-0008 §4).
 var ErrBreaker = errors.New("active: target under stress, scan stopped")
 
-// ErrBudget is returned (and logged as budget) past the scan's or the
-// module's request budget.
+// ErrBudget is returned (and logged as budget) past the scan's request
+// budget: the scan stops.
 var ErrBudget = errors.New("active: request budget exhausted")
+
+// ErrModuleBudget is returned (and logged as budget) past one module's
+// request budget: that check ends, incomplete; the scan goes on with the
+// next check, still within the scan's budget (ADR-0008 §4).
+var ErrModuleBudget = errors.New("active: module request budget exhausted")
 
 // Limits are the do-no-harm limits of one active scan.
 type Limits struct {

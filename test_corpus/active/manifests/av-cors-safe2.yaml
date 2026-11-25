@@ -5,7 +5,22 @@ description: >
   False-positive control, second sample (avlab.py, site_cors_safe2): an echo with
   Access-Control-Allow-Credentials "True" (the Fetch standard compares it byte for byte, so a
   browser refuses the credentialed read), "*" with credentials (refused by browsers), an
-  allow-list of the site's own subdomains checked on the parsed host, and an echo with
+  allow-list of one named https subdomain compared on the parsed origin, and an echo with
   credentials "false". None grants a foreign origin a credentialed read.
 checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
 expect: []
+oracle_disputed: # ZAP verdicts judged wrong, with the evidence (test_corpus/oracles/zap/compare.py)
+  - check: active_cors
+    location: http://av-cors-safe2.lab.test/api/legacy
+    why: >-
+      ZAP reports risk High for an echoed Origin with Access-Control-Allow-Credentials: True. The
+      Fetch standard's CORS check requires that header to be exactly the byte sequence "true"
+      (https://fetch.spec.whatwg.org/#cors-check); for "True" a browser fails the check and
+      never exposes the credentialed response to the foreign origin.
+  - check: active_cors
+    location: http://av-cors-safe2.lab.test/api/cred-false
+    why: >-
+      ZAP reports risk High for an echoed Origin with Access-Control-Allow-Credentials: false.
+      By the same CORS check (the header must be exactly "true"), a credentialed read is
+      refused; without credentials only data the endpoint gives anyone is readable (ZAP rates
+      the same echo without the header, av-cors-safe /api/echo, below High).
