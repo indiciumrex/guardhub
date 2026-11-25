@@ -1,0 +1,22 @@
+target: av-redirect3
+origin: http://av-redirect3.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_redirect2 on host av-redirect3): a returnTo after
+  signing off, a filter that strips a leading http:// or https:// once (so //host/ passes) and
+  a Refresh header written as 0;URL='...'. Ground truth: the VULN lines of avlab.py, confirmed
+  by ZAP.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect3.lab.test/bye?returnTo
+    why: "returnTo goes into Location unchecked."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect3.lab.test/r?next
+    why: "next loses a leading http:// or https:// once; //other-host/ is not touched (protocol-relative)."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect3.lab.test/to?url
+    why: "url goes into the Refresh header (0;URL='...') unchecked."

@@ -233,13 +233,13 @@ func TestBudgets(t *testing.T) {
 	u := mustURL(t, srv.URL+"/")
 	for i := range 4 {
 		_, err := c.Send(context.Background(), Baseline("a", u))
-		if (i < 3) != (err == nil) {
+		if (i < 3) != (err == nil) || (i == 3 && !errors.Is(err, ErrModuleBudget)) {
 			t.Fatalf("module budget at %d: %v", i, err)
 		}
 	}
 	for i := range 3 {
 		_, err := c.Send(context.Background(), Baseline("b", u))
-		if (i < 2) != (err == nil) {
+		if (i < 2) != (err == nil) || (i == 2 && !errors.Is(err, ErrBudget)) {
 			t.Fatalf("scan budget at %d: %v", i, err)
 		}
 	}

@@ -12,13 +12,18 @@ A discovered endpoint that echoes a foreign `Origin` (or `null`) together with `
 
 ## How it works
 
-Up to three discovered pages other than `/` (which `http_hardening` covers) are
-requested with `Origin: https://gh-canary.invalid` and `Origin: null`.
+Every discovered page other than `/` (which `http_hardening` covers), including endpoints that
+answer 401 or 403 to the anonymous scan (an API behind a login still sends its CORS headers), is
+requested with
+`Origin: https://gh-canary.invalid` and `Origin: null`, until three findings are reported in one
+scan.
 
 ## Not reported (false-positive discipline)
 
 - `Access-Control-Allow-Origin: *` (browsers never send credentials with it);
-- an echoed origin without `Access-Control-Allow-Credentials: true`.
+- an echoed origin without `Access-Control-Allow-Credentials: true`;
+- `Access-Control-Allow-Credentials` with any value other than exactly `true` (`True`, `TRUE`):
+  the Fetch standard's CORS check compares it byte for byte, so browsers refuse the read.
 
 ## Safety (every active check, ADR-0008)
 

@@ -56,11 +56,17 @@ func payload(id string) active.Payload {
 	return p
 }
 
-// send wraps Client.Send: a non-fatal error (one request refused or failed)
-// returns nil, nil so the check moves on.
+// endsCheck reports whether err ends the running check: a fatal stop, or
+// the check's own request budget is spent (the scan goes on with the next).
+func endsCheck(err error) bool {
+	return IsFatal(err) || errors.Is(err, active.ErrModuleBudget)
+}
+
+// send wraps Client.Send: an error that does not end the check (one request
+// refused or failed) returns nil, nil so the check moves on.
 func send(ctx context.Context, c *active.Client, r active.Request) (*active.Response, error) {
 	resp, err := c.Send(ctx, r)
-	if err != nil && IsFatal(err) {
+	if err != nil && endsCheck(err) {
 		return nil, err
 	}
 	return resp, nil
@@ -328,7 +334,9 @@ func (c CORS) Run(ctx context.Context, env Env) ([]evidence.Finding, error) {
 				continue
 			}
 			acao := strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Origin"))
-			if acao == p.Value && strings.EqualFold(strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Credentials")), "true") {
+			// the Fetch standard's CORS check compares both values byte for byte: a browser
+			// refuses a credentialed read for "True" or "TRUE", so only exactly "true" counts
+			if acao == p.Value && strings.TrimSpace(resp.Header.Get("Access-Control-Allow-Credentials")) == "true" {
 				out = append(out, evidence.New(c.ID(), "cors_origin_reflected",
 					map[string]string{"path": pg.URL.Path, "origin": p.Value},
 					evidence.KindHttpHeader, pg.URL.Scheme+"://"+pg.URL.Host+pg.URL.Path,

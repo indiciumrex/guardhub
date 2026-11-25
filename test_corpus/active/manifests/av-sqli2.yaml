@@ -1,0 +1,46 @@
+target: av-sqli2
+origin: http://av-sqli2.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_sqli2; SQLite): a string concatenated with the database
+  message shown, a number in a comparison with the message shown, a number in parentheses with
+  errors hidden (blind: text, and 200 vs 404), a string in LIKE with SQLITE_ERROR shown, blind
+  injections whose linked value is not 1 (a review number 3, an e-mail address), and an ORDER BY
+  column (outside); next to a bound look-alike, a page that never answers the same twice, a
+  filter that answers 403 to quotes and SQL words, and a number cast that falls back to item 1.
+  Ground truth: the VULN lines of avlab.py, confirmed by ZAP.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/user?name
+    why: "name is concatenated into a quoted WHERE string and the SQLite message is shown."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/price?max
+    why: "max is concatenated into WHERE price <= ... and the SQLite message is shown."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/stock?sku
+    why: "sku is concatenated into WHERE (id = ...); errors are hidden, found and missing differ only in text (blind)."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/tag?name
+    why: "name is concatenated into a quoted LIKE pattern and the SQLite message is shown as SQLITE_ERROR."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/item?id
+    why: "id is concatenated into WHERE id = (...); errors are hidden, found answers 200, missing 404 (blind)."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/review?id
+    why: "id is concatenated into WHERE id = ...; errors are hidden and the linked value is 3, so a condition must keep 3 to answer like the page (blind)."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/lookup?email
+    why: "email is concatenated into a quoted WHERE string; errors are hidden and the linked value is an e-mail address (blind)."
+  - check: active_sqli
+    key: sql_injection
+    location: http://av-sqli2.lab.test/sorted?order
+    outside: true # ORDER BY: active_sqli declares error and boolean probes of WHERE conditions; a sort column answers the same rows for true and false (docs/checks/active_sqli.md)
+    why: "order is concatenated into ORDER BY and the SQLite message is shown."

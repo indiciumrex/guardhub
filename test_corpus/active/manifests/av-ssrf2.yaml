@@ -1,0 +1,31 @@
+target: av-ssrf2
+origin: http://av-ssrf2.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_ssrf2): a webhook test, a thumbnail, a feed reader, a
+  proxy and a link preview (a parameter named q whose value is a URL) that fetch what they are
+  given; next to an own-host allow-list, a feed cache that never fetches and a pattern check.
+  Ground truth: the VULN lines of avlab.py, confirmed by ZAP's SSRF rule (40046) through its
+  callback listener; GuardHub confirms through the lab collaborator.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf2.lab.test/api/webhook-test?webhook
+    why: "the server fetches webhook."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf2.lab.test/thumb?image_url
+    why: "the server fetches image_url."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf2.lab.test/rss?feed
+    why: "the server fetches feed."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf2.lab.test/proxy?target
+    why: "the server fetches target."
+  - check: active_ssrf
+    key: ssrf_confirmed
+    location: http://av-ssrf2.lab.test/share?q
+    why: "the server fetches q (a link preview; the parameter name says nothing, its value is a URL)."

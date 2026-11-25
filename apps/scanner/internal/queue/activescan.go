@@ -216,7 +216,7 @@ func activeErrCode(ctx context.Context, err error) string {
 		return ErrCodeTimeout
 	case errors.Is(err, active.ErrBreaker):
 		return ErrCodeTargetStressed
-	case errors.Is(err, active.ErrBudget):
+	case errors.Is(err, active.ErrBudget), errors.Is(err, active.ErrModuleBudget):
 		return ErrCodeBudgetExceeded
 	}
 	return ErrCodeInternal

@@ -1,0 +1,10 @@
+target: av-redirect-safe2
+origin: http://av-redirect-safe2.lab.test
+active: true
+description: >
+  False-positive control, second sample (avlab.py, site_redirect2 on host av-redirect-safe2):
+  a fixed destination table, destinations the site signed (HMAC), an interstitial page that
+  shows the destination (as a link only for http(s) URLs and own paths) and a redirect that
+  ignores its parameter. Nothing redirects to a host the parameter names.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect: []

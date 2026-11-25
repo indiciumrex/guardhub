@@ -104,12 +104,22 @@ func DiscoverAs(ctx context.Context, c *active.Client, origin *url.URL, start []
 		}
 		resp, err := c.Send(ctx, active.AsSession(active.Baseline("discovery", it.u), sess))
 		if err != nil {
-			if fatal(err) {
-				return sortedPoints(points), pages, err
+			if fatal(err) || errors.Is(err, active.ErrModuleBudget) {
+				return sortedPoints(points), pages, err // module budget: what was found so far
 			}
 			continue
 		}
-		if resp == nil || resp.Status != 200 {
+		if resp == nil {
+			continue
+		}
+		if resp.Status == 401 || resp.Status == 403 {
+			// an endpoint behind a login: nothing to follow, but its headers count (an API that
+			// answers 401 to an anonymous scan can still grant a foreign origin a credentialed
+			// read, active_cors). IDOR only uses pages that answered 200.
+			pages = append(pages, Page{URL: resp.URL, Resp: resp})
+			continue
+		}
+		if resp.Status != 200 {
 			continue
 		}
 		pages = append(pages, Page{URL: resp.URL, Resp: resp})

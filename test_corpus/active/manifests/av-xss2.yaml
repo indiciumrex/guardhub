@@ -1,0 +1,40 @@
+target: av-xss2
+origin: http://av-xss2.lab.test
+active: true
+description: >
+  Gate M second sample (test_corpus/active/avlab/avlab.py, site_xss2): reflected XSS behind a
+  script-tag-only blocklist, a quotes-only escape, a 400 error page, JSON served as text/html, a
+  double-quoted href, an &-only escape and the second of two parameters; next to the same
+  blocklist followed by encoding, an unencoded reflection served as text/plain (nosniff), and
+  encoded attribute and textarea reflections. Ground truth: the VULN lines of avlab.py,
+  confirmed by the pinned OWASP ZAP oracle.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/find?term
+    why: "term passes a blocklist that removes script tags only; other elements are written unencoded."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/tag?label
+    why: "label has its quotes encoded but not < and >, inside page text."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/err?code
+    why: "code is written unencoded into an HTTP 400 error page."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/json-html?q
+    why: "q is written unencoded into a JSON body served as text/html."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/list?dir
+    why: "dir is written unencoded into a double-quoted href attribute."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/hello?name
+    why: "name passes a home-made escape that encodes & only."
+  - check: active_xss
+    key: reflected_xss
+    location: http://av-xss2.lab.test/page?ref
+    why: "ref is written unencoded into the page text (id, the other parameter, is validated)."

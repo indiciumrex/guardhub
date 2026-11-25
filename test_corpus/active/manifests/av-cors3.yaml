@@ -1,0 +1,21 @@
+target: av-cors3
+origin: http://av-cors3.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_cors3): an HTML export and a JSON feed (any request
+  header allowed) that echo any Origin with credentials, and an allow-list that also admits
+  null. Ground truth: the VULN lines of avlab.py, confirmed by ZAP (risk High).
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors3.lab.test/data/export
+    why: "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true (HTML)."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors3.lab.test/data/feed
+    why: "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors3.lab.test/data/stats
+    why: "The allow-list admits Origin null, granted with Access-Control-Allow-Credentials true."

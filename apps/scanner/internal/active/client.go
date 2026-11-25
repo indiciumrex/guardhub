@@ -215,8 +215,8 @@ func (c *Client) one(ctx context.Context, r Request, u *url.URL) (*Response, err
 	if c.brk.isTripped() {
 		return nil, refuse(OutcomeBreaker, ErrBreaker)
 	}
-	if !c.reserve(r.module) {
-		return nil, refuse(OutcomeBudget, ErrBudget)
+	if err := c.reserve(r.module); err != nil {
+		return nil, refuse(OutcomeBudget, err)
 	}
 	if err := c.limiter.Wait(ctx); err != nil {
 		return nil, refuse(OutcomeKilled, ErrKilled)
@@ -283,15 +283,20 @@ func (c *Client) one(ctx context.Context, r Request, u *url.URL) (*Response, err
 	return resp, nil
 }
 
-func (c *Client) reserve(module string) bool {
+// reserve counts one request against the scan's and the module's budget:
+// ErrBudget when the scan's is spent, ErrModuleBudget when only the module's is.
+func (c *Client) reserve(module string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.sent >= c.limits.ScanBudget || c.byModule[module] >= c.limits.ModuleBudget {
-		return false
+	if c.sent >= c.limits.ScanBudget {
+		return ErrBudget
+	}
+	if c.byModule[module] >= c.limits.ModuleBudget {
+		return ErrModuleBudget
 	}
 	c.sent++
 	c.byModule[module]++
-	return true
+	return nil
 }
 
 // Sent returns the number of requests that passed every fence.
