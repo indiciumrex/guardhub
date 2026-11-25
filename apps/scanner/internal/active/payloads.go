@@ -6,6 +6,11 @@ package active
 // no self-executing script, no destinations other than GuardHub's own
 // canary (.invalid, never resolvable) or OOB names, at most 256 bytes. A new
 // payload needs a second reviewer in its PR.
+//
+// {orig} (OrigPlaceholder) stands for the parameter's own value on the page,
+// so a blind condition keeps the row the page shows ("3 AND 7=7" answers like
+// "3"). Only this package fills it, from the target URL, and only with a value
+// of the payload's Anchor shape (anchor.go); anything else becomes "1".
 
 // Where a payload goes.
 const (
@@ -21,6 +26,7 @@ type Payload struct {
 	Value   string // exact bytes ({oob}: the collaborator's per-probe URL)
 	Control string // a harmless value of the same shape: a difference it also causes is no finding
 	Why     string // why it cannot harm the target
+	Anchor  string // "" or AnchorNumber/AnchorWord: what {orig} may be (anchor.go)
 }
 
 // CanaryHost never resolves (RFC 6761 .invalid): redirect and CORS probes
@@ -30,6 +36,9 @@ const CanaryHost = "gh-canary.invalid"
 // OOBPlaceholder is the whole value of an OOB payload; it is replaced by the
 // collaborator's unique URL for each probe (oob.go).
 const OOBPlaceholder = "{oob}"
+
+// OrigPlaceholder is replaced by the parameter's own value (anchor.go).
+const OrigPlaceholder = "{orig}"
 
 // Payloads is the catalogue.
 var Payloads = []Payload{
@@ -54,14 +63,14 @@ var Payloads = []Payload{
 		Why: "a single quote (error-based): reading only; the doubled quote is the same length and valid SQL",
 	},
 	{
-		ID: "sqli.bool.true", Module: "active_sqli", In: InQuery,
-		Value: `1' AND '7'='7`, Control: `1' AND '7'='8`,
-		Why: "a read-only boolean comparison; true and false variants must answer differently",
+		ID: "sqli.bool.orig", Module: "active_sqli", In: InQuery, Anchor: AnchorWord,
+		Value: `{orig}' AND '7'='7`, Control: `{orig}' AND '7'='8`,
+		Why: "a read-only boolean comparison after the page's own value (letters, digits, @ . _ - only, or 1); true and false variants must answer differently",
 	},
 	{
-		ID: "sqli.bool.num.true", Module: "active_sqli", In: InQuery,
-		Value: `1 AND 7=7`, Control: `1 AND 7=8`,
-		Why: "a read-only numeric boolean comparison",
+		ID: "sqli.bool.num.orig", Module: "active_sqli", In: InQuery, Anchor: AnchorNumber,
+		Value: `{orig} AND 7=7`, Control: `{orig} AND 7=8`,
+		Why: "a read-only numeric boolean comparison after the page's own number (digits only, or 1)",
 	},
 	{
 		ID: "redirect.canary.abs", Module: "active_redirect", In: InQuery,

@@ -36,6 +36,7 @@ type Request struct {
 	target  *url.URL
 	param   string
 	oob     string   // OOB name substituted for {oob}
+	orig    string   // the anchor substituted for {orig} (anchor.go); set by Probe
 	session *Session // nil: anonymous (session.go)
 }
 
@@ -49,7 +50,7 @@ func Baseline(module string, target *url.URL) Request {
 // that is a programming error, caught by tests.
 func Probe(module string, target *url.URL, param string, p Payload) Request {
 	mustCatalogued(module, p)
-	return Request{module: module, payload: p, target: target, param: param}
+	return Request{module: module, payload: p, target: target, param: param, orig: anchor(p.Anchor, target, param)}
 }
 
 // ControlProbe is Probe with the payload's harmless control value.
@@ -79,8 +80,12 @@ func (r Request) value() string {
 	if r.control {
 		v = r.payload.Control
 	}
-	return strings.ReplaceAll(v, OOBPlaceholder, r.oob)
+	return strings.ReplaceAll(strings.ReplaceAll(v, OOBPlaceholder, r.oob), OrigPlaceholder, r.orig)
 }
+
+// Sent is the exact value this request puts on the wire (for evidence and
+// for removing the probe's own echo from an answer).
+func (r Request) Sent() string { return r.value() }
 
 func (r Request) payloadID() string {
 	switch {
