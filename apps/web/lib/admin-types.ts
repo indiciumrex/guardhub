@@ -268,3 +268,26 @@ export interface KillState {
   scope: string;
   engaged: boolean;
 }
+
+/** GET /admin/active/owner-scan: what still blocks an owner-target active scan (ADR-0008 §8). */
+export type OwnerScanLock =
+  "approval" | "modules" | "kill_switch" | "scanner_switch" | "target" | "origin_busy";
+
+export interface OwnerScanReadiness {
+  approved: boolean;
+  modules_on: string[];
+  oob_configured: boolean;
+  kill_engaged: boolean;
+  scanner_switch: "on" | "off" | "unknown";
+  targets: { id: string; host: string; origin: string }[];
+  blocked_by: OwnerScanLock[];
+}
+
+export interface OwnerScanStarted {
+  scan_id: string;
+  consent_id: string;
+  origin: string;
+  checks: string[];
+  exclude: string[];
+  idor_accounts: boolean;
+}
