@@ -12,12 +12,12 @@ export function ErrorList({
   none: string;
 }) {
   return (
-    <ul className="gh-card divide-y divide-slate-200 text-sm dark:divide-navy-700">
+    <ul className="gh-panel divide-y divide-slate-200 text-sm dark:divide-navy-800">
       {items.length === 0 ? (
-        <li className="gh-muted p-3">{none}</li>
+        <li className="gh-muted px-5 py-3">{none}</li>
       ) : (
         items.map((e, i) => (
-          <li key={`${e.source}-${i}`} className="p-3">
+          <li key={`${e.source}-${i}`} className="px-5 py-2.5">
             <Badge tone={e.source === "module" ? "warn" : "bad"}>{e.source}</Badge>{" "}
             <span className="font-mono text-xs">{e.title}</span>
             {e.count ? <span className="gh-muted"> ×{e.count}</span> : null}

@@ -234,6 +234,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with: { name: playwright-report, path: e2e/playwright-report, retention-days: 7 }
+      # the admin console as it looks (light + dark), for design review; no data beyond the e2e
+      # account and the demo target
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: admin-screenshots, path: e2e/screenshots, retention-days: 14, if-no-files-found: ignore }
 
   # Gate M (ADR-0008 §9): the active checks, through the production active path (`scanner
   # activelab`), on DVWA, Juice Shop, WebGoat and passive targets as false-positive controls,

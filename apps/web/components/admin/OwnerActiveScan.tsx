@@ -78,10 +78,7 @@ export function OwnerActiveScan({ readiness }: { readiness: OwnerScanReadiness }
   return (
     <div className="space-y-4 text-sm">
       {blocked ? (
-        <div
-          role="status"
-          className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950"
-        >
+        <div role="status" className="gh-tone-locked rounded-lg border p-3">
           <p className="font-semibold">{t("blockedTitle")}</p>
           <ul className="mt-1 list-disc pl-5">
             {r.blocked_by.map((lock) => (

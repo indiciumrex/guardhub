@@ -987,6 +987,43 @@
       "confirm": "Bu sitenin GuardHub'a ait olduğunu ve şimdi test edilmesini onaylıyorum (yalnızca GET, saniyede 1 istek, en fazla 300 istek).",
       "start": "Aktif taramayı başlat",
       "started": "{origin} için aktif tarama sıraya alındı:"
+    },
+    "safety": {
+      "title": "Güvenlik durumu",
+      "intro": "Aktif test kilitleri, laboratuvar kapıları ve yanlış alarm oranı. Yalnızca gösterir; her kilidi API yeniden denetler.",
+      "headlineOff": "Aktif test KAPALI",
+      "headlineOn": "Aktif test AÇIK",
+      "effective": "Aktif test",
+      "effectiveDetail": "Yalnızca dört kilit de izin verdiğinde ve durdurma anahtarı serbestken açıktır.",
+      "activeOn": "Açık",
+      "activeOff": "Kapalı",
+      "kill": "Durdurma anahtarı",
+      "killEngaged": "Devrede: hepsi durdu",
+      "killReleased": "Serbest",
+      "approval": "Kurucu onayı",
+      "approved": "Onaylandı",
+      "awaitingFounder": "Kilitli: kurucu onayı bekleniyor",
+      "scannerSwitch": "Tarayıcı anahtarı",
+      "switchOn": "Açık",
+      "switchOff": "Kilitli (kapalı)",
+      "activeModules": "Aktif modüller",
+      "modulesOn": "{count, plural, =0 {Kilitli: hiçbiri açık değil} one {# açık} other {# açık}}",
+      "oob": "SSRF toplayıcısı (OOB)",
+      "oobOn": "Kurulu",
+      "oobOff": "Kurulmadı: SSRF kilitli",
+      "gateL": "Kapı L (pasif kontroller)",
+      "gateM": "Kapı M (aktif kontroller)",
+      "gateMet": "{total} kontrolden {met} tanesi kapıyı geçiyor",
+      "gateFailed": "{count, plural, one {# kontrol kapıyı geçemiyor} other {# kontrol kapıyı geçemiyor}}",
+      "gateUnmeasured": "{count, plural, one {# kontrol ölçülmedi} other {# kontrol ölçülmedi}}",
+      "prodFp": "Yanlış alarm oranı (canlı)",
+      "noTriage": "Henüz incelenmiş bulgu yok",
+      "fpDetail": "İncelenen {groups} bulgu grubundan {fp} tanesi yanlış alarm",
+      "unknown": "Bilinmiyor (kaynak alınamadı)"
+    },
+    "console": {
+      "eyebrow": "GuardHub yönetim konsolu",
+      "fullId": "Tam kimlik"
     }
   }
 }

@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ErrorList } from "@/components/admin/ErrorList";
-import { Badge, Section, pct } from "@/components/admin/Stat";
+import { HashId, PageHeader, Section, StatusBadge, pct } from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
 import type { AuditDetail, Monitoring } from "@/lib/admin-types";
@@ -42,6 +42,7 @@ export default async function AdminAuditPage({
   const t = await getTranslations("adminCenter.audit");
   const tc = await getTranslations("adminCenter.common");
   const tHealth = await getTranslations("health");
+  const tConsole = await getTranslations("adminCenter.console");
   const format = await getFormatter();
   const when = (v: string | null) =>
     v
@@ -57,16 +58,13 @@ export default async function AdminAuditPage({
     })}`;
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
-      </div>
+    <>
+      <PageHeader eyebrow={tConsole("eyebrow")} title={t("title")} intro={t("intro")} />
 
       {mon ? (
         <Section id="mon-h" title={t("monitoringHeading")}>
           <div className="grid gap-4 lg:grid-cols-3">
-            <div className="gh-card p-5 text-sm">
+            <div className="gh-panel px-5 py-4 text-sm">
               <h3 className="font-semibold">{t("system")}</h3>
               <dl className="mt-2 space-y-1">
                 <div className="flex justify-between gap-3">
@@ -96,7 +94,7 @@ export default async function AdminAuditPage({
                   mon.scanners.map((s) => (
                     <li key={s.consumer}>
                       <span className="font-mono">{s.consumer}</span> ·{" "}
-                      {s.version ? s.version.slice(0, 12) : "-"} ·{" "}
+                      <HashId value={s.version} chars={12} /> ·{" "}
                       {t("scannerLimits", {
                         rps: s.host_rps,
                         budget: s.max_requests_per_scan,
@@ -104,16 +102,16 @@ export default async function AdminAuditPage({
                       })}{" "}
                       ·{" "}
                       {s.active_enabled ? (
-                        <Badge tone="warn">{t("activeOn")}</Badge>
+                        <StatusBadge tone="warn">{t("activeOn")}</StatusBadge>
                       ) : (
-                        <Badge tone="good">{t("activeOff")}</Badge>
+                        <StatusBadge tone="locked">{t("activeOff")}</StatusBadge>
                       )}
                     </li>
                   ))
                 )}
               </ul>
             </div>
-            <div className="gh-card overflow-x-auto p-5 text-sm">
+            <div className="gh-panel overflow-x-auto px-5 py-4 text-sm">
               <h3 className="font-semibold">{t("moduleHealth")}</h3>
               <table className="gh-table mt-2">
                 <caption className="sr-only">{t("moduleHealth")}</caption>
@@ -157,7 +155,7 @@ export default async function AdminAuditPage({
       ) : null}
 
       <Section id="audit-h" title={t("logHeading")} intro={t("logIntro")}>
-        <form method="get" className="gh-card flex flex-wrap items-end gap-3 p-4 text-sm">
+        <form method="get" className="gh-panel flex flex-wrap items-end gap-3 px-5 py-4 text-sm">
           <div>
             <label htmlFor="a-action" className="gh-label">
               {t("actionFilter")}
@@ -199,8 +197,8 @@ export default async function AdminAuditPage({
             {t("clear")}
           </Link>
         </form>
-        <div className="gh-card overflow-x-auto">
-          <table className="gh-table">
+        <div className="gh-panel overflow-x-auto">
+          <table className="gh-table-admin">
             <caption className="sr-only">{t("logHeading")}</caption>
             <thead>
               <tr>
@@ -226,11 +224,15 @@ export default async function AdminAuditPage({
                     <td className="break-all text-xs">
                       {r.actor_email ?? r.actor}
                       {r.actor_email ? (
-                        <span className="gh-muted block font-mono">{r.actor}</span>
+                        <span className="gh-muted block">
+                          <HashId value={r.actor} chars={14} />
+                        </span>
                       ) : null}
                     </td>
                     <td className="font-mono text-xs">{r.action}</td>
-                    <td className="break-all font-mono text-xs">{r.target || "-"}</td>
+                    <td className="text-xs">
+                      {r.target ? <HashId value={r.target} chars={12} /> : "-"}
+                    </td>
                     <td className="text-xs">
                       {Object.keys(r.changes).length === 0 ? (
                         "-"
@@ -245,7 +247,9 @@ export default async function AdminAuditPage({
                         </dl>
                       )}
                     </td>
-                    <td className="font-mono text-xs">{r.ip_hash ?? "-"}</td>
+                    <td className="text-xs">
+                      <HashId value={r.ip_hash} />
+                    </td>
                   </tr>
                 ))
               )}
@@ -266,6 +270,6 @@ export default async function AdminAuditPage({
           ) : null}
         </nav>
       </Section>
-    </div>
+    </>
   );
 }

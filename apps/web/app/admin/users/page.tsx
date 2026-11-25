@@ -24,9 +24,9 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">{t("usersHeading")}</h1>
-      <div className="gh-card overflow-x-auto">
-        <table className="gh-table">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("usersHeading")}</h1>
+      <div className="gh-panel overflow-x-auto">
+        <table className="gh-table-admin">
           <caption className="sr-only">{t("usersHeading")}</caption>
           <thead>
             <tr>

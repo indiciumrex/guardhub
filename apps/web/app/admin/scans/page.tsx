@@ -10,7 +10,16 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { KillSwitch } from "@/components/admin/KillSwitch";
 import { OwnerActiveScan } from "@/components/admin/OwnerActiveScan";
 import { ScanActions } from "@/components/admin/ScanActions";
-import { Badge, Section, Stat } from "@/components/admin/Stat";
+import {
+  HashId,
+  KV,
+  PageHeader,
+  Panel,
+  Section,
+  Stat,
+  StatusBadge,
+  type Tone,
+} from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
 import {
@@ -26,12 +35,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("scans") };
 }
 
-const lifecycleTone: Record<Lifecycle, "good" | "warn" | "bad" | "neutral"> = {
+const lifecycleTone: Record<Lifecycle, Tone> = {
   queued: "neutral",
-  running: "neutral",
-  completed: "good",
-  failed: "bad",
-  timed_out: "bad",
+  running: "info",
+  completed: "ok",
+  failed: "crit",
+  timed_out: "crit",
   cancelled: "warn",
 };
 
@@ -60,64 +69,75 @@ export default async function ScanOrchestrationPage({
       ? format.dateTime(new Date(v), { dateStyle: "short", timeStyle: "short", timeZone: "UTC" })
       : "-";
   const a = orch.active;
-  const onOff = (v: boolean) => (v ? tc("on") : tc("off"));
+  const tConsole = await getTranslations("adminCenter.console");
+  const tSafety = await getTranslations("adminCenter.safety");
+  const lock = (on: boolean) => (
+    <StatusBadge tone={on ? "warn" : "locked"}>{on ? tc("on") : tc("off")}</StatusBadge>
+  );
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
-      </div>
+    <>
+      <PageHeader eyebrow={tConsole("eyebrow")} title={t("title")} intro={t("intro")} />
 
       <Section id="active-h" title={t("activeHeading")} intro={t("activeIntro")}>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="gh-card p-5">
-            <p className="text-lg font-semibold">
-              {t("effective")}:{" "}
-              <Badge tone={a.effective === "on" ? "warn" : "good"}>
+          <Panel
+            id="effective-h"
+            emphasis={a.effective === "on" ? "warn" : "locked"}
+            title={t("effective")}
+            actions={
+              <StatusBadge size="lg" tone={a.effective === "on" ? "warn" : "ok"}>
                 {a.effective === "on" ? tc("on") : tc("off")}
-              </Badge>
-            </p>
-            <dl className="mt-3 space-y-1 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt>{t("approved")}</dt>
-                <dd>{onOff(a.approved)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>{t("scannerSwitch")}</dt>
-                <dd>{a.scanner_switch === "unknown" ? tc("unknown") : tc(a.scanner_switch)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>{t("modulesOn")}</dt>
-                <dd>{a.modules_on.length ? a.modules_on.join(", ") : tc("none")}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>{t("oob")}</dt>
-                <dd>{onOff(a.oob_configured)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>{t("globalKill")}</dt>
-                <dd>{a.global_kill ? t("killEngaged") : t("killReleased")}</dd>
-              </div>
-            </dl>
+              </StatusBadge>
+            }
+          >
+            <KV
+              rows={[
+                { label: t("approved"), value: lock(a.approved) },
+                {
+                  label: t("scannerSwitch"),
+                  value:
+                    a.scanner_switch === "unknown" ? (
+                      <StatusBadge tone="neutral">{tc("unknown")}</StatusBadge>
+                    ) : (
+                      lock(a.scanner_switch === "on")
+                    ),
+                },
+                {
+                  label: t("modulesOn"),
+                  value: a.modules_on.length ? (
+                    <span className="font-mono text-xs">{a.modules_on.join(", ")}</span>
+                  ) : (
+                    <StatusBadge tone="locked">{tSafety("modulesOn", { count: 0 })}</StatusBadge>
+                  ),
+                },
+                { label: t("oob"), value: lock(a.oob_configured) },
+                {
+                  label: t("globalKill"),
+                  value: (
+                    <StatusBadge tone={a.global_kill ? "locked" : "neutral"}>
+                      {a.global_kill ? t("killEngaged") : t("killReleased")}
+                    </StatusBadge>
+                  ),
+                },
+              ]}
+            />
             <p className="gh-muted mt-3 text-xs">{t("effectiveRule")}</p>
-          </div>
-          <div className="gh-card p-5">
-            <h3 className="font-semibold">{t("killHeading")}</h3>
-            <p className="gh-muted mb-3 mt-1 text-xs">{t("killIntro")}</p>
+          </Panel>
+          <Panel id="kill-h" emphasis="crit" title={t("killHeading")} intro={t("killIntro")}>
             <KillSwitch engaged={a.global_kill} />
-          </div>
+          </Panel>
         </div>
-        <div className="gh-card mt-4 p-5" id="owner-scan">
-          <h3 className="font-semibold">{t("ownerHeading")}</h3>
-          <p className="gh-muted mb-3 mt-1 text-xs">{t("ownerIntro")}</p>
-          <OwnerActiveScan readiness={owner} />
+        <div id="owner-scan">
+          <Panel id="owner-h" emphasis="locked" title={t("ownerHeading")} intro={t("ownerIntro")}>
+            <OwnerActiveScan readiness={owner} />
+          </Panel>
         </div>
       </Section>
 
       <Section id="limits-h" title={t("limitsHeading")} intro={t("limitsIntro")}>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="gh-card p-5 text-sm">
+          <div className="gh-panel px-5 py-4 text-sm">
             <h3 className="font-semibold">{t("passiveLimits")}</h3>
             {orch.passive_limits ? (
               <dl className="mt-2 space-y-1">
@@ -132,7 +152,7 @@ export default async function ScanOrchestrationPage({
               <p className="gh-muted mt-2">{t("noScannerReport")}</p>
             )}
           </div>
-          <div className="gh-card p-5 text-sm">
+          <div className="gh-panel px-5 py-4 text-sm">
             <h3 className="font-semibold">{t("activeLimits")}</h3>
             <dl className="mt-2 space-y-1">
               {Object.entries(orch.active_limits).map(([k, v]) => (
@@ -143,7 +163,7 @@ export default async function ScanOrchestrationPage({
               ))}
             </dl>
           </div>
-          <div className="gh-card p-5 text-sm">
+          <div className="gh-panel px-5 py-4 text-sm">
             <h3 className="font-semibold">{t("backpressure")}</h3>
             {orch.queue.available ? (
               <dl className="mt-2 space-y-1">
@@ -182,22 +202,23 @@ export default async function ScanOrchestrationPage({
           ))}
         </dl>
         <nav aria-label={t("filterLabel")} className="flex flex-wrap gap-2 text-sm">
-          <Link href="/admin/scans" aria-current={!stage ? "page" : undefined} className="gh-link">
-            {tc("all")}
-          </Link>
-          {LIFECYCLES.map((l) => (
+          {[undefined, ...LIFECYCLES].map((l) => (
             <Link
-              key={l}
-              href={`/admin/scans?stage=${l}`}
+              key={l ?? "all"}
+              href={l ? `/admin/scans?stage=${l}` : "/admin/scans"}
               aria-current={stage === l ? "page" : undefined}
-              className={`gh-link ${stage === l ? "font-bold" : ""}`}
+              className={`inline-flex min-h-9 items-center rounded-full border px-3 font-medium ${
+                stage === l
+                  ? "border-navy-900 bg-navy-900 text-white underline underline-offset-4 dark:border-teal-300 dark:bg-teal-300 dark:text-navy-950"
+                  : "border-slate-300 hover:bg-slate-100 dark:border-navy-700 dark:hover:bg-navy-800"
+              }`}
             >
-              {tc(`lifecycle.${l}`)}
+              {l ? tc(`lifecycle.${l}`) : tc("all")}
             </Link>
           ))}
         </nav>
-        <div className="gh-card overflow-x-auto">
-          <table className="gh-table">
+        <div className="gh-panel overflow-x-auto">
+          <table className="gh-table-admin">
             <caption className="sr-only">{t("lifecycleHeading")}</caption>
             <thead>
               <tr>
@@ -220,19 +241,22 @@ export default async function ScanOrchestrationPage({
                 scans.map((s) => (
                   <tr key={s.id}>
                     <td className="align-top">
-                      <span className="break-all">{s.target_url}</span>
+                      <span className="break-all font-medium">{s.target_url}</span>
                       <span className="gh-muted block text-xs">
                         {s.project_name ?? t("anonymous")}
                         {s.owner_email ? ` · ${s.owner_email}` : ""} · {t(`trigger.${s.trigger}`)}
                       </span>
-                      <Link href={`/admin/scans/${s.id}`} className="gh-link text-xs">
-                        {t("details")}
-                      </Link>
+                      <span className="mt-1 flex items-center gap-2 text-xs">
+                        <HashId value={s.id} />
+                        <Link href={`/admin/scans/${s.id}`} className="gh-link">
+                          {t("details")}
+                        </Link>
+                      </span>
                     </td>
                     <td className="align-top">
-                      <Badge tone={lifecycleTone[s.lifecycle]}>
+                      <StatusBadge tone={lifecycleTone[s.lifecycle]}>
                         {tc(`lifecycle.${s.lifecycle}`)}
-                      </Badge>
+                      </StatusBadge>
                       {s.error && s.lifecycle === "failed" ? (
                         <span className="gh-muted block font-mono text-xs">{s.error}</span>
                       ) : null}
@@ -244,12 +268,12 @@ export default async function ScanOrchestrationPage({
                     </td>
                     <td className="align-top text-xs">
                       {s.ownership.kind === "none" ? (
-                        <Badge tone="bad">{t("proof.none")}</Badge>
+                        <StatusBadge tone="crit">{t("proof.none")}</StatusBadge>
                       ) : (
                         <>
-                          <Badge tone={s.ownership.verified_at ? "good" : "bad"}>
+                          <StatusBadge tone={s.ownership.verified_at ? "ok" : "crit"}>
                             {t(`proof.${s.ownership.kind}`)}
-                          </Badge>
+                          </StatusBadge>
                           <span className="gh-muted block">
                             {s.ownership.method ? t(`method.${s.ownership.method}`) : "-"} ·{" "}
                             {when(s.ownership.verified_at)}
@@ -301,6 +325,6 @@ export default async function ScanOrchestrationPage({
           ) : null}
         </nav>
       </Section>
-    </div>
+    </>
   );
 }

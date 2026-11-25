@@ -66,7 +66,7 @@ export function ModuleConfig({ module }: { module: CenterModule }) {
             setPlan(next);
             void save({ min_plan: next });
           }}
-          className="gh-input min-h-9 py-1"
+          className="gh-input min-h-9 w-auto min-w-28 py-1"
         >
           {PLANS.map((p) => (
             <option key={p} value={p}>

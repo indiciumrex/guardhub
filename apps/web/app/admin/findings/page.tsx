@@ -7,7 +7,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
-import { Badge, Section } from "@/components/admin/Stat";
+import { HashId, PageHeader, Section, StatusBadge } from "@/components/admin/Stat";
 import { TriageControl } from "@/components/admin/TriageControl";
 import { SeverityBadge } from "@/components/scan/SeverityBadge";
 import { serverApiFetch } from "@/lib/api-server";
@@ -46,6 +46,7 @@ export default async function AdminFindingsPage({
   const t = await getTranslations("adminCenter.findings");
   const tc = await getTranslations("adminCenter.common");
   const tSev = await getTranslations("severity");
+  const tConsole = await getTranslations("adminCenter.console");
   const format = await getFormatter();
   const when = (v: string) =>
     format.dateTime(new Date(v), { dateStyle: "short", timeStyle: "short", timeZone: "UTC" });
@@ -58,13 +59,10 @@ export default async function AdminFindingsPage({
     })}`;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
-      </div>
+    <>
+      <PageHeader eyebrow={tConsole("eyebrow")} title={t("title")} intro={t("intro")} />
 
-      <form method="get" className="gh-card flex flex-wrap items-end gap-3 p-4 text-sm">
+      <form method="get" className="gh-panel flex flex-wrap items-end gap-3 px-5 py-4 text-sm">
         <div>
           <label htmlFor="f-severity" className="gh-label">
             {t("severityFilter")}
@@ -114,8 +112,8 @@ export default async function AdminFindingsPage({
       </form>
 
       <Section id="groups-h" title={t("listHeading")} intro={t("cvssNote")}>
-        <div className="gh-card overflow-x-auto">
-          <table className="gh-table">
+        <div className="gh-panel overflow-x-auto">
+          <table className="gh-table-admin">
             <caption className="sr-only">{t("listHeading")}</caption>
             <thead>
               <tr>
@@ -140,7 +138,7 @@ export default async function AdminFindingsPage({
                       <SeverityBadge severity={g.severity} />{" "}
                       <span className="font-medium">{g.title}</span>
                       <span className="gh-muted block font-mono text-xs">
-                        {g.check_id}/{g.finding_key}
+                        {g.check_id}/{g.finding_key} · <HashId value={g.fingerprint} />
                       </span>
                       <span className="gh-muted block break-all text-xs">
                         {g.location ?? g.target_url}
@@ -151,7 +149,7 @@ export default async function AdminFindingsPage({
                       {g.classification.cvss_vector ? (
                         <span className="gh-muted block font-mono">
                           {t("cvss", { score: g.classification.cvss_score ?? 0 })}{" "}
-                          <span className="break-all">{g.classification.cvss_vector}</span>
+                          <HashId value={g.classification.cvss_vector} chars={12} />
                         </span>
                       ) : null}
                       {[...g.classification.cves, ...g.classification.advisories].length ? (
@@ -174,17 +172,17 @@ export default async function AdminFindingsPage({
                     </td>
                     <td className="align-top">
                       <p className="mb-2">
-                        <Badge
+                        <StatusBadge
                           tone={
                             g.triage === "false_positive"
                               ? "warn"
                               : g.triage === "new"
-                                ? "neutral"
-                                : "good"
+                                ? "info"
+                                : "ok"
                           }
                         >
                           {t(`triage.${g.triage}`)}
-                        </Badge>
+                        </StatusBadge>
                       </p>
                       <TriageControl group={g} />
                     </td>
@@ -207,6 +205,6 @@ export default async function AdminFindingsPage({
           ) : null}
         </nav>
       </Section>
-    </div>
+    </>
   );
 }
