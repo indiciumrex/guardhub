@@ -31,6 +31,8 @@ from guardhub_api.db.session import dispose_engine
 from guardhub_api.github.router import router as github_router
 from guardhub_api.health.router import router as health_router
 from guardhub_api.jobs.client import close_arq
+from guardhub_api.platform.router import router as config_router
+from guardhub_api.platform.router import status_router as platform_status_router
 from guardhub_api.projects.router import router as projects_router
 from guardhub_api.scans.router import public_router
 from guardhub_api.scans.router import router as scans_router
@@ -111,6 +113,8 @@ def create_app() -> FastAPI:
         scans_router,
         admin_router,
         trusted_domains_router,
+        config_router,
+        platform_status_router,
         alerts_router,
         github_router,
     ):

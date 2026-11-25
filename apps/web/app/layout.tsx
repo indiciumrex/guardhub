@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { PlatformBanner } from "@/components/layout/PlatformBanner";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BrowserErrorReporting } from "@/components/observability/BrowserErrorReporting";
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <BrowserErrorReporting environment={tracking.environment} release={tracking.release} />
         ) : null}
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
+          <PlatformBanner />
           <SiteHeader />
           <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
             {children}

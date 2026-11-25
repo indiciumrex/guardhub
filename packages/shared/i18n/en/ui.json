@@ -114,7 +114,14 @@
     "active_scan_running": "An active scan of this site is already running.",
     "idor_needs_two_accounts": "IDOR needs both test accounts, or neither.",
     "not_an_active_check": "Choose active checks only.",
-    "invalid_excluded_path": "Excluded paths start with / and carry no query."
+    "invalid_excluded_path": "Excluded paths start with / and carry no query.",
+    "maintenance": "GuardHub is in maintenance. New scans are paused for a short while.",
+    "public_scan_paused": "Scans without an account are paused for now. Please try again later.",
+    "registration_closed": "New sign-ups are closed for now. Please try again later.",
+    "setting_invalid": "That value is outside the allowed range.",
+    "setting_unknown": "This setting cannot be changed here.",
+    "setting_not_revertible": "That earlier value is no longer allowed, so it cannot be restored.",
+    "change_not_found": "This change is not in the configuration history."
   },
   "severity": {
     "critical": "Critical",
@@ -688,7 +695,8 @@
       "findings": "Findings & risk",
       "audit": "Audit & monitoring",
       "users": "Users",
-      "trustedDomains": "Trusted domains"
+      "trustedDomains": "Trusted domains",
+      "config": "Configuration"
     },
     "common": {
       "lifecycle": {
@@ -1024,6 +1032,85 @@
     "console": {
       "eyebrow": "GuardHub admin console",
       "fullId": "Full id"
+    },
+    "config": {
+      "title": "Configuration",
+      "intro": "Runtime settings, feature flags and maintenance mode. Every change is checked against fixed limits, recorded with who and why, and can be reverted.",
+      "fixedTitle": "Not editable here",
+      "fixedIntro": "These are security controls, not settings. They stay in code and in the server's environment file.",
+      "notEditable": "Locked",
+      "fixed": {
+        "activeLocks": "The four active-testing locks: founder approval, scanner switch, per-module switches (Module Center) and the kill switch.",
+        "killSwitch": "The kill switch is always available on the Scans page, whatever is set here.",
+        "ownership": "Ownership proof (§9.2) for every scan, and its timeouts.",
+        "auth": "Sign-in, two-factor and session limits.",
+        "secrets": "Secrets and keys: shown below only as configured or not set."
+      },
+      "toLocks": "Active-testing locks and kill switch →",
+      "maintenanceTitle": "Maintenance mode",
+      "maintenanceIntro": "Pauses every new scan (public, project, scheduled) and shows the message on the public site. Scans already running finish. Owner active tests are controlled by their own locks.",
+      "maintenanceOn": "Maintenance ON",
+      "maintenanceOff": "Not in maintenance",
+      "flagsTitle": "Feature flags",
+      "flagsIntro": "Switch whole features off for everyone, for example during an incident.",
+      "scansTitle": "Scans & concurrency",
+      "scansIntro": "How long a scan may run and how many scheduled scans run at once.",
+      "ratesTitle": "Rate limits",
+      "ratesIntro": "Per hour. Lower is stricter. Sign-in and two-factor limits are fixed.",
+      "propagation": "A change reaches every server process within {seconds} seconds.",
+      "envTitle": "Environment (read-only)",
+      "envIntro": "Values from the server's environment file. Secrets are never shown, only whether they are set.",
+      "envName": "Name",
+      "envValue": "Value",
+      "secretSet": "Secret configured",
+      "hiddenSet": "Set (hidden)",
+      "notSet": "Not set",
+      "historyTitle": "Change history",
+      "historyIntro": "The last 50 changes. Reverting is a new change: it is checked again and recorded.",
+      "noHistory": "No changes yet: every setting uses its default.",
+      "colWhen": "When",
+      "colWho": "Who",
+      "colSetting": "Setting",
+      "colChange": "Change",
+      "colReason": "Reason",
+      "action": {
+        "changed": "Changed",
+        "reset": "Reset to default",
+        "reverted": "Reverted"
+      },
+      "revert": "Revert",
+      "save": "Save",
+      "reason": "Reason (optional)",
+      "reasonPlaceholder": "Reason (optional, goes into the history)",
+      "resetToDefault": "Reset to default",
+      "range": "Allowed: {min} to {max}",
+      "defaultIs": "Default: {value}",
+      "defaultValue": "default",
+      "overridden": "Changed",
+      "default": "Default",
+      "changedBy": "by {who}, {when}",
+      "on": "on",
+      "off": "off",
+      "empty": "(empty)",
+      "keys": {
+        "maintenance.enabled": "Maintenance mode",
+        "maintenance.message": "Message shown on the public site",
+        "flags.public_scan": "Scans without an account",
+        "flags.registration": "New sign-ups",
+        "flags.scheduled_scans": "Scheduled scans",
+        "scan.deadline_seconds": "Scan time limit (seconds)",
+        "scheduler.batch": "Scheduled scans claimed per run",
+        "scheduler.max_inflight": "Scheduled scans running at once",
+        "rate.challenge_per_ip_hour": "Ownership challenges per address",
+        "rate.anon_scan_per_ip_hour": "Scans without an account per address",
+        "rate.anon_scan_per_target_hour": "Scans without an account per site",
+        "rate.rescan_per_project_hour": "Manual re-scans per project",
+        "rate.register_per_ip_hour": "Sign-ups per address"
+      }
     }
+  },
+  "platformBanner": {
+    "maintenance": "Maintenance: new scans are paused for a short while.",
+    "label": "Service notice"
   }
 }

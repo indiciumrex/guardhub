@@ -247,6 +247,16 @@ class AuditLog(Base):
     at: Mapped[datetime] = _now()
 
 
+class PlatformSetting(Base):
+    """An admin override of one registry tunable (platform/registry.py), migration 0019. Admin/system only."""
+
+    __tablename__ = "platform_settings"
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    value: Mapped[object] = mapped_column(JSONB)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    updated_at: Mapped[datetime] = _now()
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

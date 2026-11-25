@@ -36,6 +36,7 @@ from guardhub_api.common.request_meta import DEFAULT_LOCALE, match_locale
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import User
 from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.platform import service as platform
 
 LOGIN_WINDOW = 15 * 60
 
@@ -73,7 +74,9 @@ def full_session(user: User) -> SessionClaims:
 
 
 async def register(redis: Redis, *, email: str, password: str, locale: str, ip: str) -> User:
-    await ratelimit.enforce(redis, "register", keyed_hash(_pepper(), ip), limit=5, window=3600)
+    await platform.require_feature("flags.registration")
+    limit = await platform.int_value("rate.register_per_ip_hour")
+    await ratelimit.enforce(redis, "register", keyed_hash(_pepper(), ip), limit=limit, window=3600)
     email = email.lower()
     problem = password_problem(password, email)
     if problem:
