@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from collections.abc import AsyncIterator
 
 import httpx
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy import select
 
 from guardhub_api.db.models import AuditLog, Scan, User, Webhook, WebhookDelivery
@@ -20,6 +22,12 @@ from .conftest import new_client, signed_in
 from .test_active import make_admin
 
 HOOKS = "/api/v1/admin/webhooks"
+
+
+@pytest.fixture(autouse=True)
+async def _fresh_rate_limits(redis: Redis) -> AsyncIterator[None]:
+    """Every test registers users from the same test address: start each with fresh rate limits."""
+    yield
 
 
 async def _hook(client: httpx.AsyncClient, events: list[str]) -> tuple[str, str]:
