@@ -121,7 +121,11 @@
     "setting_invalid": "Bu değer izin verilen aralığın dışında.",
     "setting_unknown": "Bu ayar burada değiştirilemez.",
     "setting_not_revertible": "Önceki değer artık izinli değil, bu yüzden geri yüklenemez.",
-    "change_not_found": "Bu değişiklik yapılandırma geçmişinde yok."
+    "change_not_found": "Bu değişiklik yapılandırma geçmişinde yok.",
+    "alert_not_found": "Bu uyarı yok.",
+    "alert_resolved": "Bu uyarı zaten çözüldü.",
+    "alert_rule_not_found": "Bu uyarı kuralı yok.",
+    "mute_invalid": "1 saat, 4 saat ya da 24 saat susturun veya susturmayı kaldırın."
   },
   "severity": {
     "critical": "Kritik",
@@ -696,7 +700,8 @@
       "audit": "Denetim ve izleme",
       "users": "Kullanıcılar",
       "trustedDomains": "Güvenilir alan adları",
-      "config": "Yapılandırma"
+      "config": "Yapılandırma",
+      "alerts": "Uyarılar"
     },
     "common": {
       "lifecycle": {
@@ -1107,6 +1112,78 @@
         "rate_rescan_per_project_hour": "Proje başına elle yeniden tarama",
         "rate_register_per_ip_hour": "Adres başına kayıt"
       }
+    },
+    "alerts": {
+      "title": "Uyarılar",
+      "intro": "Platform için operasyonel uyarılar: kritik bulgular, başarısız taramalar, çevrimdışı tarayıcı ve API hataları. Her dakika denetlenir.",
+      "openTitle": "Açık uyarılar",
+      "openCount": "{count, plural, one {# açık uyarı} other {# açık uyarı}}",
+      "noOpen": "Açık uyarı yok",
+      "allClear": "Her şey yolunda: hiçbir kural eşiğini aşmıyor.",
+      "resolveNote": "Koşul ortadan kalkınca uyarı kendiliğinden çözülür. Koşul sürerken elle çözülen uyarı, sonraki denetimde yeniden açılır.",
+      "acknowledge": "Onayla",
+      "resolve": "Çöz",
+      "valueVsThreshold": "Şu an {value}, eşik {threshold}",
+      "openedAt": "Açıldı: {when}",
+      "lastSeen": "son görülme {when}",
+      "emailed": "E-posta gönderildi",
+      "emailFailed": "E-posta gönderilemedi",
+      "escalated": "Eskalasyon yapıldı",
+      "status": {
+        "open": "Açık",
+        "acknowledged": "Onaylandı",
+        "resolved": "Çözüldü",
+        "autoResolved": "Çözüldü (koşul kalktı)"
+      },
+      "kind": {
+        "critical_finding": "Kritik bulgular",
+        "scan_failures": "Başarısız taramalar",
+        "worker_offline": "Tarayıcı çevrimdışı",
+        "api_errors": "API hataları (5xx)"
+      },
+      "ruleHelp": {
+        "critical_finding": "Pencere içinde tüm taramalarda kaydedilen kritik bulgular.",
+        "scan_failures": "Pencere içinde başarısız olan taramalar.",
+        "worker_offline": "İş kuyruğunu okuyan bir tarayıcının olmadığı dakikalar.",
+        "api_errors": "Pencere içinde 5xx durum kodlu API yanıtları."
+      },
+      "thresholdLabel": {
+        "critical_finding": "Uyarı eşiği (bulgu)",
+        "scan_failures": "Uyarı eşiği (başarısız tarama)",
+        "worker_offline": "Uyarı süresi (dakika)",
+        "api_errors": "Uyarı eşiği (hata)"
+      },
+      "channelsTitle": "Kanallar",
+      "inAppOn": "Uygulama içi: her zaman açık",
+      "inAppDetail": "Her uyarı bu sayfaya kaydedilir.",
+      "emailOn": "E-posta: ayarlı",
+      "emailOff": "E-posta: ayarlı değil (SMTP)",
+      "recipients": "{count, plural, one {# yönetici uyarı e-postası alır} other {# yönetici uyarı e-postası alır}}",
+      "rulesTitle": "Kurallar",
+      "rulesIntro": "Her kural için eşik ve pencere. Eskalasyon, uyarıyı zamanında kimse onaylamazsa bir e-posta daha gönderir. Susturmak uyarıları kaydetmeye devam eder ama e-posta göndermez.",
+      "ruleOn": "Kural açık",
+      "ruleEnabled": "Açık",
+      "ruleDisabled": "Kapalı",
+      "windowLabel": "Pencere (dakika)",
+      "escalateLabel": "Eskalasyon süresi (dakika)",
+      "escalateOff": "kapalı",
+      "emailChannel": "Yöneticilere e-posta",
+      "saveRule": "Kuralı kaydet",
+      "muteLabel": "E-postaları sustur:",
+      "mute": {
+        "60": "1 saat",
+        "240": "4 saat",
+        "1440": "24 saat"
+      },
+      "unmute": "Susturmayı kaldır",
+      "mutedUntil": "Susturuldu: {when} tarihine kadar",
+      "recentTitle": "Son uyarılar",
+      "noRecent": "Henüz uyarı yok.",
+      "colKind": "Uyarı",
+      "colStatus": "Durum",
+      "colValue": "Değer / eşik",
+      "colOpened": "Açıldı",
+      "colClosed": "Çözüldü"
     }
   },
   "platformBanner": {

@@ -26,6 +26,7 @@ from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.jobs import client, scheduler
+from guardhub_api.opsalerts import service as ops_alerts
 
 NOTIFY_MAX_TRIES = notifier.MAX_ATTEMPTS
 NOTIFY_RETRY_BASE_SECONDS = 30
@@ -74,6 +75,11 @@ async def send_test_notification(ctx: JobContext, user_id: str, channel: str) ->
     return await notifier.send_test(uuid.UUID(user_id), channel, job_id=str(ctx.get("job_id", "")))
 
 
+async def evaluate_ops_alerts(ctx: JobContext) -> dict[str, int]:
+    """Admin operational alerts (Prompt 2 §2): one pass over every rule, every minute."""
+    return await ops_alerts.evaluate(get_redis())
+
+
 async def startup(ctx: JobContext) -> None:
     configure_logging(get_settings().log_level)
 
@@ -91,6 +97,8 @@ FUNCTIONS: list[Function] = [
 ]
 
 CRON_JOBS: list[CronJob] = [
+    # Prompt 2 §2: admin operational alerts (critical findings, scan failures, scanner, API 5xx)
+    cron(evaluate_ops_alerts, second=0, unique=True, run_at_startup=False, timeout=50),
     cron(enqueue_due_scans, minute=EVERY_5_MINUTES, second=0, unique=True, run_at_startup=False, timeout=290),
     # ADR-0003: daily background re-proof of trusted domains (suspends when the proof is gone)
     cron(

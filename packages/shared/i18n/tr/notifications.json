@@ -43,5 +43,16 @@
     "subject": "GuardHub: test bildirimi",
     "intro": "Bu bir test mesajıdır. GuardHub uyarılarınız buraya gelecek.",
     "detail": "Yalnızca bir şey değiştiğinde uyarı göndeririz: yeni sorunlar, yeniden ortaya çıkan sorunlar veya düzeltilen sorunlar."
+  },
+  "opsAlert": {
+    "kind": {
+      "critical_finding": "Kritik bulgular",
+      "scan_failures": "Başarısız taramalar",
+      "worker_offline": "Tarayıcı çevrimdışı (dakika)",
+      "api_errors": "API hataları (5xx)"
+    },
+    "subject": "[GuardHub] Uyarı: {label}",
+    "subjectEscalated": "[GuardHub] Eskalasyon, onaylanmadı: {label}",
+    "body": "{label}: {value} (eşik {threshold}). Uyarıyı yönetim konsolunda açın:"
   }
 }

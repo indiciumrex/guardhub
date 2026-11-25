@@ -12,6 +12,7 @@ const SECTIONS = [
   { href: "/admin/modules", key: "modules" },
   { href: "/admin/scans", key: "scans" },
   { href: "/admin/findings", key: "findings" },
+  { href: "/admin/alerts", key: "alerts" },
   { href: "/admin/audit", key: "audit" },
   { href: "/admin/users", key: "users" },
   { href: "/admin/trusted-domains", key: "trustedDomains" },

@@ -43,5 +43,16 @@
     "subject": "GuardHub: test notification",
     "intro": "This is a test message. Your GuardHub alerts will arrive here.",
     "detail": "We only send alerts when something changes: new issues, issues that came back, or issues that were fixed."
+  },
+  "opsAlert": {
+    "kind": {
+      "critical_finding": "Critical findings",
+      "scan_failures": "Scan failures",
+      "worker_offline": "Scanner offline (minutes)",
+      "api_errors": "API errors (5xx)"
+    },
+    "subject": "[GuardHub] Alert: {label}",
+    "subjectEscalated": "[GuardHub] Escalated, not acknowledged: {label}",
+    "body": "{label}: {value} (threshold {threshold}). Open the alert in the admin console:"
   }
 }
