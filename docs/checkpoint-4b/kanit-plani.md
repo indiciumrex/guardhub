@@ -90,5 +90,5 @@ Betik sırasıyla:
 
 Müşteri hedeflerinde aktif test için ayrıca gerekenler (her biri ayrı kurucu kararı):
 rıza metninin hukuk onayı (taslak kurucuya özel olarak iletildi; bu açık repoda değil), rıza arayüzü ve API'si, aynı origin'de
-tek aktif test kilidi, istek günlüğü 90 gün silme işi, SSRF için OOB sunucu
-(şartname ve maliyet kurucuya özel olarak iletildi).
+tek aktif test kilidi, SSRF için OOB sunucu
+(şartname ve maliyet kurucuya özel olarak iletildi). İstek günlüğü 30 gün saklanır ve günlük iş siler (kurucu kararı 2026-11-25, migration 0018).

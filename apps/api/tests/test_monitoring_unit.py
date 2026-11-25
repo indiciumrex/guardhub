@@ -161,12 +161,15 @@ def test_worker_registration() -> None:
     assert names == {client.NOTIFY_SCAN, client.NOTIFY_PAUSED, client.SEND_TEST_NOTIFICATION}
     notify = next(f for f in worker.FUNCTIONS if f.name == client.NOTIFY_SCAN)
     assert notify.max_tries == 3
-    tick, recheck = worker.CRON_JOBS
+    tick, recheck, purge = worker.CRON_JOBS
     assert tick.name == "cron:enqueue_due_scans" and tick.unique and not tick.run_at_startup
     assert tick.minute == set(range(0, 60, 5))
     # ADR-0003: trusted domains are re-proven once a day, one run across all workers/colours
     assert recheck.name == "cron:recheck_trusted_domains" and recheck.unique and not recheck.run_at_startup
     assert (recheck.hour, recheck.minute) == ({4}, {10})
+    # ADR-0008 §7: the active request log is purged after 30 days, once a day
+    assert purge.name == "cron:purge_active_request_log" and purge.unique and not purge.run_at_startup
+    assert (purge.hour, purge.minute) == ({4}, {40})
     assert worker.WorkerSettings.job_serializer is client.serialize_job or callable(
         worker.WorkerSettings.job_serializer
     )
