@@ -30,6 +30,9 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.github.router import router as github_router
 from guardhub_api.health.router import router as health_router
+from guardhub_api.integrations import traffic
+from guardhub_api.integrations.router import admin_router as integrations_admin_router
+from guardhub_api.integrations.router import router as integrations_router
 from guardhub_api.jobs.client import close_arq
 from guardhub_api.opsalerts.counters import count_5xx
 from guardhub_api.opsalerts.router import router as alerts_admin_router
@@ -100,6 +103,14 @@ def create_app() -> FastAPI:
                 raise
             if response.status_code >= 500:
                 await count_5xx(get_redis())
+            route = request.scope.get("route")
+            await traffic.record(  # endpoint traffic (Prompt 2 §4); route templates only, never raises
+                get_redis(),
+                method=request.method,
+                route=getattr(route, "path", None) or "unmatched",
+                status=response.status_code,
+                latency_ms=(time.perf_counter() - start) * 1000,
+            )
         response.headers.update(SECURITY_HEADERS)
         response.headers["X-Request-Id"] = request_id[:64]
         log.info(
@@ -127,6 +138,8 @@ def create_app() -> FastAPI:
         alerts_admin_router,
         reports_router,
         report_schedules_router,
+        integrations_admin_router,
+        integrations_router,
         platform_status_router,
         alerts_router,
         github_router,

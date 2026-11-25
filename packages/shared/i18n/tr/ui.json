@@ -128,7 +128,13 @@
     "mute_invalid": "1 saat, 4 saat ya da 24 saat susturun veya susturmayı kaldırın.",
     "report_unknown": "Bu rapor yok.",
     "report_days_invalid": "7, 30 ya da 90 gün seçin.",
-    "report_schedule_unknown": "Yalnızca haftalık ya da aylık."
+    "report_schedule_unknown": "Yalnızca haftalık ya da aylık.",
+    "api_key_expiry_invalid": "30, 90, 180 ya da 365 gün seçin.",
+    "api_key_name_invalid": "Anahtara kısa bir ad verin.",
+    "api_key_not_found": "Bu API anahtarı yok.",
+    "api_key_missing": "Bir API anahtarı gönderin.",
+    "api_key_invalid": "Bu API anahtarı bilinmiyor, süresi dolmuş ya da iptal edilmiş.",
+    "api_key_scope_missing": "Bu API anahtarının bu istek için yetkisi yok."
   },
   "severity": {
     "critical": "Kritik",
@@ -705,7 +711,8 @@
       "trustedDomains": "Güvenilir alan adları",
       "config": "Yapılandırma",
       "alerts": "Uyarılar",
-      "reports": "Raporlar"
+      "reports": "Raporlar",
+      "integrations": "API ve entegrasyonlar"
     },
     "common": {
       "lifecycle": {
@@ -1265,6 +1272,66 @@
         "monthly": "Aylık özet (ayın 1'i, 06:05 UTC)"
       },
       "lastSent": "Son gönderim: {when}"
+    },
+    "integrations": {
+      "title": "API ve entegrasyonlar",
+      "intro": "CI hattı gibi entegrasyonlar için anahtarlar ve her API ucunun trafiği.",
+      "boundaryTitle": "Bir anahtarın asla yapamayacakları",
+      "enforced": "API tarafından uygulanır",
+      "boundary": {
+        "noAdmin": "Anahtar asla oturum açmaz: yönetim konsolu ve API'si onu reddeder.",
+        "userRole": "Anahtar, sahibinin yerine müşteri rolünde çalışır; sahibi yönetici olsa bile yalnızca sahibinin kendi projelerini ve taramalarını görür.",
+        "proof": "Anahtarla başlatılan bir tarama da güncel bir sahiplik kanıtı (§9.2) ister. Aktif testler bir anahtarla asla başlatılamaz.",
+        "hashed": "Anahtarın yalnızca özeti saklanır. Anahtar yalnızca oluşturulduğu anda bir kez gösterilir.",
+        "limits": "Her anahtarın süresi dolar (en çok 365 gün), her an iptal edilebilir ve dakikada 120 istekle sınırlıdır. Oluşturma, iptal ve başlattığı her tarama denetim kaydına yazılır."
+      },
+      "howTo": "Anahtarı bearer token olarak gönderin. Bir şeyi değiştiren istekler X-GuardHub-CSRF başlığını da ister.",
+      "keysTitle": "API anahtarları",
+      "keysIntro": "Anahtar, onu oluşturan yöneticiye aittir.",
+      "createTitle": "API anahtarı oluştur",
+      "keyName": "Ad",
+      "scopesLabel": "Yetkiler",
+      "scope": {
+        "projects_read": "Projeleri okuma",
+        "scans_read": "Taramaları okuma",
+        "scans_trigger": "Tarama başlatma"
+      },
+      "expiresIn": "Geçerlilik",
+      "daysOption": "{days} gün",
+      "create": "Anahtar oluştur",
+      "secretOnce": "“{name}” anahtarı oluşturuldu. Şimdi kopyalayın: bir daha gösterilmeyecek.",
+      "secretWarning": "Entegrasyonunuzun gizli bilgi deposunda saklayın. Kaybolursa iptal edip yenisini oluşturun.",
+      "secretLabel": "Yeni API anahtarı",
+      "copy": "Kopyala",
+      "copied": "Kopyalandı",
+      "done": "Tamam",
+      "noKeys": "Henüz API anahtarı yok.",
+      "colName": "Ad ve sahip",
+      "colKey": "Anahtar",
+      "colScopes": "Yetkiler",
+      "colStatus": "Durum",
+      "colExpires": "Bitiş",
+      "colLastUsed": "Son kullanım",
+      "status": {
+        "active": "Etkin",
+        "expired": "Süresi doldu",
+        "revoked": "İptal edildi"
+      },
+      "revoke": "İptal et",
+      "revokeNamed": "{name} anahtarını iptal et",
+      "trafficTitle": "Uç trafiği",
+      "trafficIntro": "Tüm API süreçlerinden, rota başına. Rotalar kimliklerle değil, şablon olarak gösterilir.",
+      "hoursLabel": "Dönem",
+      "hours": "{hours, plural, one {# saat} other {# saat}}",
+      "noTraffic": "Bu dönemde trafik kaydı yok.",
+      "colEndpoint": "Uç",
+      "colRequests": "İstek",
+      "col4xx": "4xx",
+      "col5xx": "5xx",
+      "col429": "Hız sınırına takılan",
+      "colAvg": "Ortalama",
+      "colP95": "p95",
+      "over5s": "5 sn üstü"
     }
   },
   "platformBanner": {

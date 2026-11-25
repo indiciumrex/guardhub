@@ -14,6 +14,7 @@ const SECTIONS = [
   { href: "/admin/findings", key: "findings" },
   { href: "/admin/alerts", key: "alerts" },
   { href: "/admin/reports", key: "reports" },
+  { href: "/admin/integrations", key: "integrations" },
   { href: "/admin/audit", key: "audit" },
   { href: "/admin/users", key: "users" },
   { href: "/admin/trusted-domains", key: "trustedDomains" },
