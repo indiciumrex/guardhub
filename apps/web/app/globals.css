@@ -83,6 +83,67 @@
   @apply font-medium text-teal-800 underline underline-offset-2 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-200;
 }
 
+/* ---- Admin console design system (GUARDHUB_STANDARDS §8.3) ----
+ * One scale: 4 px spacing steps, three text sizes (xs data, sm body, xl/2xl headings).
+ * Colour carries meaning only: status tones (ok / warn / crit / info / neutral / locked) and
+ * severity; every tone is paired with an icon and text, never colour alone (WCAG 1.4.1). Light
+ * and dark follow prefers-color-scheme; each pair meets AA contrast on its surface. */
+@utility gh-panel {
+  @apply rounded-xl border border-slate-200 bg-white shadow-sm dark:border-navy-800 dark:bg-navy-900;
+}
+
+@utility gh-panel-head {
+  @apply flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-navy-800;
+}
+
+@utility gh-panel-body {
+  @apply px-5 py-4;
+}
+
+@utility gh-eyebrow {
+  @apply text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400;
+}
+
+@utility gh-kv {
+  @apply flex items-baseline justify-between gap-4 border-b border-dashed border-slate-200 py-1.5 last:border-b-0 dark:border-navy-800;
+}
+
+@utility gh-tone-ok {
+  @apply border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200;
+}
+
+@utility gh-tone-warn {
+  @apply border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200;
+}
+
+@utility gh-tone-crit {
+  @apply border-red-300 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-200;
+}
+
+@utility gh-tone-info {
+  @apply border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-200;
+}
+
+@utility gh-tone-neutral {
+  @apply border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200;
+}
+
+@utility gh-tone-locked {
+  @apply border-navy-300 bg-navy-50 text-navy-900 dark:border-navy-600 dark:bg-navy-800 dark:text-navy-100;
+}
+
+/* A technical id shortened in lists; the full value is in the tooltip (hover AND keyboard focus)
+ * and in the accessible name. */
+@utility gh-tip {
+  @apply relative cursor-help underline decoration-dotted underline-offset-2;
+
+  &:hover::after,
+  &:focus-visible::after {
+    content: attr(data-tip);
+    @apply absolute bottom-full left-0 z-20 mb-1 max-w-[min(32rem,80vw)] rounded-md bg-navy-950 px-2 py-1 font-mono text-xs break-all whitespace-normal text-white shadow-lg dark:bg-slate-100 dark:text-navy-950;
+  }
+}
+
 @utility gh-table {
   @apply w-full border-collapse text-left text-sm;
 
@@ -92,5 +153,28 @@
 
   & td {
     @apply border-b border-slate-100 px-3 py-2 align-top dark:border-navy-800;
+  }
+}
+
+/* Dense data table for the admin console: quiet header, row hover, comfortable 12 px cells. */
+@utility gh-table-admin {
+  @apply w-full border-collapse text-left text-sm;
+
+  & thead th {
+    @apply border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold tracking-wide text-slate-600 uppercase dark:border-navy-700 dark:bg-navy-950 dark:text-slate-300;
+  }
+
+  & tbody th,
+  & tbody td {
+    @apply border-b border-slate-100 px-4 py-3 align-top dark:border-navy-800;
+  }
+
+  & tbody tr:hover {
+    @apply bg-slate-50 dark:bg-navy-950/60;
+  }
+
+  & tbody tr:last-child th,
+  & tbody tr:last-child td {
+    @apply border-b-0;
   }
 }

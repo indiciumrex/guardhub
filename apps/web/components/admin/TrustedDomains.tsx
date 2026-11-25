@@ -59,7 +59,7 @@ export function AddTrustedDomainForm() {
   }
 
   return (
-    <form onSubmit={submit} className="gh-card space-y-4 p-5">
+    <form onSubmit={submit} className="gh-panel space-y-4 px-5 py-4">
       <div>
         <label htmlFor="trusted-domain-url" className="gh-label">
           {t("addLabel")}
@@ -140,7 +140,7 @@ export function TrustedDomainCard({ domain }: { domain: TrustedDomain }) {
 
   const headingId = `trusted-domain-${domain.id}`;
   return (
-    <li className="gh-card space-y-4 p-5" aria-labelledby={headingId}>
+    <li className="gh-panel space-y-4 px-5 py-4" aria-labelledby={headingId}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 id={headingId} className="text-lg font-semibold break-all">

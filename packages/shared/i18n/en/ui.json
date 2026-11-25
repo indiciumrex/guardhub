@@ -987,6 +987,43 @@
       "confirm": "I confirm this site belongs to GuardHub and should be tested now (GET only, 1 request/s, at most 300 requests).",
       "start": "Start the active scan",
       "started": "Active scan of {origin} queued:"
+    },
+    "safety": {
+      "title": "Safety status",
+      "intro": "The active-testing locks, the lab gates and the false-positive rate. Read-only; every lock is checked again by the API.",
+      "headlineOff": "Active testing OFF",
+      "headlineOn": "Active testing ON",
+      "effective": "Active testing",
+      "effectiveDetail": "On only when all four locks allow it and the kill switch is released.",
+      "activeOn": "On",
+      "activeOff": "Off",
+      "kill": "Kill switch",
+      "killEngaged": "Engaged: all stopped",
+      "killReleased": "Released",
+      "approval": "Founder approval",
+      "approved": "Approved",
+      "awaitingFounder": "Locked: awaiting founder approval",
+      "scannerSwitch": "Scanner switch",
+      "switchOn": "On",
+      "switchOff": "Locked (off)",
+      "activeModules": "Active modules",
+      "modulesOn": "{count, plural, =0 {Locked: none on} one {# on} other {# on}}",
+      "oob": "SSRF collaborator (OOB)",
+      "oobOn": "Configured",
+      "oobOff": "Not set up: SSRF locked",
+      "gateL": "Gate L (passive checks)",
+      "gateM": "Gate M (active checks)",
+      "gateMet": "{met} of {total} meet the gate",
+      "gateFailed": "{count, plural, one {# check fails the gate} other {# checks fail the gate}}",
+      "gateUnmeasured": "{count, plural, one {# check not measured} other {# checks not measured}}",
+      "prodFp": "False-positive rate (production)",
+      "noTriage": "No reviewed findings yet",
+      "fpDetail": "{fp} of {groups} reviewed finding groups marked false positive",
+      "unknown": "Unknown (source unavailable)"
+    },
+    "console": {
+      "eyebrow": "GuardHub admin console",
+      "fullId": "Full id"
     }
   }
 }

@@ -1,17 +1,29 @@
 /**
- * Admin overview (§8.3): scans, findings by severity, module success rates, system health
- * (API, database, Redis, scanner, queue), recent admin actions and recent errors.
+ * Admin overview (§8.3): the safety status first (active-testing locks, lab gates, false-positive
+ * rate), then scans, findings by severity, system health (API, database, Redis, scanner, queue),
+ * module success rates, recent admin actions and recent errors.
  * Each block loads independently, so one failing endpoint doesn't hide the others.
  */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ErrorList } from "@/components/admin/ErrorList";
-import { Badge, Section, Stat, pct } from "@/components/admin/Stat";
+import { SafetyStatus } from "@/components/admin/SafetyStatus";
+import {
+  KV,
+  PageHeader,
+  Panel,
+  Section,
+  Stat,
+  StatusBadge,
+  pct,
+  type Tone,
+} from "@/components/admin/Stat";
+import { SeverityIcon } from "@/components/scan/SeverityBadge";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
 import type { AiStatus } from "@/lib/types";
-import type { Overview } from "@/lib/admin-types";
+import type { CenterModule, ModuleStats, Orchestration, Overview } from "@/lib/admin-types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin");
@@ -24,11 +36,21 @@ function settled<T>(result: PromiseSettledResult<T>): T | null {
 
 const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
 
+function healthTone(status: string): Tone {
+  if (status === "ok" || status === "healthy") return "ok";
+  if (status === "degraded") return "warn";
+  if (status === "down" || status === "error" || status === "unhealthy") return "crit";
+  return "neutral";
+}
+
 export default async function AdminOverviewPage() {
-  const [overviewR, aiR] = await loadProtected(() =>
+  const [overviewR, aiR, orchR, modulesR, statsR] = await loadProtected(() =>
     Promise.allSettled([
       serverApiFetch<Overview>("/admin/overview"),
       serverApiFetch<AiStatus>("/admin/ai"),
+      serverApiFetch<Orchestration>("/admin/orchestration"),
+      serverApiFetch<CenterModule[]>("/admin/modules"),
+      serverApiFetch<ModuleStats[]>("/admin/modules/stats"),
     ]),
   );
   const ov = settled(overviewR);
@@ -38,6 +60,7 @@ export default async function AdminOverviewPage() {
   const tAdmin = await getTranslations("admin");
   const tHealth = await getTranslations("health");
   const tSev = await getTranslations("severity");
+  const tConsole = await getTranslations("adminCenter.console");
   const format = await getFormatter();
   const when = (v: string | null) =>
     v
@@ -47,86 +70,109 @@ export default async function AdminOverviewPage() {
   const unavailable = <p className="gh-muted text-sm">{tAdmin("unavailable")}</p>;
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-3xl font-bold">{tAdmin("title")}</h1>
-        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
-      </div>
+    <>
+      <PageHeader eyebrow={tConsole("eyebrow")} title={tAdmin("title")} intro={t("intro")} />
+
+      <SafetyStatus
+        active={settled(orchR)?.active ?? null}
+        modules={settled(modulesR)}
+        stats={settled(statsR)}
+      />
 
       {!ov ? (
         unavailable
       ) : (
         <>
-          <Section id="scans-h" title={t("scansHeading")}>
+          <Section
+            id="scans-h"
+            title={t("scansHeading")}
+            actions={
+              <Link href="/admin/scans" className="gh-link text-sm">
+                {t("toScans")}
+              </Link>
+            }
+          >
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
               <Stat label={t("total")} value={ov.scans.total} />
               <Stat label={t("last24h")} value={ov.scans.last_24h} />
               <Stat label={tc("lifecycle.queued")} value={ov.scans.queued} />
               <Stat label={tc("lifecycle.running")} value={ov.scans.running} />
-              <Stat label={tc("lifecycle.completed")} value={ov.scans.completed} />
-              <Stat label={tc("lifecycle.failed")} value={ov.scans.failed} />
-              <Stat label={tc("lifecycle.timed_out")} value={ov.scans.timed_out} />
+              <Stat label={tc("lifecycle.completed")} value={ov.scans.completed} tone="ok" />
+              <Stat
+                label={tc("lifecycle.failed")}
+                value={ov.scans.failed}
+                tone={ov.scans.failed ? "crit" : undefined}
+              />
+              <Stat
+                label={tc("lifecycle.timed_out")}
+                value={ov.scans.timed_out}
+                tone={ov.scans.timed_out ? "warn" : undefined}
+              />
               <Stat label={tc("lifecycle.cancelled")} value={ov.scans.cancelled} />
             </dl>
-            <Link href="/admin/scans" className="gh-link text-sm">
-              {t("toScans")}
-            </Link>
           </Section>
 
-          <Section id="findings-h" title={t("findingsHeading")} intro={t("findingsIntro")}>
+          <Section
+            id="findings-h"
+            title={t("findingsHeading")}
+            intro={t("findingsIntro")}
+            actions={
+              <Link href="/admin/findings" className="gh-link text-sm">
+                {t("toFindings")}
+              </Link>
+            }
+          >
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <Stat label={t("total")} value={ov.findings.total} />
               {SEVERITIES.map((s) => (
-                <Stat key={s} label={tSev(s)} value={ov.findings[s]} />
+                <div key={s} className="gh-panel px-4 py-3">
+                  <dt className="gh-eyebrow flex items-center gap-1.5">
+                    <SeverityIcon severity={s} className="h-3.5 w-3.5" />
+                    {tSev(s)}
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{ov.findings[s]}</dd>
+                </div>
               ))}
             </dl>
-            <Link href="/admin/findings" className="gh-link text-sm">
-              {t("toFindings")}
-            </Link>
           </Section>
 
           <Section id="health-h" title={t("healthHeading")}>
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="gh-card p-5">
-                <h3 className="font-semibold">{t("components")}</h3>
-                <dl className="mt-3 space-y-1 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <dt className="font-semibold">{tAdmin("overall")}</dt>
-                    <dd>{healthLabel(ov.health.status)}</dd>
-                  </div>
-                  {Object.entries(ov.health.components).map(([name, status]) => (
-                    <div key={name} className="flex justify-between gap-3">
-                      <dt>{tc.has(`component.${name}`) ? tc(`component.${name}`) : name}</dt>
-                      <dd>{healthLabel(status)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-              <div className="gh-card p-5">
-                <h3 className="font-semibold">{t("queue")}</h3>
+              <Panel
+                id="components-h"
+                title={t("components")}
+                actions={
+                  <StatusBadge tone={healthTone(ov.health.status)}>
+                    {healthLabel(ov.health.status)}
+                  </StatusBadge>
+                }
+              >
+                <KV
+                  rows={Object.entries(ov.health.components).map(([name, status]) => ({
+                    key: name,
+                    label: tc.has(`component.${name}`) ? tc(`component.${name}`) : name,
+                    value: (
+                      <StatusBadge tone={healthTone(status)}>{healthLabel(status)}</StatusBadge>
+                    ),
+                  }))}
+                />
+              </Panel>
+              <Panel id="queue-h" title={t("queue")}>
                 {ov.queue.available ? (
-                  <dl className="mt-3 space-y-1 text-sm">
-                    <div className="flex justify-between gap-3">
-                      <dt>{tc("queue.lag")}</dt>
-                      <dd className="tabular-nums">{ov.queue.lag ?? "-"}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <dt>{tc("queue.pending")}</dt>
-                      <dd className="tabular-nums">{ov.queue.pending ?? "-"}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <dt>{tc("queue.consumers")}</dt>
-                      <dd className="tabular-nums">{ov.queue.consumers ?? "-"}</dd>
-                    </div>
-                  </dl>
+                  <KV
+                    rows={[
+                      { label: tc("queue.lag"), value: ov.queue.lag ?? "-" },
+                      { label: tc("queue.pending"), value: ov.queue.pending ?? "-" },
+                      { label: tc("queue.consumers"), value: ov.queue.consumers ?? "-" },
+                    ]}
+                  />
                 ) : (
                   unavailable
                 )}
-              </div>
-              <div className="gh-card p-5">
-                <h3 className="font-semibold">{tAdmin("aiHeading")}</h3>
+              </Panel>
+              <Panel id="ai-h" title={tAdmin("aiHeading")}>
                 {ai ? (
-                  <p className="mt-3 text-sm">
+                  <p className="text-sm">
                     {ai.active
                       ? tAdmin("aiActive", { provider: ai.provider ?? "-" })
                       : tAdmin("aiNotConfigured")}
@@ -134,7 +180,7 @@ export default async function AdminOverviewPage() {
                 ) : (
                   unavailable
                 )}
-              </div>
+              </Panel>
             </div>
           </Section>
 
@@ -142,8 +188,8 @@ export default async function AdminOverviewPage() {
             {ov.modules.length === 0 ? (
               <p className="gh-muted text-sm">{t("noRuns")}</p>
             ) : (
-              <div className="gh-card overflow-x-auto">
-                <table className="gh-table">
+              <div className="gh-panel overflow-x-auto">
+                <table className="gh-table-admin">
                   <caption className="sr-only">{t("ratesHeading")}</caption>
                   <thead>
                     <tr>
@@ -162,19 +208,19 @@ export default async function AdminOverviewPage() {
                         <td className="tabular-nums">{m.runs}</td>
                         <td className="tabular-nums">{m.failed}</td>
                         <td>
-                          <Badge
+                          <StatusBadge
                             tone={
                               m.success_rate === null
                                 ? "neutral"
                                 : m.success_rate >= 0.95
-                                  ? "good"
+                                  ? "ok"
                                   : m.success_rate >= 0.8
                                     ? "warn"
-                                    : "bad"
+                                    : "crit"
                             }
                           >
                             {pct(m.success_rate)}
-                          </Badge>
+                          </StatusBadge>
                         </td>
                       </tr>
                     ))}
@@ -185,24 +231,29 @@ export default async function AdminOverviewPage() {
           </Section>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Section id="audit-h" title={t("auditHeading")}>
-              <ul className="gh-card divide-y divide-slate-200 text-sm dark:divide-navy-700">
+            <Section
+              id="audit-h"
+              title={t("auditHeading")}
+              actions={
+                <Link href="/admin/audit" className="gh-link text-sm">
+                  {t("toAudit")}
+                </Link>
+              }
+            >
+              <ul className="gh-panel divide-y divide-slate-200 text-sm dark:divide-navy-800">
                 {ov.recent_audit.length === 0 ? (
-                  <li className="gh-muted p-3">{tc("none")}</li>
+                  <li className="gh-muted px-5 py-3">{tc("none")}</li>
                 ) : (
                   ov.recent_audit.map((a) => (
-                    <li key={a.id} className="p-3">
-                      <span className="font-mono text-xs">{a.action}</span>{" "}
-                      <span className="gh-muted">
+                    <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 px-5 py-2.5">
+                      <span className="font-mono text-xs font-semibold">{a.action}</span>
+                      <span className="gh-muted text-xs">
                         {a.actor_email ?? a.actor} · {when(a.at)}
                       </span>
                     </li>
                   ))
                 )}
               </ul>
-              <Link href="/admin/audit" className="gh-link text-sm">
-                {t("toAudit")}
-              </Link>
             </Section>
             <Section id="errors-h" title={t("errorsHeading")}>
               <ErrorList
@@ -221,6 +272,6 @@ export default async function AdminOverviewPage() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

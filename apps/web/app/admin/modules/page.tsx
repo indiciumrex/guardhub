@@ -12,7 +12,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ModuleConfig } from "@/components/admin/ModuleConfig";
 import { ModuleToggle } from "@/components/admin/ModuleToggle";
-import { Badge, Section, pct } from "@/components/admin/Stat";
+import { HashId, PageHeader, Panel, Section, StatusBadge, pct } from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
 import type { AdminModule } from "@/lib/types";
@@ -33,23 +33,25 @@ export default async function ModuleCenterPage() {
   const t = await getTranslations("adminCenter.modules");
   const tc = await getTranslations("adminCenter.common");
   const byCheck = new Map(stats.map((s) => [s.check_id, s]));
-  const statusTone = { active: "good", maintenance: "warn", disabled: "neutral" } as const;
+  const statusTone = { active: "ok", maintenance: "warn", disabled: "neutral" } as const;
+  const tConsole = await getTranslations("adminCenter.console");
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="gh-muted mt-2 max-w-3xl">{t("intro")}</p>
-      </div>
+    <>
+      <PageHeader eyebrow={tConsole("eyebrow")} title={t("title")} intro={t("intro")} />
 
-      <div role="note" className="gh-card max-w-3xl border-l-4 border-l-teal-700 p-4 text-sm">
-        <p className="font-semibold">{t("ruleTitle")}</p>
-        <p className="mt-1">{t("ruleBody")}</p>
+      <div role="note">
+        <Panel emphasis="locked">
+          <p className="flex items-center gap-2 font-semibold">
+            <StatusBadge tone="locked">{t("ruleTitle")}</StatusBadge>
+          </p>
+          <p className="mt-2 max-w-3xl text-sm">{t("ruleBody")}</p>
+        </Panel>
       </div>
 
       <Section id="modules-h" title={t("tableHeading")}>
-        <div className="gh-card overflow-x-auto">
-          <table className="gh-table">
+        <div className="gh-panel overflow-x-auto">
+          <table className="gh-table-admin">
             <caption className="sr-only">{t("tableHeading")}</caption>
             <thead>
               <tr>
@@ -82,10 +84,12 @@ export default async function ModuleCenterPage() {
                       </Link>
                     </th>
                     <td className="space-y-1 align-top">
-                      <Badge tone={statusTone[m.status]}>{t(`status.${m.status}`)}</Badge>
+                      <StatusBadge tone={statusTone[m.status]}>
+                        {t(`status.${m.status}`)}
+                      </StatusBadge>
                       {m.stage === "beta" ? (
                         <span className="block">
-                          <Badge tone="warn">{t("beta")}</Badge>
+                          <StatusBadge tone="info">{t("beta")}</StatusBadge>
                         </span>
                       ) : null}
                     </td>
@@ -94,15 +98,18 @@ export default async function ModuleCenterPage() {
                         <span className="gh-muted">{t("notACheck")}</span>
                       ) : g && g.measured ? (
                         <>
-                          <Badge tone={g.meets_gate ? "good" : "bad"}>
+                          <StatusBadge tone={g.meets_gate ? "ok" : "crit"}>
                             {t(g.meets_gate ? "gateMet" : "gateNotMet", { gate: g.gate })}
-                          </Badge>
+                          </StatusBadge>
                           <span className="gh-muted mt-1 block text-xs">
-                            {t("measuredAt", { source: g.source || "-" })}
+                            {t("measuredAt", { source: "" })}
+                            <HashId value={g.source} chars={7} />
                           </span>
                         </>
                       ) : (
-                        <Badge tone="bad">{t("notMeasured", { gate: g?.gate ?? "L" })}</Badge>
+                        <StatusBadge tone="crit">
+                          {t("notMeasured", { gate: g?.gate ?? "L" })}
+                        </StatusBadge>
                       )}
                     </td>
                     <td className="align-top text-xs tabular-nums">
@@ -151,13 +158,12 @@ export default async function ModuleCenterPage() {
                     </td>
                     <td className="align-top">
                       {m.enable_blocked && !m.enabled_global ? (
-                        <p className="text-sm">
-                          <span aria-hidden="true">🔒 </span>
-                          <span className="font-semibold">{t("locked")}</span>
-                          <span className="gh-muted block text-xs">
+                        <div className="max-w-56 text-sm">
+                          <StatusBadge tone="locked">{t("locked")}</StatusBadge>
+                          <span className="mt-1 block text-xs">
                             {t(`blocked.${m.enable_blocked}`)}
                           </span>
-                        </p>
+                        </div>
                       ) : (
                         <ModuleToggle module={m as AdminModule} />
                       )}
@@ -172,6 +178,6 @@ export default async function ModuleCenterPage() {
           </table>
         </div>
       </Section>
-    </div>
+    </>
   );
 }

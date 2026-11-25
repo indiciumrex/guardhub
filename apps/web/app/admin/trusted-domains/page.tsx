@@ -27,11 +27,14 @@ export default async function TrustedDomainsPage() {
         <Link href="/admin" className="gh-link text-sm">
           {t("back")}
         </Link>
-        <h1 className="mt-2 text-3xl font-bold">{t("title")}</h1>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="gh-muted mt-2 max-w-2xl">{t("intro")}</p>
       </div>
 
-      <section aria-labelledby="rules-heading" className="gh-card max-w-2xl p-5">
+      <section
+        aria-labelledby="rules-heading"
+        className="gh-panel max-w-2xl border-l-4 border-l-navy-800 px-5 py-4 dark:border-l-teal-300"
+      >
         <h2 id="rules-heading" className="text-lg font-semibold">
           {t("rulesHeading")}
         </h2>

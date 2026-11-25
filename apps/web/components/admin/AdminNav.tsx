@@ -1,7 +1,7 @@
 "use client";
 /**
- * Admin control centre navigation (§8.3). A plain list of links; the current section carries
- * aria-current="page" and a visible underline (not colour alone).
+ * Admin control centre navigation (§8.3): section tabs. The current tab carries
+ * aria-current="page", a filled background and an underline (not colour alone).
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,16 +24,16 @@ export function AdminNav() {
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
   return (
     <nav aria-label={t("label")} className="mb-8 overflow-x-auto">
-      <ul className="flex min-w-max gap-1 border-b border-slate-200 dark:border-navy-700">
+      <ul className="flex min-w-max gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-navy-800 dark:bg-navy-900">
         {SECTIONS.map((s) => (
           <li key={s.href}>
             <Link
               href={s.href}
               aria-current={current(s.href) ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center px-3 text-sm font-semibold ${
+              className={`inline-flex min-h-10 items-center rounded-lg px-3.5 text-sm font-semibold transition-colors ${
                 current(s.href)
-                  ? "border-b-2 border-teal-700 text-teal-800 dark:border-teal-300 dark:text-teal-200"
-                  : "gh-muted hover:underline"
+                  ? "bg-navy-900 text-white underline decoration-teal-300 decoration-2 underline-offset-[6px] dark:bg-teal-300 dark:text-navy-950 dark:decoration-navy-950"
+                  : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-navy-800"
               }`}
             >
               {t(s.key)}

@@ -159,6 +159,13 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(
     page.getByText("Not configured. The core product runs fully without AI."),
   ).toBeVisible();
+  // the safety status leads the console: every active-testing lock is shown, all locked
+  const safety = page.getByRole("region", { name: "Safety status" });
+  await expect(safety).toBeVisible();
+  await expect(safety.getByText("Active testing OFF")).toBeVisible();
+  await expect(safety.getByText("Locked: awaiting founder approval")).toBeVisible();
+  await expect(safety.getByText("Gate M (active checks)")).toBeVisible();
+  await expect(page.getByText("Powered by").first()).toBeVisible(); // brand in the console, §8.1
   // the control centre's sections: users, then the Module Center
   const nav = page.getByRole("navigation", { name: "Administration sections" });
   await nav.getByRole("link", { name: "Users" }).click();
@@ -171,6 +178,9 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await nav.getByRole("link", { name: "Scans" }).click();
   await expect(page.getByRole("heading", { name: "Scan orchestration", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Active testing (Phase 4B)" })).toBeVisible();
+  // owner-target active scan: the locks are listed and the form cannot start (nothing is on)
+  await expect(page.getByText("Blocked by:")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start the active scan" })).toBeDisabled();
   await nav.getByRole("link", { name: "Findings & risk" }).click();
   await expect(page.getByRole("heading", { name: "Findings & risk", level: 1 })).toBeVisible();
   await nav.getByRole("link", { name: "Audit & monitoring" }).click();

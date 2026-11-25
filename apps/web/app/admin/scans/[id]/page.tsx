@@ -7,7 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import { ScanActions } from "@/components/admin/ScanActions";
-import { Badge, Section } from "@/components/admin/Stat";
+import { Section, StatusBadge } from "@/components/admin/Stat";
 import { SeverityBadge } from "@/components/scan/SeverityBadge";
 import { ApiError } from "@/lib/api";
 import { serverApiFetch } from "@/lib/api-server";
@@ -48,17 +48,19 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
       : "-";
 
   return (
-    <div className="space-y-8">
-      <div>
+    <>
+      <header>
         <Link href="/admin/scans" className="gh-link text-sm">
           {t("back")}
         </Link>
-        <h1 className="mt-2 break-all text-3xl font-bold">{scan.target_url}</h1>
-        <p className="gh-muted mt-1 font-mono text-xs">{scan.id}</p>
-      </div>
+        <h1 className="mt-2 break-all text-2xl font-bold tracking-tight sm:text-3xl">
+          {scan.target_url}
+        </h1>
+        <p className="gh-muted mt-1 font-mono text-xs break-all">{scan.id}</p>
+      </header>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="gh-card p-5 text-sm">
+        <div className="gh-panel px-5 py-4 text-sm">
           <dl className="space-y-1">
             <div className="flex justify-between gap-3">
               <dt>{t("colLifecycle")}</dt>
@@ -79,8 +81,14 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
             <div className="flex justify-between gap-3">
               <dt>{t("colProof")}</dt>
               <dd>
-                {t(`proof.${scan.ownership.kind}`)}
-                {scan.ownership.method ? ` · ${t(`method.${scan.ownership.method}`)}` : ""}
+                <StatusBadge
+                  tone={
+                    scan.ownership.kind !== "none" && scan.ownership.verified_at ? "ok" : "crit"
+                  }
+                >
+                  {t(`proof.${scan.ownership.kind}`)}
+                  {scan.ownership.method ? ` · ${t(`method.${scan.ownership.method}`)}` : ""}
+                </StatusBadge>
               </dd>
             </div>
             <div className="flex justify-between gap-3">
@@ -92,7 +100,7 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
             <ScanActions scan={scan} />
           </div>
         </div>
-        <div className="gh-card p-5">
+        <div className="gh-panel px-5 py-4">
           <h2 className="text-lg font-semibold">{t("riskHeading")}</h2>
           <p className="mt-2 text-4xl font-bold tabular-nums">
             {risk.score ?? "-"}
@@ -107,15 +115,15 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
           </p>
           {risk.capped_at_zero ? (
             <p className="mt-2 text-sm">
-              <Badge tone="bad">{t("cappedAtZero")}</Badge>
+              <StatusBadge tone="crit">{t("cappedAtZero")}</StatusBadge>
             </p>
           ) : null}
         </div>
       </div>
 
       <Section id="contrib-h" title={t("contributionsHeading")}>
-        <div className="gh-card overflow-x-auto">
-          <table className="gh-table">
+        <div className="gh-panel overflow-x-auto">
+          <table className="gh-table-admin">
             <caption className="sr-only">{t("contributionsHeading")}</caption>
             <thead>
               <tr>
@@ -146,9 +154,12 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
             </tbody>
           </table>
         </div>
-        <ul className="gh-card divide-y divide-slate-200 text-sm dark:divide-navy-700">
+        <ul className="gh-panel divide-y divide-slate-200 text-sm dark:divide-navy-800">
           {risk.findings.map((f, i) => (
-            <li key={`${f.check_id}-${f.finding_key}-${i}`} className="flex flex-wrap gap-2 p-3">
+            <li
+              key={`${f.check_id}-${f.finding_key}-${i}`}
+              className="flex flex-wrap gap-2 px-5 py-2.5"
+            >
               <SeverityBadge severity={f.severity} />
               <span>{f.title}</span>
               <span className="gh-muted font-mono text-xs">
@@ -158,6 +169,6 @@ export default async function AdminScanPage({ params }: { params: Promise<{ id: 
           ))}
         </ul>
       </Section>
-    </div>
+    </>
   );
 }
