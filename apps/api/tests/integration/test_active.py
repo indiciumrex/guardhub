@@ -118,9 +118,9 @@ async def test_request_log_purged_after_30_days_only(redis: Redis) -> None:
                 text(
                     "INSERT INTO active_request_log (scan_id, consent_id, at, module, payload_id, method, path,"
                     " outcome, recorded_at) VALUES (:s, :c, now(), 'active_xss', 'xss.marker.tag', 'GET', :p,"
-                    " 'sent', now() - :age)"
+                    " 'sent', :recorded)"
                 ),
-                {"s": scan_id, "c": base.consent_id, "p": path, "age": age},
+                {"s": scan_id, "c": base.consent_id, "p": path, "recorded": datetime.now(UTC) - age},
             )
     # setting the purge flag by hand does not open a DELETE: the app role has no grant, and the
     # trigger refuses rows younger than 30 days
