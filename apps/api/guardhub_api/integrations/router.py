@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Literal
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
@@ -17,7 +16,7 @@ from sqlalchemy import func, select
 
 from guardhub_api.auth.deps import AdminSession
 from guardhub_api.common import ratelimit
-from guardhub_api.common.errors import NotFoundError
+from guardhub_api.common.errors import NotFoundError, UnprocessableError
 from guardhub_api.common.redis import get_redis
 from guardhub_api.db.models import Finding, Scan
 from guardhub_api.db.session import db_session
@@ -129,7 +128,8 @@ async def revoke_key(key_id: uuid.UUID, claims: AdminSession) -> keys.KeyView:
 
 @admin_router.get("/traffic")
 async def traffic_summary(
-    claims: AdminSession,
-    hours: Literal[1, 24, 48] = Query(default=24),
+    claims: AdminSession, hours: int = Query(default=24)
 ) -> list[traffic.EndpointTraffic]:
+    if hours not in (1, 24, 48):
+        raise UnprocessableError("traffic_hours_invalid", "Choose 1, 24 or 48 hours.")
     return await traffic.summary(get_redis(), hours)
