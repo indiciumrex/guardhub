@@ -1093,19 +1093,19 @@
       "off": "off",
       "empty": "(empty)",
       "keys": {
-        "maintenance.enabled": "Maintenance mode",
-        "maintenance.message": "Message shown on the public site",
-        "flags.public_scan": "Scans without an account",
-        "flags.registration": "New sign-ups",
-        "flags.scheduled_scans": "Scheduled scans",
-        "scan.deadline_seconds": "Scan time limit (seconds)",
-        "scheduler.batch": "Scheduled scans claimed per run",
-        "scheduler.max_inflight": "Scheduled scans running at once",
-        "rate.challenge_per_ip_hour": "Ownership challenges per address",
-        "rate.anon_scan_per_ip_hour": "Scans without an account per address",
-        "rate.anon_scan_per_target_hour": "Scans without an account per site",
-        "rate.rescan_per_project_hour": "Manual re-scans per project",
-        "rate.register_per_ip_hour": "Sign-ups per address"
+        "maintenance_enabled": "Maintenance mode",
+        "maintenance_message": "Message shown on the public site",
+        "flags_public_scan": "Scans without an account",
+        "flags_registration": "New sign-ups",
+        "flags_scheduled_scans": "Scheduled scans",
+        "scan_deadline_seconds": "Scan time limit (seconds)",
+        "scheduler_batch": "Scheduled scans claimed per run",
+        "scheduler_max_inflight": "Scheduled scans running at once",
+        "rate_challenge_per_ip_hour": "Ownership challenges per address",
+        "rate_anon_scan_per_ip_hour": "Scans without an account per address",
+        "rate_anon_scan_per_target_hour": "Scans without an account per site",
+        "rate_rescan_per_project_hour": "Manual re-scans per project",
+        "rate_register_per_ip_hour": "Sign-ups per address"
       }
     }
   },

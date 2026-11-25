@@ -51,7 +51,11 @@ export default async function AdminConfigPage() {
     v
       ? format.dateTime(new Date(v), { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })
       : "-";
-  const label = (key: string) => (t.has(`keys.${key}`) ? t(`keys.${key}`) : key);
+  // message keys cannot contain dots (next-intl reads them as nesting): maintenance.enabled -> maintenance_enabled
+  const label = (key: string) => {
+    const k = `keys.${key.replace(/\./g, "_")}`;
+    return t.has(k) ? t(k) : key;
+  };
   const shown = (raw: string) => {
     if (raw === "__default__") return t("defaultValue");
     try {
