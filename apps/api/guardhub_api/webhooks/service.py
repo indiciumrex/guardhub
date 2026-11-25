@@ -20,7 +20,7 @@ from typing import Literal
 
 import httpx
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import any_, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -210,7 +210,7 @@ async def ping(claims: SessionClaims, webhook_id: uuid.UUID) -> DeliveryView:
 async def fan_out(event: Event, event_id: str) -> list[uuid.UUID]:
     """One delivery per enabled, subscribed webhook (scan events: the scan owner's webhooks only)."""
     async with db_session(DbContext.system()) as session:
-        stmt = select(Webhook.id).where(Webhook.enabled.is_(True), Webhook.events.contains([event]))
+        stmt = select(Webhook.id).where(Webhook.enabled.is_(True), any_(Webhook.events) == event)
         if event == "scan.completed":
             owner = (
                 await session.execute(select(Scan.user_id).where(Scan.id == uuid.UUID(event_id)))
