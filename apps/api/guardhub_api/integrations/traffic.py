@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import MutableMapping
+from typing import Any
 
 from pydantic import BaseModel
 from redis.asyncio import Redis
@@ -48,6 +50,26 @@ async def record(redis: Redis, *, method: str, route: str, status: int, latency_
             await pipe.execute()
     except Exception:
         log.warning("traffic_record_failed")
+
+
+def route_template(scope: MutableMapping[str, Any]) -> str:
+    """The full route template of a request (`/api/v1/scans/{scan_id}`), never the raw path.
+
+    The matched route carries its own template without the prefixes of the routers it was
+    included into, so the prefix is what remains of the real path once the concrete route path
+    (template + path parameters) is cut from its end.
+    """
+    route = scope.get("route")
+    template = getattr(route, "path", None)
+    if not isinstance(template, str):
+        return "unmatched"
+    path = str(scope.get("path", ""))
+    try:
+        concrete = str(getattr(route, "path_format", template)).format(**dict(scope.get("path_params") or {}))
+    except (KeyError, IndexError, ValueError):
+        return template
+    prefix = path[: len(path) - len(concrete)] if path.endswith(concrete) else ""
+    return f"{prefix}{template}"
 
 
 class EndpointTraffic(BaseModel):
