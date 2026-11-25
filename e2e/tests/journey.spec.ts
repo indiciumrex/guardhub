@@ -191,6 +191,44 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "IP (hash)" })).toBeVisible();
   await shoot(page, "admin-audit");
+
+  // configuration: the security controls are listed as not editable, secrets never show, and a
+  // bounded change is recorded in the history and reverted from there
+  await nav.getByRole("link", { name: "Configuration" }).click();
+  await expect(page.getByRole("heading", { name: "Configuration", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Safety status" })).toBeVisible();
+  const fixed = page.getByRole("region", { name: "Not editable here" });
+  await expect(fixed).toContainText("The four active-testing locks");
+  await expect(fixed).toContainText("Ownership proof (§9.2)");
+  await expect(page.getByRole("rowheader", { name: "jwt_secret" })).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: /jwt_secret/ }).getByText("Secret configured"),
+  ).toBeVisible();
+  const limit = page.getByLabel("Manual re-scans per project");
+  await limit.fill("8");
+  const changed = page.waitForResponse(
+    (r) => r.url().includes("/admin/config/settings/rate.rescan_per_project_hour") && r.ok(),
+  );
+  await page
+    .getByRole("listitem")
+    .filter({ has: limit })
+    .getByRole("button", { name: "Save" })
+    .click();
+  await changed;
+  const history = page.getByRole("region", { name: "Change history" });
+  await expect(history.getByRole("row", { name: /rate\.rescan_per_project_hour/ })).toContainText(
+    "default → 8",
+  );
+  await shoot(page, "admin-config");
+  const reverted = page.waitForResponse((r) => r.url().includes("/revert") && r.ok());
+  await history
+    .getByRole("row", { name: /rate\.rescan_per_project_hour/ })
+    .first()
+    .getByRole("button", { name: "Revert" })
+    .click();
+  await reverted;
+  await expect(history.getByRole("row", { name: /Reverted/ }).first()).toContainText("8 → default");
+
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,

@@ -23,6 +23,7 @@ from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import check_name, render_finding
 from guardhub_api.findings.scoring import count_by_severity, severity_rank
 from guardhub_api.modules.registry import enabled_check_ids
+from guardhub_api.platform import service as platform
 from guardhub_api.scans import queue, repository
 from guardhub_api.scans.schemas import (
     EvidenceView,
@@ -59,7 +60,8 @@ async def create_and_enqueue(
     trigger: ScanTrigger = "manual",
     repo: RepoJob | None = None,
 ) -> Scan:
-    settings = get_settings()
+    await platform.require_no_maintenance()
+    deadline = await platform.int_value("scan.deadline_seconds")
     async with db_session(ctx) as session:
         checks = await enabled_check_ids(session, "repo" if repo else "site")
         if not checks:
@@ -85,7 +87,7 @@ async def create_and_enqueue(
                 repo=repo.full_name,
                 token=repo.token,
                 checks=checks,
-                deadline_seconds=settings.scan_deadline_seconds,
+                deadline_seconds=deadline,
             )
         else:
             await queue.enqueue_scan(
@@ -93,7 +95,7 @@ async def create_and_enqueue(
                 scan_id=scan.id,
                 target=target,
                 checks=checks,
-                deadline_seconds=settings.scan_deadline_seconds,
+                deadline_seconds=deadline,
             )
     except RedisError as exc:
         log.exception("enqueue_failed", extra={"scan_id": str(scan.id)})

@@ -114,7 +114,14 @@
     "active_scan_running": "Bu sitede zaten bir aktif tarama sürüyor.",
     "idor_needs_two_accounts": "IDOR için iki test hesabının ikisi de gerekir ya da hiçbiri.",
     "not_an_active_check": "Yalnızca aktif testler seçin.",
-    "invalid_excluded_path": "Hariç tutulan yollar / ile başlar ve sorgu içermez."
+    "invalid_excluded_path": "Hariç tutulan yollar / ile başlar ve sorgu içermez.",
+    "maintenance": "GuardHub bakımda. Yeni taramalar kısa bir süre için durduruldu.",
+    "public_scan_paused": "Hesapsız taramalar şimdilik durduruldu. Lütfen daha sonra tekrar deneyin.",
+    "registration_closed": "Yeni kayıtlar şimdilik kapalı. Lütfen daha sonra tekrar deneyin.",
+    "setting_invalid": "Bu değer izin verilen aralığın dışında.",
+    "setting_unknown": "Bu ayar burada değiştirilemez.",
+    "setting_not_revertible": "Önceki değer artık izinli değil, bu yüzden geri yüklenemez.",
+    "change_not_found": "Bu değişiklik yapılandırma geçmişinde yok."
   },
   "severity": {
     "critical": "Kritik",
@@ -688,7 +695,8 @@
       "findings": "Bulgular ve risk",
       "audit": "Denetim ve izleme",
       "users": "Kullanıcılar",
-      "trustedDomains": "Güvenilir alan adları"
+      "trustedDomains": "Güvenilir alan adları",
+      "config": "Yapılandırma"
     },
     "common": {
       "lifecycle": {
@@ -1024,6 +1032,85 @@
     "console": {
       "eyebrow": "GuardHub yönetim konsolu",
       "fullId": "Tam kimlik"
+    },
+    "config": {
+      "title": "Yapılandırma",
+      "intro": "Çalışma zamanı ayarları, özellik bayrakları ve bakım modu. Her değişiklik sabit sınırlara göre denetlenir, kimin ve neden yaptığıyla kaydedilir ve geri alınabilir.",
+      "fixedTitle": "Burada değiştirilemez",
+      "fixedIntro": "Bunlar ayar değil, güvenlik kontrolleridir. Kodda ve sunucunun ortam dosyasında kalırlar.",
+      "notEditable": "Kilitli",
+      "fixed": {
+        "activeLocks": "Dört aktif test kilidi: kurucu onayı, tarayıcı anahtarı, modül anahtarları (Modül Merkezi) ve durdurma anahtarı.",
+        "killSwitch": "Durdurma anahtarı, burada ne ayarlanırsa ayarlansın Taramalar sayfasında her zaman kullanılabilir.",
+        "ownership": "Her taramada sahiplik kanıtı (§9.2) ve zaman aşımları.",
+        "auth": "Giriş, iki adımlı doğrulama ve oturum sınırları.",
+        "secrets": "Gizli bilgiler ve anahtarlar: aşağıda yalnızca ayarlı ya da ayarsız olarak gösterilir."
+      },
+      "toLocks": "Aktif test kilitleri ve durdurma anahtarı →",
+      "maintenanceTitle": "Bakım modu",
+      "maintenanceIntro": "Tüm yeni taramaları (herkese açık, proje, zamanlanmış) durdurur ve mesajı herkese açık sitede gösterir. Çalışan taramalar tamamlanır. Sahip aktif testleri kendi kilitleriyle yönetilir.",
+      "maintenanceOn": "Bakım AÇIK",
+      "maintenanceOff": "Bakımda değil",
+      "flagsTitle": "Özellik bayrakları",
+      "flagsIntro": "Bir özelliği herkes için kapatın, örneğin bir olay sırasında.",
+      "scansTitle": "Taramalar ve eşzamanlılık",
+      "scansIntro": "Bir taramanın ne kadar sürebileceği ve aynı anda kaç zamanlanmış tarama çalışacağı.",
+      "ratesTitle": "Hız sınırları",
+      "ratesIntro": "Saat başına. Düşük değer daha sıkıdır. Giriş ve iki adımlı doğrulama sınırları sabittir.",
+      "propagation": "Bir değişiklik {seconds} saniye içinde tüm sunucu süreçlerine ulaşır.",
+      "envTitle": "Ortam (salt okunur)",
+      "envIntro": "Sunucunun ortam dosyasındaki değerler. Gizli bilgiler asla gösterilmez, yalnızca ayarlı olup olmadıkları.",
+      "envName": "Ad",
+      "envValue": "Değer",
+      "secretSet": "Gizli bilgi ayarlı",
+      "hiddenSet": "Ayarlı (gizli)",
+      "notSet": "Ayarlı değil",
+      "historyTitle": "Değişiklik geçmişi",
+      "historyIntro": "Son 50 değişiklik. Geri almak yeni bir değişikliktir: yeniden denetlenir ve kaydedilir.",
+      "noHistory": "Henüz değişiklik yok: tüm ayarlar varsayılan değerinde.",
+      "colWhen": "Ne zaman",
+      "colWho": "Kim",
+      "colSetting": "Ayar",
+      "colChange": "Değişiklik",
+      "colReason": "Gerekçe",
+      "action": {
+        "changed": "Değiştirildi",
+        "reset": "Varsayılana döndürüldü",
+        "reverted": "Geri alındı"
+      },
+      "revert": "Geri al",
+      "save": "Kaydet",
+      "reason": "Gerekçe (isteğe bağlı)",
+      "reasonPlaceholder": "Gerekçe (isteğe bağlı, geçmişe yazılır)",
+      "resetToDefault": "Varsayılana döndür",
+      "range": "İzin verilen: {min} ile {max} arası",
+      "defaultIs": "Varsayılan: {value}",
+      "defaultValue": "varsayılan",
+      "overridden": "Değiştirildi",
+      "default": "Varsayılan",
+      "changedBy": "{who}, {when}",
+      "on": "açık",
+      "off": "kapalı",
+      "empty": "(boş)",
+      "keys": {
+        "maintenance_enabled": "Bakım modu",
+        "maintenance_message": "Herkese açık sitede gösterilen mesaj",
+        "flags_public_scan": "Hesapsız taramalar",
+        "flags_registration": "Yeni kayıtlar",
+        "flags_scheduled_scans": "Zamanlanmış taramalar",
+        "scan_deadline_seconds": "Tarama süre sınırı (saniye)",
+        "scheduler_batch": "Çalışma başına alınan zamanlanmış tarama",
+        "scheduler_max_inflight": "Aynı anda çalışan zamanlanmış tarama",
+        "rate_challenge_per_ip_hour": "Adres başına sahiplik doğrulaması",
+        "rate_anon_scan_per_ip_hour": "Adres başına hesapsız tarama",
+        "rate_anon_scan_per_target_hour": "Site başına hesapsız tarama",
+        "rate_rescan_per_project_hour": "Proje başına elle yeniden tarama",
+        "rate_register_per_ip_hour": "Adres başına kayıt"
+      }
     }
+  },
+  "platformBanner": {
+    "maintenance": "Bakım: yeni taramalar kısa bir süre için durduruldu.",
+    "label": "Hizmet bildirimi"
   }
 }

@@ -29,9 +29,9 @@ from guardhub_api.common.errors import (
     ServiceUnavailableError,
     UnprocessableError,
 )
-from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.jobs import client as jobs
+from guardhub_api.platform import service as platform
 from guardhub_api.projects import repository as project_repo
 from guardhub_api.projects.scanning import start_project_scan
 from guardhub_api.projects.schedule import next_run_after
@@ -73,11 +73,14 @@ def proof_is_gone(error: UnprocessableError) -> bool:
 
 
 async def claim_due(now: datetime, report: SchedulerReport) -> list[uuid.UUID]:
-    settings = get_settings()
     claimed: list[uuid.UUID] = []
+    if await platform.flag("maintenance.enabled") or not await platform.flag("flags.scheduled_scans"):
+        return claimed  # paused by an admin: due projects stay due and run once it is lifted
+    max_inflight = await platform.int_value("scheduler.max_inflight")
+    batch = await platform.int_value("scheduler.batch")
     async with db_session(DbContext.system()) as session:
-        room = max(0, settings.scheduler_max_inflight - await scan_repo.count_inflight_scheduled(session))
-        for project in await project_repo.lock_due(session, now, settings.scheduler_batch):
+        room = max(0, max_inflight - await scan_repo.count_inflight_scheduled(session))
+        for project in await project_repo.lock_due(session, now, batch):
             assert project.next_scan_at is not None
             if await scan_repo.has_active(session, project.id):
                 project.next_scan_at = next_run_after(project.next_scan_at, project.scan_frequency, now)

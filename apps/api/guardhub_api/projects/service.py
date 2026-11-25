@@ -27,6 +27,7 @@ from guardhub_api.common.urls import normalize_origin
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Project, Scan
 from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.platform import service as platform
 from guardhub_api.projects import repository, schedule
 from guardhub_api.projects.scanning import record_proof, start_project_scan
 from guardhub_api.projects.schemas import ProjectView
@@ -169,7 +170,8 @@ async def verify_project(redis: Redis, claims: SessionClaims, project_id: uuid.U
 
 
 async def rescan(redis: Redis, claims: SessionClaims, project_id: uuid.UUID) -> ScanSummary:
-    await ratelimit.enforce(redis, "rescan", str(project_id), limit=10, window=3600)
+    limit = await platform.int_value("rate.rescan_per_project_hour")
+    await ratelimit.enforce(redis, "rescan", str(project_id), limit=limit, window=3600)
     async with db_session(_ctx(claims)) as session:
         await _get_owned(session, project_id, claims.user_id)
     scan = await start_project_scan(

@@ -291,3 +291,48 @@ export interface OwnerScanStarted {
   exclude: string[];
   idor_accounts: boolean;
 }
+
+// ---- configuration & feature flags (GET /admin/config, Prompt 2 §1) ----
+
+export type SettingValue = number | boolean | string;
+
+export interface ConfigSetting {
+  key: string;
+  group: "maintenance" | "flags" | "scans" | "concurrency" | "rate_limits";
+  kind: "int" | "bool" | "text";
+  value: SettingValue;
+  default: SettingValue;
+  overridden: boolean;
+  minimum: number | null;
+  maximum: number | null;
+  max_length: number | null;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+export interface ConfigEnv {
+  name: string;
+  kind: "value" | "secret" | "hidden";
+  configured: boolean;
+  value: string | null;
+}
+
+export interface ConfigChange {
+  id: number;
+  at: string;
+  action: "config.changed" | "config.reset" | "config.reverted";
+  actor: string;
+  actor_email: string | null;
+  key: string;
+  old: string;
+  new: string;
+  reason: string;
+  revertible: boolean;
+}
+
+export interface ConfigView {
+  settings: ConfigSetting[];
+  environment: ConfigEnv[];
+  history: ConfigChange[];
+  cache_seconds: number;
+}

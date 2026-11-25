@@ -20,6 +20,7 @@ from guardhub_api.common.urls import normalize_origin
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import TargetVerification
 from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.platform import service as platform
 from guardhub_api.projects import repository as project_repo
 from guardhub_api.projects.verification import (
     VerificationInstructions,
@@ -52,7 +53,10 @@ def _pepper() -> str:
 async def create_challenge(redis: Redis, *, target_url: str, ip: str) -> ChallengeView:
     settings = get_settings()
     ip_hash = keyed_hash(_pepper(), ip)
-    await ratelimit.enforce(redis, "challenge-ip", ip_hash, limit=10, window=3600)
+    await platform.require_no_maintenance()
+    await platform.require_feature("flags.public_scan")
+    limit = await platform.int_value("rate.challenge_per_ip_hour")
+    await ratelimit.enforce(redis, "challenge-ip", ip_hash, limit=limit, window=3600)
     origin = normalize_origin(target_url, allow_private_hosts=settings.private_host_allowlist)
     token = new_token()
     async with db_session(DbContext.system()) as session:
@@ -82,8 +86,14 @@ async def verify_and_scan(redis: Redis, *, challenge_id: uuid.UUID, ip: str) -> 
         if challenge is None or challenge.user_id is not None or challenge.expires_at < datetime.now(UTC):
             raise NotFoundError("challenge_not_found", "This verification has expired. Start again.")
         origin, token = challenge.target_origin, challenge.token
-    await ratelimit.enforce(redis, "anon-scan-ip", ip_hash, limit=5, window=3600)
-    await ratelimit.enforce(redis, "anon-scan-target", keyed_hash(_pepper(), origin), limit=5, window=3600)
+    await platform.require_no_maintenance()
+    await platform.require_feature("flags.public_scan")
+    per_ip = await platform.int_value("rate.anon_scan_per_ip_hour")
+    per_target = await platform.int_value("rate.anon_scan_per_target_hour")
+    await ratelimit.enforce(redis, "anon-scan-ip", ip_hash, limit=per_ip, window=3600)
+    await ratelimit.enforce(
+        redis, "anon-scan-target", keyed_hash(_pepper(), origin), limit=per_target, window=3600
+    )
 
     # Ownership is re-proven for every anonymous scan: the proof must be live right now.
     method = await prove_ownership(redis, origin=origin, token=token)

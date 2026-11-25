@@ -15,6 +15,7 @@ const SECTIONS = [
   { href: "/admin/audit", key: "audit" },
   { href: "/admin/users", key: "users" },
   { href: "/admin/trusted-domains", key: "trustedDomains" },
+  { href: "/admin/config", key: "config" },
 ] as const;
 
 export function AdminNav() {

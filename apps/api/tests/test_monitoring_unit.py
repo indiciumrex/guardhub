@@ -15,6 +15,7 @@ from guardhub_api.common.errors import UnprocessableError
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Scan
 from guardhub_api.jobs import client, scheduler, worker
+from guardhub_api.platform import service as platform_service
 from guardhub_api.scans import compare
 
 NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
@@ -46,6 +47,12 @@ def fake_db(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
         return int(state["inflight"])  # type: ignore[call-overload]
 
     monkeypatch.setattr(scheduler, "db_session", fake_session)
+
+    async def no_overrides() -> dict[str, object]:
+        return {}
+
+    monkeypatch.setattr(platform_service, "_load_overrides", no_overrides)  # defaults: today's behaviour
+    platform_service.clear_cache()
     monkeypatch.setattr(scheduler.project_repo, "lock_due", lock_due)
     monkeypatch.setattr(scheduler.scan_repo, "has_active", has_active)
     monkeypatch.setattr(scheduler.scan_repo, "count_inflight_scheduled", inflight)

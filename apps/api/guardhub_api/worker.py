@@ -25,6 +25,7 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.session import DbContext, db_session, dispose_engine
 from guardhub_api.health import service as health
 from guardhub_api.jobs.client import close_arq
+from guardhub_api.platform.registry import SCAN_DEADLINE_MAX
 from guardhub_api.scans import repository as scan_repo
 from guardhub_api.scans.ingest import decode_payload, handle_event
 from guardhub_api.scans.queue import API_GROUP, EVENTS_STREAM
@@ -93,7 +94,9 @@ async def consume_once(redis: Redis, consumer: str, block_ms: int = 5000) -> int
 
 async def reap_stuck_scans() -> int:
     """Fail scans that outlived their deadline (e.g. scanner crashed) so users never wait forever."""
-    cutoff = datetime.now(UTC) - timedelta(seconds=get_settings().scan_deadline_seconds) - REAPER_GRACE
+    # The longest deadline an admin can set (platform registry), so a scan started under a longer
+    # setting is never failed early after the setting is lowered.
+    cutoff = datetime.now(UTC) - timedelta(seconds=SCAN_DEADLINE_MAX) - REAPER_GRACE
     async with db_session(DbContext.system()) as session:
         count = await scan_repo.fail_stuck(session, cutoff, datetime.now(UTC))
     if count:
