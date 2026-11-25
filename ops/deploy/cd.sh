@@ -233,7 +233,8 @@ g_selfscan() { # F: GuardHub scans its own site with the new scanner; critical/h
   local v=$1 token saved rc=0
   token=ghv_cd_$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
   saved=$(mktemp); cp -p "$SELFVERIFY" "$saved" 2>/dev/null || : >"$saved"
-  install -m 644 /dev/stdin "$SELFVERIFY" <<<"$token"
+  # added as one more line: tokens already published (admin trusted domains, ADR-0003) stay valid
+  { cat "$saved"; echo "$token"; } | install -m 644 /dev/stdin "$SELFVERIFY"
   docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges:true \
     "guardhub-scanner:$v" selfscan "$PUBLIC" "$token" || rc=$?
   install -m 644 "$saved" "$SELFVERIFY"; rm -f "$saved"

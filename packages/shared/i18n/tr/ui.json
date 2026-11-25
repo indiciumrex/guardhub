@@ -105,7 +105,16 @@
     "finding_not_found": "Bu bulgu artık yok.",
     "invalid_plan": "Planlardan birini seçin.",
     "active_testing_not_approved": "Aktif testler kurucunun kontrol noktasına kadar kapalı kalır.",
-    "module_not_measured": "Bu kontrolün kapıyı geçen bir laboratuvar ölçümü henüz yok."
+    "module_not_measured": "Bu kontrolün kapıyı geçen bir laboratuvar ölçümü henüz yok.",
+    "active_module_off": "Seçilen aktif testlerden biri kapalı ya da bakımda.",
+    "oob_not_configured": "SSRF için bant dışı toplayıcı gerekir; henüz kurulmadı.",
+    "active_killed": "Aktif test durdurma anahtarı açık.",
+    "scanner_active_disabled": "Aktif testi açık çalışan bir tarayıcı yok.",
+    "trusted_domain_not_active": "Kanıtlanmış (etkin) ve GuardHub'a ait bir alan adı seçin.",
+    "active_scan_running": "Bu sitede zaten bir aktif tarama sürüyor.",
+    "idor_needs_two_accounts": "IDOR için iki test hesabının ikisi de gerekir ya da hiçbiri.",
+    "not_an_active_check": "Yalnızca aktif testler seçin.",
+    "invalid_excluded_path": "Hariç tutulan yollar / ile başlar ve sorgu içermez."
   },
   "severity": {
     "critical": "Kritik",
@@ -883,7 +892,9 @@
       "countCol": "Bulgu",
       "weightCol": "Her biri",
       "pointsCol": "Düşülen",
-      "result": "Sonuç"
+      "result": "Sonuç",
+      "ownerHeading": "GuardHub'a ait bir sitede aktif tarama",
+      "ownerIntro": "Yalnızca GuardHub'ın sahip olduğu ve kanıtladığı alan adları (yönetici güvenilir alan adları); sahiplik tarama başlarken yeniden kanıtlanır. Müşteri siteleri burada seçilemez."
     },
     "findings": {
       "title": "Bulgular ve risk",
@@ -950,6 +961,32 @@
       "colIp": "IP (özet)",
       "ipNote": "IP adresleri asla saklanmaz: kayıt anahtarlı bir özet tutar; böylece aynı adres, açığa çıkmadan tanınabilir.",
       "pagination": "Sayfalar"
+    },
+    "ownerScan": {
+      "blockedTitle": "Engelleyenler:",
+      "lock": {
+        "approval": "Kurucu onayı (ACTIVE_TESTING_APPROVED) verilmedi.",
+        "modules": "Açık bir aktif modül yok.",
+        "kill_switch": "Durdurma anahtarı açık.",
+        "scanner_switch": "Aktif testi açık çalışan bir tarayıcı yok.",
+        "target": "GuardHub'a ait kanıtlanmış bir alan adı (yönetici güvenilir alan adı) yok.",
+        "origin_busy": "Bu sitede zaten bir aktif tarama sürüyor."
+      },
+      "ready": "Tüm kilitler sahip-hedef aktif taramaya izin veriyor.",
+      "target": "Site",
+      "noTargets": "Henüz GuardHub'a ait kanıtlanmış bir alan adı yok.",
+      "checks": "Aktif testler",
+      "moduleOff": "kapalı",
+      "needsOob": "bant dışı toplayıcı gerekir",
+      "exclude": "Hariç tutulan yollar (her satıra bir tane)",
+      "excludeHint": "Hiçbir yazımıyla istenmez. Yönetim alanını ve API'yi hariç tutun.",
+      "accounts": "IDOR için iki test hesabı (isteğe bağlı)",
+      "accountsHint": "Bu sitede açtığınız iki test hesabının oturum çerezleri; yalnızca bu tarama için kullanılır, saklanmaz. Verilmezse IDOR atlanır.",
+      "cookie": "{name} hesabı: Cookie başlığı",
+      "marker": "{name} hesabı: yalnızca bu hesabın verisinde görünen metin (ör. e-postası)",
+      "confirm": "Bu sitenin GuardHub'a ait olduğunu ve şimdi test edilmesini onaylıyorum (yalnızca GET, saniyede 1 istek, en fazla 300 istek).",
+      "start": "Aktif taramayı başlat",
+      "started": "{origin} için aktif tarama sıraya alındı:"
     }
   }
 }

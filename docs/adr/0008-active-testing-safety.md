@@ -170,6 +170,28 @@ Turning any of it on for a real or external target is the founder's decision, af
    text;
 3. the OOB collaborator infrastructure (domain, DNS, server), if SSRF is wanted.
 
+**Owner targets (founder, 2026-11-25).** The live proof (item 1) passed on guardhub.dev
+(2026-11-25 11:27Z, `docs/checkpoint-4b/kanit-plani.md`). The founder then allowed preparing
+active scans of **GuardHub-owned** sites only: XSS, SQLi, open redirect, CORS and IDOR; SSRF stays
+off until the OOB collaborator exists; customer targets stay off until the ToS, the consent UI and
+OOB. The path is `POST /admin/active/owner-scan` (admin + MFA; `apps/api/guardhub_api/active/owner_scan.py`,
+form on the admin Scans page). It queues an `active_scan` job only when every lock allows it,
+checked on each request in this order:
+
+1. founder approval (`ACTIVE_TESTING_APPROVED`);
+2. each requested module switched on and not in maintenance; `active_ssrf` also needs a scanner
+   reporting an OOB collaborator;
+3. the kill switch released (unreadable = engaged);
+4. a scanner reporting `SCANNER_ACTIVE_ENABLED=true` (the scanner refuses the job anyway when off);
+5. the target is an `active` admin trusted domain (ADR-0003); the scanner proves ownership again
+   at scan start with its token;
+6. one active scan per origin (a Redis lock released when the scan ends, expiring after 16 min).
+
+The admin's go is recorded as an `active_consents` row (`owner-internal-v1` + the SHA-256 of the
+fixed owner statement) and audited (`active.scan.started`). IDOR test-account cookies go only to a
+one-time Redis key the scanner reads and deletes (15 min TTL); they are never stored, logged,
+audited or returned. All four switches ship off; this path changes none of them.
+
 ### 9. Accuracy (Gate M)
 
 Each active module follows ADR-0007's method:

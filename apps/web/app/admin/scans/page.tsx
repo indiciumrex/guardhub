@@ -8,11 +8,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { KillSwitch } from "@/components/admin/KillSwitch";
+import { OwnerActiveScan } from "@/components/admin/OwnerActiveScan";
 import { ScanActions } from "@/components/admin/ScanActions";
 import { Badge, Section, Stat } from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
-import { LIFECYCLES, type AdminScan, type Lifecycle, type Orchestration } from "@/lib/admin-types";
+import {
+  LIFECYCLES,
+  type AdminScan,
+  type Lifecycle,
+  type Orchestration,
+  type OwnerScanReadiness,
+} from "@/lib/admin-types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("adminCenter.nav");
@@ -36,12 +43,13 @@ export default async function ScanOrchestrationPage({
   const sp = await searchParams;
   const stage = LIFECYCLES.includes(sp.stage as Lifecycle) ? (sp.stage as Lifecycle) : undefined;
   const page = Math.max(0, Number.parseInt(sp.page ?? "0", 10) || 0);
-  const [orch, scans] = await loadProtected(() =>
+  const [orch, scans, owner] = await loadProtected(() =>
     Promise.all([
       serverApiFetch<Orchestration>("/admin/orchestration"),
       serverApiFetch<AdminScan[]>("/admin/scans/detailed", {
         query: { stage, limit: 50, offset: page * 50 },
       }),
+      serverApiFetch<OwnerScanReadiness>("/admin/active/owner-scan"),
     ]),
   );
   const t = await getTranslations("adminCenter.scans");
@@ -99,6 +107,11 @@ export default async function ScanOrchestrationPage({
             <p className="gh-muted mb-3 mt-1 text-xs">{t("killIntro")}</p>
             <KillSwitch engaged={a.global_kill} />
           </div>
+        </div>
+        <div className="gh-card mt-4 p-5" id="owner-scan">
+          <h3 className="font-semibold">{t("ownerHeading")}</h3>
+          <p className="gh-muted mb-3 mt-1 text-xs">{t("ownerIntro")}</p>
+          <OwnerActiveScan readiness={owner} />
         </div>
       </Section>
 

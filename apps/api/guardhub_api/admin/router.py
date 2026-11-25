@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
+from guardhub_api.active import owner_scan
 from guardhub_api.active.kill import KillState
 from guardhub_api.admin import center, service
 from guardhub_api.ai.provider import AIStatus
@@ -82,6 +83,20 @@ async def active_kill_state(claims: AdminSession, scan_id: uuid.UUID | None = No
 async def active_kill(body: ActiveKillRequest, claims: AdminSession) -> KillState:
     """The active-test kill switch (ADR-0008 §3): stops every active request within ~1 s."""
     return await service.set_active_kill(claims, engaged=body.engaged, scan_id=body.scan_id)
+
+
+@router.get("/active/owner-scan")
+async def owner_scan_readiness(claims: AdminSession) -> owner_scan.OwnerScanReadiness:
+    """What still blocks an active scan of a GuardHub-owned target (the four locks + a target)."""
+    return await owner_scan.readiness(claims, get_redis())
+
+
+@router.post("/active/owner-scan", status_code=202)
+async def start_owner_scan(
+    body: owner_scan.OwnerScanRequest, claims: AdminSession
+) -> owner_scan.OwnerScanStarted:
+    """Active checks on an admin trusted domain (owned, proven), only when every lock allows it."""
+    return await owner_scan.start(claims, get_redis(), body)
 
 
 @router.get("/ai")

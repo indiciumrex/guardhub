@@ -34,7 +34,8 @@ PROOF_LOG=/var/log/nginx/guardhub-active-proof.log
 color=$(cat "$ROOT/state/active_color")
 scanner="guardhub-$color-scanner-1"
 image=$(docker inspect -f '{{.Config.Image}}' "$scanner")
-token=$(tr -d '[:space:]' <"$ROOT/selfverify/guardhub-verify.txt") # public: nginx serves it
+# public (nginx serves it); one token per line: the first is the self-verify token
+token=$(grep -m1 -v '^[[:space:]]*$' "$ROOT/selfverify/guardhub-verify.txt" | tr -d '[:space:]')
 out="$ROOT/proof/$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$out"
 chmod 700 "$ROOT/proof"

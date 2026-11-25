@@ -23,11 +23,12 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from guardhub_api.active import log as active_log
+from guardhub_api.active import owner_scan
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Evidence, Finding, Scan
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import text_key
-from guardhub_api.findings.contract_gen import CHECK_FINDING_KEYS, RawFinding
+from guardhub_api.findings.contract_gen import ACTIVE_CHECK_IDS, CHECK_FINDING_KEYS, RawFinding
 from guardhub_api.findings.scoring import compute_score
 from guardhub_api.health import counters
 from guardhub_api.jobs import client as jobs
@@ -151,11 +152,13 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         await _store_request_log(scan_id, event)
         return
     notify = False
+    active_origin: str | None = None
     async with db_session(DbContext.system()) as session:
         scan = await repository.get(session, scan_id, for_update=True)
         if scan is None:
             log.warning("event_for_unknown_scan", extra={"scan_id": str(scan_id)})
             return
+        active_origin = _ended_active_origin(scan, kind)
         if scan.status == "cancelled":
             # an admin cancelled it (admin control centre): later scanner events never reopen it
             log.info("event_for_cancelled_scan", extra={"scan_id": str(scan_id), "type": str(kind)})
@@ -177,10 +180,20 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
             notify = scan.project_id is not None
         else:
             log.warning("unknown_event_type", extra={"type": str(kind)})
+    if active_origin is not None:
+        # an owner-target active scan ended: its origin may be tested again (owner_scan.py)
+        await owner_scan.release_origin_lock(redis, active_origin, scan_id)
     if notify:
         # After the commit, so the job always sees the finished scan. If this raises, the event
         # stays pending and is retried (see above).
         await jobs.enqueue_notify_scan(scan_id)
+
+
+def _ended_active_origin(scan: Scan, kind: object) -> str | None:
+    """The origin of an active scan this event ends (its one-per-origin lock is then released)."""
+    if kind in ("scan.completed", "scan.failed") and any(c in ACTIVE_CHECK_IDS for c in scan.checks):
+        return scan.target_url
+    return None
 
 
 async def _apply_completed(session: AsyncSession, scan: Scan, event: dict[str, Any], at: datetime) -> None:

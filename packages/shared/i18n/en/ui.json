@@ -105,7 +105,16 @@
     "finding_not_found": "That finding no longer exists.",
     "invalid_plan": "Choose one of the plans.",
     "active_testing_not_approved": "Active tests stay off until the founder's checkpoint.",
-    "module_not_measured": "This check has no lab measurement that meets the gate yet."
+    "module_not_measured": "This check has no lab measurement that meets the gate yet.",
+    "active_module_off": "One of the chosen active checks is switched off or in maintenance.",
+    "oob_not_configured": "SSRF needs the out-of-band collaborator, which is not set up yet.",
+    "active_killed": "The active-test kill switch is engaged.",
+    "scanner_active_disabled": "No scanner runs with active testing switched on.",
+    "trusted_domain_not_active": "Choose a proven (active) GuardHub-owned domain.",
+    "active_scan_running": "An active scan of this site is already running.",
+    "idor_needs_two_accounts": "IDOR needs both test accounts, or neither.",
+    "not_an_active_check": "Choose active checks only.",
+    "invalid_excluded_path": "Excluded paths start with / and carry no query."
   },
   "severity": {
     "critical": "Critical",
@@ -883,7 +892,9 @@
       "countCol": "Findings",
       "weightCol": "Points each",
       "pointsCol": "Points off",
-      "result": "Result"
+      "result": "Result",
+      "ownerHeading": "Active scan of a GuardHub-owned site",
+      "ownerIntro": "Only domains GuardHub owns and has proven (admin trusted domains); ownership is proven again when the scan starts. Customer sites cannot be chosen here."
     },
     "findings": {
       "title": "Findings & risk",
@@ -950,6 +961,32 @@
       "colIp": "IP (hash)",
       "ipNote": "IP addresses are never stored: the log keeps a keyed hash, so the same address can be recognised without being revealed.",
       "pagination": "Pages"
+    },
+    "ownerScan": {
+      "blockedTitle": "Blocked by:",
+      "lock": {
+        "approval": "Founder approval (ACTIVE_TESTING_APPROVED) is not set.",
+        "modules": "No active module is switched on.",
+        "kill_switch": "The kill switch is engaged.",
+        "scanner_switch": "No scanner runs with active testing switched on.",
+        "target": "No proven GuardHub-owned domain (admin trusted domain).",
+        "origin_busy": "An active scan of this site is already running."
+      },
+      "ready": "Every lock allows an owner-target active scan.",
+      "target": "Site",
+      "noTargets": "No proven GuardHub-owned domain yet.",
+      "checks": "Active checks",
+      "moduleOff": "switched off",
+      "needsOob": "needs the OOB collaborator",
+      "exclude": "Excluded paths (one per line)",
+      "excludeHint": "Never requested, in any spelling. Keep the admin area and the API excluded.",
+      "accounts": "Two test accounts for IDOR (optional)",
+      "accountsHint": "Session cookies of two test accounts you created on this site, used for this scan only and never stored. Without them IDOR is skipped.",
+      "cookie": "Account {name}: Cookie header",
+      "marker": "Account {name}: text only this account's data shows (e.g. its e-mail)",
+      "confirm": "I confirm this site belongs to GuardHub and should be tested now (GET only, 1 request/s, at most 300 requests).",
+      "start": "Start the active scan",
+      "started": "Active scan of {origin} queued:"
     }
   }
 }

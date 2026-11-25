@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithIntl } from "@/test/render-with-intl";
-import type { AdminScan, CenterModule, FindingGroup } from "@/lib/admin-types";
+import type { AdminScan, CenterModule, FindingGroup, OwnerScanReadiness } from "@/lib/admin-types";
 import { KillSwitch } from "./KillSwitch";
 import { ModuleConfig } from "./ModuleConfig";
+import { OwnerActiveScan } from "./OwnerActiveScan";
 import { ScanActions } from "./ScanActions";
 import { TriageControl } from "./TriageControl";
 
@@ -160,5 +161,74 @@ describe("ModuleConfig", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(sent(0)).toMatchObject({ method: "PATCH", body: { maintenance: true } });
     expect(sent(0).url).toContain("/admin/modules/info_leak/config");
+  });
+});
+
+describe("OwnerActiveScan", () => {
+  const ready: OwnerScanReadiness = {
+    approved: true,
+    modules_on: ["active_xss", "active_sqli", "active_redirect", "active_cors", "active_idor"],
+    oob_configured: false,
+    kill_engaged: false,
+    scanner_switch: "on",
+    targets: [
+      {
+        id: "4f1c2b8e-1d2a-4b3c-8d4e-5f6a7b8c9d0e",
+        host: "guardhub.dev",
+        origin: "https://guardhub.dev",
+      },
+    ],
+    blocked_by: [],
+  };
+
+  it("lists every lock and cannot start while one blocks it", () => {
+    renderWithIntl(
+      <OwnerActiveScan
+        readiness={{ ...ready, approved: false, blocked_by: ["approval", "kill_switch"] }}
+      />,
+    );
+    expect(screen.getByText(/Founder approval/)).toBeTruthy();
+    expect(screen.getByText("The kill switch is engaged.")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm this site belongs to GuardHub/ }),
+    );
+    expect(screen.getByRole("button", { name: "Start the active scan" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
+  it("keeps SSRF unavailable without OOB and sends the five checks after confirmation", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(202, {
+        scan_id: "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a",
+        consent_id: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        origin: "https://guardhub.dev",
+        checks: [],
+        exclude: [],
+        idor_accounts: false,
+      }),
+    );
+    renderWithIntl(<OwnerActiveScan readiness={ready} />);
+    expect(screen.getByRole("checkbox", { name: /active_ssrf/ })).toHaveProperty("disabled", true);
+    const start = screen.getByRole("button", { name: "Start the active scan" });
+    expect(start).toHaveProperty("disabled", true); // not confirmed yet
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm this site belongs to GuardHub/ }),
+    );
+    fireEvent.click(start);
+    await waitFor(() =>
+      expect(screen.getByText(/Active scan of https:\/\/guardhub.dev queued/)).toBeTruthy(),
+    );
+    const req = sent(0);
+    expect(req.url).toContain("/admin/active/owner-scan");
+    expect(req.method).toBe("POST");
+    expect(req.body).toMatchObject({
+      trusted_domain_id: "4f1c2b8e-1d2a-4b3c-8d4e-5f6a7b8c9d0e",
+      checks: ["active_xss", "active_sqli", "active_redirect", "active_cors", "active_idor"],
+      exclude: ["/admin", "/api"],
+      account_a: null,
+      account_b: null,
+    });
   });
 });
