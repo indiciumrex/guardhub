@@ -1,7 +1,10 @@
 # Kapsam koruyucu (scope guard) + durdurma anahtarı (kill switch) canlı kanıt planı
 
-> **Durum: hazır, ÇALIŞTIRILMADI.** Kurucu "git" demeden hiçbir aktif istek gerçek bir hedefe
-> gitmez. "git" sonrası tek adım: §4'teki komut.
+> **Durum: ÇALIŞTIRILDI ve GEÇTİ (2026-11-25 11:27Z, kurucu onayıyla, yalnızca guardhub.dev).**
+> 34 kapsam denemesi ağa çıkmadan reddedildi; 8 istek gönderildi, nginx 8 gördü (hepsi GET,
+> en az 999 ms arayla, hariç yol yok); durdurma görüldükten sonra son istek 949 ms; genel
+> durdurma önceden kuruluyken 0 istek. Kanıt sunucuda: `/opt/guardhub/proof/20261125T112726Z/`.
+> İlk deneme (11:26Z) rapor dosyası yazılamadığı için (izin hatası, betik düzeltildi) sayılmadı.
 
 ## 1. Neyi kanıtlıyoruz (ADR-0008 §8.1)
 
