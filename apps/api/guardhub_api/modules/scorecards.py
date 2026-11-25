@@ -6,9 +6,9 @@
 
 Both files are generated in CI and committed only when they match a CI measurement (never edited
 by hand). The API image carries copies next to packages/shared (apps/api/Dockerfile). The ON
-switch itself is still decided by modules/accuracy.py (packages/shared/accuracy.json) and, for
-active checks, by the founder's checkpoint; this module only explains the numbers. It fails soft:
-a missing or unreadable file means "not measured".
+switch is decided by modules/accuracy.py: Gate L for passive checks, and this Gate M scorecard for
+active checks (plus the founder's checkpoint). A missing or unreadable file means "not measured",
+so an active check cannot be switched on without it.
 """
 
 from __future__ import annotations
