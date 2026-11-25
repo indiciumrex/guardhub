@@ -201,3 +201,39 @@ func TestSSRFNeedsCollaborator(t *testing.T) {
 		t.Fatalf("SSRF must be silent without a collaborator: %+v", fs)
 	}
 }
+
+// CORS: a foreign or null origin granted with credentials, where "credentials" means exactly
+// "true" (Fetch's CORS check is byte for byte; browsers refuse "True"), never "*".
+func TestCORSCredentialsMustBeExactlyTrue(t *testing.T) {
+	echo := func(acac string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			if o := r.Header.Get("Origin"); o != "" {
+				w.Header().Set("Access-Control-Allow-Origin", o)
+				w.Header().Set("Access-Control-Allow-Credentials", acac)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<a href="/api/true?v=1">a</a><a href="/api/upper?v=1">b</a><a href="/api/false?v=1">c</a><a href="/api/star?v=1">d</a>`))
+	})
+	mux.HandleFunc("/api/true", echo("true"))
+	mux.HandleFunc("/api/upper", echo("True"))
+	mux.HandleFunc("/api/false", echo("false"))
+	mux.HandleFunc("/api/star", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	fs, err := CORS{}.Run(context.Background(), newEnv(t, srv))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fs) != 1 || fs[0].Evidence.Location != srv.URL+"/api/true" {
+		t.Fatalf("want exactly /api/true, got %+v", fs)
+	}
+}

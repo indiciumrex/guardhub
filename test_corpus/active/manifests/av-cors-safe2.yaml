@@ -1,0 +1,11 @@
+target: av-cors-safe2
+origin: http://av-cors-safe2.lab.test
+active: true
+description: >
+  False-positive control, second sample (avlab.py, site_cors_safe2): an echo with
+  Access-Control-Allow-Credentials "True" (the Fetch standard compares it byte for byte, so a
+  browser refuses the credentialed read), "*" with credentials (refused by browsers), an
+  allow-list of the site's own subdomains checked on the parsed host, and an echo with
+  credentials "false". None grants a foreign origin a credentialed read.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect: []

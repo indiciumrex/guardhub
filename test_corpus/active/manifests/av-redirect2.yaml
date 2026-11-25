@@ -1,0 +1,40 @@
+target: av-redirect2
+origin: http://av-redirect2.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_redirect2): open redirects with 301, 307 and 303, a
+  redirect_uri that refuses only javascript:, a returnTo after signing off, a filter that strips
+  a leading http:// or https:// once (so //host/ passes) and a Refresh header written as
+  0;URL='...'; next to a fixed destination table, destinations the site signed (HMAC), an
+  interstitial page that only shows the link, and a redirect that ignores its parameter. Ground
+  truth: the VULN lines of avlab.py, confirmed by ZAP.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/r301?u
+    why: "u goes into Location (301) unchecked."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/r307?return
+    why: "return goes into Location (307) unchecked."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/r303?continue
+    why: "continue goes into Location (303) unchecked."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/auth/callback?redirect_uri
+    why: "redirect_uri goes into Location; only javascript: is refused."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/bye?returnTo
+    why: "returnTo goes into Location unchecked."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/r?next
+    why: "next loses a leading http:// or https:// once; //other-host/ is not touched (protocol-relative)."
+  - check: active_redirect
+    key: open_redirect
+    location: http://av-redirect2.lab.test/to?url
+    why: "url goes into the Refresh header (0;URL='...') unchecked."

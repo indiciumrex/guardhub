@@ -1,0 +1,22 @@
+target: av-cors2
+origin: http://av-cors2.lab.test
+active: true
+description: >
+  Gate M second sample (avlab.py, site_cors2): an Origin echoed with credentials (with
+  framework-style Allow-Methods), the same on an endpoint that answers 401 without a session,
+  and the null origin trusted with credentials. Ground truth: the VULN lines of avlab.py,
+  confirmed by ZAP (risk High).
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors2.lab.test/v1/profile
+    why: "Access-Control-Allow-Origin echoes any Origin, with Access-Control-Allow-Credentials true."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors2.lab.test/v1/notifications
+    why: "Any Origin is echoed with Access-Control-Allow-Credentials true, on a 401 answer."
+  - check: active_cors
+    key: cors_origin_reflected
+    location: http://av-cors2.lab.test/v1/tokens
+    why: "Origin null is granted with Access-Control-Allow-Credentials true."

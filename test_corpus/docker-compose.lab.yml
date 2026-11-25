@@ -353,7 +353,9 @@ services:
     command: ["python3", "-I", "/app/avlab.py", "80"]
     read_only: true
     volumes: [./active/avlab:/app:ro]
-    networks: { lab: { aliases: [av-xss.lab.test, av-sqli.lab.test, av-redirect.lab.test, av-cors.lab.test, av-cors-safe.lab.test, av-ssrf.lab.test, av-idor.lab.test, av-clean.lab.test] } }
+    networks: { lab: { aliases: [av-xss.lab.test, av-sqli.lab.test, av-redirect.lab.test, av-cors.lab.test, av-cors-safe.lab.test, av-ssrf.lab.test, av-idor.lab.test, av-clean.lab.test,
+      av-xss2.lab.test, av-sqli2.lab.test, av-redirect2.lab.test, av-cors2.lab.test, av-cors3.lab.test,
+      av-cors-safe2.lab.test, av-ssrf2.lab.test, av-idor2.lab.test] } }
   redis: # kill-switch keys for the activeproof step (ADR-0008 §3); nothing else uses it
     image: redis:7.4.6-alpine@sha256:3b73847e72874be07e6657b129a94761662b79bc0f679273757d4218573b2a98
     command: ["redis-server", "--save", "", "--appendonly", "no"]

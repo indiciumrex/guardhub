@@ -1,0 +1,34 @@
+target: av-idor2
+origin: http://av-idor2.lab.test
+active: true
+sessions: av-idor-session.json # the av-idor accounts (login-avidor.sh); avlab keeps one session table
+description: >
+  Gate M second sample (avlab.py, site_idor2), logged in as the av-idor lab accounts (the
+  same server-side sessions): objects any signed-in account reads by a JSON path id, a UUID, a
+  number, a 24-hex key and a ref; next to an owner-checked card that answers 404, a public
+  document, an inbox that ignores its id, an owner-checked report that answers 200 with a
+  refusal, and a folder shared by both accounts. Ground truth: the VULN lines of avlab.py.
+  OWASP ZAP has no IDOR rule: the manifest is the only truth for active_idor; ZAP still
+  confirms no other check fires here.
+checks: [active_xss, active_sqli, active_redirect, active_cors, active_ssrf, active_idor]
+expect:
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor2.lab.test/api/orders/5001
+    why: "/api/orders/<id> returns any order as JSON to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor2.lab.test/download
+    why: "/download?doc_id=<uuid> returns any document to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor2.lab.test/address
+    why: "/address?addr_no= returns any address to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor2.lab.test/statement
+    why: "/statement?account_key= returns any statement to any signed-in account (no owner check)."
+  - check: active_idor
+    key: idor_cross_account_read
+    location: http://av-idor2.lab.test/ticket
+    why: "/ticket?ref= returns any ticket to any signed-in account (no owner check)."
