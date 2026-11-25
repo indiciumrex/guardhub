@@ -43,4 +43,32 @@ The data lives in hourly Redis hashes kept for 48 h, and recording never raises.
 shows the last 1, 24 or 48 hours with the average latency and an approximate p95 (the upper
 bound of the histogram bucket).
 
-Signed webhooks follow in their own PR.
+## Signed webhooks
+
+An admin adds an HTTPS endpoint (name, address, events). The signing secret is `whsec_...`,
+shown once and stored AES-GCM encrypted. Its AAD is the webhook id, and it is re-encrypted by
+`ops/rotate_encryption_key`. Migration 0023.
+
+- **Events.**
+  - `scan.completed`: only for scans owned by the webhook's owner.
+  - `ops_alert.opened`.
+  - `ping`: the admin's "Send test".
+- **Payload.** Ids, status and counts only. The delivery history keeps the status, attempts,
+  HTTP status, error and a SHA-256 of the body, never the body.
+- **Signature.** `X-GuardHub-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, "<t>.<body>")>`.
+  Receivers check v1 and that t is within 5 minutes.
+- **Retries.** Up to 3 attempts with backoff for network errors, 429 and 5xx. Never for a 4xx or
+  a refused address.
+
+### SSRF guards (api-jobs can reach the internet; the host is shared)
+
+- **Address rules.** `https://` only, port 443, a host name. No IP literals, no user info, no
+  `localhost`, `.local`, `.internal` or `.lan` names.
+- **Resolution.** At delivery time every resolved address must be globally routable. Private,
+  loopback, link-local (cloud metadata), CGNAT, unique-local, multicast and IPv4-mapped private
+  addresses are all refused. One private answer blocks the whole name.
+- **Pinned address.** The request goes to the checked address. The name is used only for TLS SNI,
+  the certificate check and the Host header, so DNS cannot change between the check and the
+  connection.
+- **No redirects.** Redirects are never followed, no proxy settings from the environment are
+  used, there is a 10 s timeout, and the response body is not read.

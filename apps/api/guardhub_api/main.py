@@ -43,6 +43,7 @@ from guardhub_api.reports.router import router as reports_router
 from guardhub_api.reports.router import schedules_router as report_schedules_router
 from guardhub_api.scans.router import public_router
 from guardhub_api.scans.router import router as scans_router
+from guardhub_api.webhooks.router import router as webhooks_router
 
 log = logging.getLogger("guardhub.http")
 
@@ -140,6 +141,7 @@ def create_app() -> FastAPI:
         report_schedules_router,
         integrations_admin_router,
         integrations_router,
+        webhooks_router,
         platform_status_router,
         alerts_router,
         github_router,

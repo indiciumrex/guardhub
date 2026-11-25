@@ -320,6 +320,38 @@ class ApiKey(Base):
     revoked_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
 
+class Webhook(Base):
+    """A signed outgoing webhook (migration 0023). Admin/system only."""
+
+    __tablename__ = "webhooks"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str] = mapped_column(Text)
+    url: Mapped[str] = mapped_column(Text)
+    events: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    secret_enc: Mapped[str] = mapped_column(Text)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = _now()
+    updated_at: Mapped[datetime] = _now()
+
+
+class WebhookDelivery(Base):
+    """One delivery of one event to one webhook (migration 0023): status only, never the payload."""
+
+    __tablename__ = "webhook_deliveries"
+    id: Mapped[uuid.UUID] = _pk()
+    webhook_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("webhooks.id"))
+    event: Mapped[str] = mapped_column(Text)
+    event_id: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String, default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    http_status: Mapped[int | None] = mapped_column(Integer)
+    error: Mapped[str | None] = mapped_column(Text)
+    payload_sha256: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now()
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

@@ -37,6 +37,7 @@ from guardhub_api.common.errors import NotFoundError, UnprocessableError
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import Finding, OpsAlert, OpsAlertRule, Scan, User
 from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.jobs import client as jobs
 from guardhub_api.opsalerts.counters import errors_in_window
 from guardhub_api.scans.queue import scanner_alive
 
@@ -108,19 +109,27 @@ async def evaluate(redis: Redis, now: datetime | None = None) -> dict[str, int]:
     async with db_session(DbContext.system()) as session:
         rules = (await session.execute(select(OpsAlertRule))).scalars().all()
     mails: list[Mail] = []
+    opened: list[uuid.UUID] = []
     for rule in rules:
         try:
             value = await _measure(redis, rule, now)
         except Exception:  # one broken measurement must not stop the other rules
             log.exception("ops_alert_measure_failed", extra={"kind": rule.kind})
             continue
-        mails += await _apply(rule, value, now, report)
+        mails += await _apply(rule, value, now, report, opened)
     for mail in mails:
         report["mails"] += await _send(mail)
+    for alert_id in opened:  # signed webhooks (Prompt 2 section 4); never blocks the alerts themselves
+        try:
+            await jobs.enqueue_webhook_fanout("ops_alert.opened", str(alert_id))
+        except Exception:
+            log.exception("ops_alert_webhook_enqueue_failed")
     return report
 
 
-async def _apply(rule: OpsAlertRule, value: int, now: datetime, report: dict[str, int]) -> list[Mail]:
+async def _apply(
+    rule: OpsAlertRule, value: int, now: datetime, report: dict[str, int], opened: list[uuid.UUID]
+) -> list[Mail]:
     breach = rule.enabled and value >= rule.threshold
     mails: list[Mail] = []
     async with db_session(DbContext.system()) as session:
@@ -156,6 +165,7 @@ async def _apply(rule: OpsAlertRule, value: int, now: datetime, report: dict[str
             session.add(current)
             await session.flush()
             report["opened"] += 1
+            opened.append(current.id)
             await audit.record(
                 session,
                 actor="system:ops-alerts",

@@ -187,6 +187,7 @@ async def handle_event(redis: Redis, event: dict[str, Any]) -> None:
         # After the commit, so the job always sees the finished scan. If this raises, the event
         # stays pending and is retried (see above).
         await jobs.enqueue_notify_scan(scan_id)
+        await jobs.enqueue_webhook_fanout("scan.completed", str(scan_id))  # owner's webhooks only
 
 
 def _ended_active_origin(scan: Scan, kind: object) -> str | None:

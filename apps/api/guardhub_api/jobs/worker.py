@@ -28,6 +28,7 @@ from guardhub_api.db.session import dispose_engine
 from guardhub_api.jobs import client, scheduler
 from guardhub_api.opsalerts import service as ops_alerts
 from guardhub_api.reports import service as reports
+from guardhub_api.webhooks import service as webhooks
 
 NOTIFY_MAX_TRIES = notifier.MAX_ATTEMPTS
 NOTIFY_RETRY_BASE_SECONDS = 30
@@ -86,6 +87,21 @@ async def send_scheduled_reports(ctx: JobContext) -> dict[str, int]:
     return await reports.send_scheduled()
 
 
+async def webhook_fanout(ctx: JobContext, event: str, event_id: str) -> int:
+    """Signed webhooks (Prompt 2 section 4): one delivery per subscribed webhook, then queue each."""
+    created = await webhooks.fan_out(event, event_id)  # type: ignore[arg-type]
+    for delivery_id in created:
+        await client.enqueue_webhook_delivery(delivery_id)
+    return len(created)
+
+
+async def deliver_webhook(ctx: JobContext, delivery_id: str) -> str:
+    outcome = await webhooks.deliver(uuid.UUID(delivery_id), final_try=_final_try(ctx))
+    if outcome == "retry":
+        raise _retry(ctx)
+    return outcome
+
+
 async def startup(ctx: JobContext) -> None:
     configure_logging(get_settings().log_level)
 
@@ -100,6 +116,8 @@ FUNCTIONS: list[Function] = [
     func(notify_scan, max_tries=NOTIFY_MAX_TRIES, timeout=120),
     func(notify_paused, max_tries=NOTIFY_MAX_TRIES, timeout=120),
     func(send_test_notification, max_tries=1, timeout=60),
+    func(webhook_fanout, max_tries=3, timeout=60),
+    func(deliver_webhook, max_tries=NOTIFY_MAX_TRIES, timeout=60),
 ]
 
 CRON_JOBS: list[CronJob] = [

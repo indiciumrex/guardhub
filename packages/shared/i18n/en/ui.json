@@ -134,7 +134,11 @@
     "api_key_not_found": "This API key does not exist.",
     "api_key_missing": "Send an API key.",
     "api_key_invalid": "This API key is unknown, expired or revoked.",
-    "api_key_scope_missing": "This API key does not have the scope for this request."
+    "api_key_scope_missing": "This API key does not have the scope for this request.",
+    "webhook_url_invalid": "Use a public https:// address on port 443 (no IP address, no internal name).",
+    "webhook_name_invalid": "Give the webhook a short name.",
+    "webhook_not_found": "This webhook does not exist.",
+    "webhook_disabled": "Switch the webhook on first."
   },
   "severity": {
     "critical": "Critical",
@@ -1283,7 +1287,8 @@
         "userRole": "A key acts as its owner in the customer role, so it sees the owner's own projects and scans only, even when the owner is an admin.",
         "proof": "A scan started with a key still needs a fresh ownership proof (§9.2). Active tests can never be started with a key.",
         "hashed": "Only a hash of the key is stored. The key is shown once, when it is created.",
-        "limits": "Every key expires (at most 365 days), can be revoked at any time and is limited to 120 requests a minute. Creation, revocation and every scan it starts are audited."
+        "limits": "Every key expires (at most 365 days), can be revoked at any time and is limited to 120 requests a minute. Creation, revocation and every scan it starts are audited.",
+        "webhooks": "Webhooks go only to public https:// addresses on port 443: every address the name resolves to is checked, the request goes to the checked address and redirects are never followed. Scan events go only to the scan owner's webhooks."
       },
       "howTo": "Send the key as a bearer token. Requests that change something also need the X-GuardHub-CSRF header.",
       "keysTitle": "API keys",
@@ -1332,6 +1337,47 @@
       "colAvg": "Average",
       "colP95": "p95",
       "over5s": "over 5 s"
+    },
+    "webhooks": {
+      "title": "Webhooks",
+      "intro": "Signed HTTPS calls when something happens. Every request carries an X-GuardHub-Signature header.",
+      "createTitle": "Add a webhook",
+      "name": "Name",
+      "url": "Address",
+      "urlHelp": "https:// only, port 443, a public host name.",
+      "eventsLabel": "Events",
+      "event": {
+        "scan_completed": "Scan completed (your own scans)",
+        "ops_alert_opened": "Operational alert opened",
+        "ping": "Test ping"
+      },
+      "create": "Add webhook",
+      "secretOnce": "Webhook “{name}” added. Copy its signing secret now: it will not be shown again.",
+      "secretHelp": "Use it to verify the X-GuardHub-Signature header on every request.",
+      "secretLabel": "Signing secret",
+      "done": "Done",
+      "none": "No webhooks yet.",
+      "on": "On",
+      "off": "Off",
+      "enable": "Switch on",
+      "disable": "Switch off",
+      "enableNamed": "Switch on webhook {name}",
+      "disableNamed": "Switch off webhook {name}",
+      "ping": "Send test",
+      "pingNamed": "Send a test to webhook {name}",
+      "deliveriesFor": "Recent deliveries of {name}",
+      "noDeliveries": "No deliveries yet.",
+      "colWhen": "When",
+      "colEvent": "Event",
+      "colStatus": "Status",
+      "colAttempts": "Attempts",
+      "colResponse": "Response",
+      "delivery": {
+        "pending": "Pending",
+        "sent": "Delivered",
+        "failed": "Failed"
+      },
+      "verifyHelp": "Verify a request: HMAC-SHA256 of \"<t>.<body>\" with the signing secret must equal v1, and t must be recent (5 minutes). Failed deliveries are retried up to 3 times for network errors, 429 and 5xx."
     }
   },
   "platformBanner": {

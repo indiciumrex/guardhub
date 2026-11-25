@@ -441,3 +441,32 @@ export interface EndpointTraffic {
   avg_ms: number;
   p95_ms: number | null;
 }
+
+export const WEBHOOK_EVENTS = ["scan.completed", "ops_alert.opened", "ping"] as const;
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
+
+export interface WebhookDeliveryView {
+  id: string;
+  event: string;
+  status: "pending" | "sent" | "failed";
+  attempts: number;
+  http_status: number | null;
+  error: string | null;
+  created_at: string;
+  delivered_at: string | null;
+}
+
+export interface WebhookView {
+  id: string;
+  name: string;
+  url: string;
+  events: WebhookEvent[];
+  enabled: boolean;
+  created_at: string;
+  deliveries: WebhookDeliveryView[];
+}
+
+export interface CreatedWebhook {
+  webhook: WebhookView;
+  secret: string;
+}
