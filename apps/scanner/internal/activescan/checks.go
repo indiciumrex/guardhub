@@ -189,17 +189,20 @@ func (c SQLi) point(ctx context.Context, env Env, pt Point) (string, string, err
 				pt.URL.Path, pt.Param, q.Value, r.Status, evidence.Truncate(string(m), 80), q.Control, ctl.Status), nil
 		}
 	}
-	for _, pid := range []string{"sqli.bool.true", "sqli.bool.num.true"} {
+	// The conditions follow the parameter's own value ("3 AND 7=7" for a page linked with 3),
+	// so the true condition keeps the page's row; active.Probe fills it in (anchor.go).
+	for _, pid := range []string{"sqli.bool.orig", "sqli.bool.num.orig"} {
 		p := payload(pid)
-		t1, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, p))
+		tr, fr := active.Probe(c.ID(), pt.URL, pt.Param, p), active.ControlProbe(c.ID(), pt.URL, pt.Param, p)
+		t1, err := env.send(ctx, tr)
 		if err != nil || t1 == nil {
 			return "", "", err
 		}
-		f, err := env.send(ctx, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
+		f, err := env.send(ctx, fr)
 		if err != nil || f == nil {
 			return "", "", err
 		}
-		strip := []string{p.Value, p.Control}
+		strip := []string{tr.Sent(), fr.Sent()}
 		// "the same answer" = same status AND the same words: a page that says 200 "found" for
 		// the true condition and 404 "missing" for the false one differs even when both bodies
 		// are nearly identical (DVWA sqli_blind). The true condition must answer like the
@@ -208,17 +211,17 @@ func (c SQLi) point(ctx context.Context, env Env, pt Point) (string, string, err
 		if t1.Status != 200 || same(t1, f) || !same(t1, base) {
 			continue
 		}
-		t2, err := env.send(ctx, active.Probe(c.ID(), pt.URL, pt.Param, p))
+		t2, err := env.send(ctx, tr)
 		if err != nil || t2 == nil {
 			return "", "", err
 		}
-		f2, err := env.send(ctx, active.ControlProbe(c.ID(), pt.URL, pt.Param, p))
+		f2, err := env.send(ctx, fr)
 		if err != nil || f2 == nil {
 			return "", "", err
 		}
 		if same(t1, t2) && same(f, f2) && !same(t2, f2) {
 			return "boolean", fmt.Sprintf("GET %s: %s=%s (true: HTTP %d, %d bytes, like the original) and %s (false: HTTP %d, %d bytes) answer differently, each the same when repeated",
-				pt.URL.Path, pt.Param, p.Value, t1.Status, len(t1.Body), p.Control, f.Status, len(f.Body)), nil
+				pt.URL.Path, pt.Param, tr.Sent(), t1.Status, len(t1.Body), fr.Sent(), f.Status, len(f.Body)), nil
 		}
 	}
 	return "", "", nil

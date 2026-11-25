@@ -81,6 +81,65 @@ func TestPayloadsDoNoHarm(t *testing.T) {
 		for _, problem := range review(p) {
 			t.Error(problem)
 		}
+		// an anchored payload is reviewed as it is sent: with the fallback and with the
+		// longest anchor of its shape (the shape admits no syntax, TestAnchorShapes)
+		if strings.Contains(p.Value+p.Control, OrigPlaceholder) {
+			if p.Anchor != AnchorNumber && p.Anchor != AnchorWord {
+				t.Errorf("%s: uses %s without an anchor shape", p.ID, OrigPlaceholder)
+			}
+			for _, a := range []string{AnchorFallback, strings.Repeat("9", 18), strings.Repeat("a", 64)} {
+				r := p
+				r.Value = strings.ReplaceAll(p.Value, OrigPlaceholder, a)
+				r.Control = strings.ReplaceAll(p.Control, OrigPlaceholder, a)
+				for _, problem := range review(r) {
+					t.Error(problem)
+				}
+			}
+		}
+	}
+}
+
+// TestAnchorShapes: {orig} is the parameter's own value only when it has the
+// payload's shape; quotes, spaces, semicolons, parentheses, comments and
+// anything long fall back to 1, so the sent text is the reviewed text around
+// one literal operand.
+func TestAnchorShapes(t *testing.T) {
+	cases := []struct {
+		kind, raw, want string
+	}{
+		{AnchorNumber, "id=3", "3"},
+		{AnchorNumber, "id=0042", "0042"},
+		{AnchorNumber, "id=abc", "1"},
+		{AnchorNumber, "id=3%20OR%201", "1"},
+		{AnchorNumber, "id=-3", "1"},
+		{AnchorNumber, "id=" + strings.Repeat("9", 19), "1"},
+		{AnchorNumber, "other=3", "1"},
+		{AnchorNumber, "id=", "1"},
+		{AnchorWord, "id=bo@av-sqli2.lab.test", "bo@av-sqli2.lab.test"},
+		{AnchorWord, "id=hello-world_2", "hello-world_2"},
+		{AnchorWord, "id=a'b", "1"},
+		{AnchorWord, "id=a%22b", "1"},
+		{AnchorWord, "id=a%20b", "1"},
+		{AnchorWord, "id=a;b", "1"},
+		{AnchorWord, "id=sleep(5)", "1"},
+		{AnchorWord, "id=a--", "1"},
+		{AnchorWord, "id=a/*", "1"},
+		{AnchorWord, "id=" + strings.Repeat("a", 65), "1"},
+		{"", "id=3", "1"},
+	}
+	for _, c := range cases {
+		u, _ := url.Parse("https://example.test/p?" + c.raw)
+		if got := anchor(c.kind, u, "id"); got != c.want {
+			t.Errorf("anchor(%q, %q) = %q, want %q", c.kind, c.raw, got, c.want)
+		}
+	}
+	p, _ := PayloadByID("sqli.bool.num.orig")
+	u, _ := url.Parse("https://example.test/review?id=3&x=y")
+	if got := Probe("active_sqli", u, "id", p).url().Query().Get("id"); got != "3 AND 7=7" {
+		t.Errorf("probe sends id=%q, want %q", got, "3 AND 7=7")
+	}
+	if got := ControlProbe("active_sqli", u, "id", p).Sent(); got != "3 AND 7=8" {
+		t.Errorf("control sends %q, want %q", got, "3 AND 7=8")
 	}
 }
 

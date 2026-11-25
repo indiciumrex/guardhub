@@ -111,6 +111,16 @@ the module, the exact bytes, and why it is harmless. CI rejects any payload that
   internal addresses or cloud metadata URLs are ever sent;
 - is longer than 256 bytes.
 
+**The page's own value (`{orig}`).** A blind SQLi condition must keep the row the page shows,
+so the two boolean payloads start with the parameter's own value (`3 AND 7=7` for a page linked
+with `id=3`). Only the `active` package fills `{orig}`, from the target URL, and only with a
+value of the payload's anchor shape: digits (at most 18) for the numeric payload; letters, digits
+and `@ . _ -` (at most 64, no `--`) for the quoted one. Anything else (a quote, a space, `;`, a
+parenthesis, a comment, a longer value, no value) becomes `1`, the earlier fixed value. The anchor
+is therefore always one literal operand, and the logic sent is only the reviewed text around it;
+CI runs the review above on each anchored payload with the fallback and the longest anchor of
+its shape. Second review: founder, 2026-11-25.
+
 **Reviews:**
 
 - **New payloads need a second review.** Every new payload is reviewed against this list in its

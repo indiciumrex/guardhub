@@ -1,6 +1,6 @@
 # `active_ssrf` accuracy
 
-Lab source revision `e31b3c017884`. Verdict: **meets the gate**.
+Lab source revision `03106298dd00`. Verdict: **meets the gate**.
 
 | Precision | Recall | Recall (all) | TP | FP | FN | FN outside | Tolerated | Targets | Clean targets | Errors |
 |---|---|---|---|---|---|---|---|---|---|---|

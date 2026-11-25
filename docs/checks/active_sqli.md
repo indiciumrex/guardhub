@@ -14,8 +14,10 @@ A query parameter that reaches a SQL statement unescaped.
 
 Error-based: a lone quote (`sqli.quote`) produces a known database error that the
 doubled quote (control) does not, and the unmodified page does not show either. Boolean-based:
-a true condition (`1' AND '7'='7` or `1 AND 7=7`) and its false control (`'7'='8`, `7=8`) answer
-differently, the true one with HTTP 200, and each answers the same when sent a second time. Only quotes and read-only
+a true condition after the parameter's own value (`3 AND 7=7` or `3' AND '7'='7` for a page
+linked with `id=3`; `1` when the value is not a plain number or word, ADR-0008 §5) and its false
+control (`7=8`, `'7'='8`) answer differently, the true one with HTTP 200 and like the original
+page, and each answers the same when sent a second time. Only quotes and read-only
 comparisons are sent: no UNION, no stacked statements, no writes, no delays.
 
 ## Not reported (false-positive discipline)

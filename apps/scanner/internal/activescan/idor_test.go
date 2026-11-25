@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -353,5 +354,82 @@ func TestStartURLsAndSingleQuotedAttribute(t *testing.T) {
 	none, _ := Run(context.Background(), env.Client, scope, []string{"active_xss"}, nil, nil, nil, nil)
 	if len(none) != 0 {
 		t.Fatalf("without the start URL nothing is reachable, got %+v", none)
+	}
+}
+
+// Blind conditions follow the page's own value: /review is linked with id=3 and /lookup with an
+// e-mail address, so "1 AND 7=7" would fetch another row (or none) and never answer like the
+// page; "3 AND 7=7" and "bo@x.test' AND '7'='7" do. /prefix reads only the leading digits (true
+// and false both answer like the page) and /bound compares the whole value as a string: neither
+// is reported.
+func TestSQLiBlindFollowsOriginalValue(t *testing.T) {
+	num := regexp.MustCompile(`^(\d+) AND 7=(\d)$`)
+	str := regexp.MustCompile(`^(.*)' AND '7'='(\d)'?$`)
+	reviews := map[string]string{"2": "Too slow", "3": "Great value for the price"}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body><a href="/review?id=3">r</a><a href="/lookup?email=bo@x.test">l</a>` +
+			`<a href="/prefix?id=3">p</a><a href="/bound?id=3">b</a></body></html>`))
+	})
+	write := func(w http.ResponseWriter, s string) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body><h1>Shop</h1><p>" + s + "</p></body></html>"))
+	}
+	mux.HandleFunc("/review", func(w http.ResponseWriter, r *http.Request) { // WHERE id = <id>
+		id, ok := r.URL.Query().Get("id"), true
+		if m := num.FindStringSubmatch(id); m != nil {
+			id, ok = m[1], m[2] == "7"
+		}
+		if body, found := reviews[id]; found && ok {
+			write(w, "Review: "+body)
+			return
+		}
+		write(w, "No review yet")
+	})
+	mux.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) { // WHERE email = '<email>'
+		e, ok := r.URL.Query().Get("email"), true
+		if m := str.FindStringSubmatch(e); m != nil {
+			e, ok = m[1], m[2] == "7"
+		}
+		if e == "bo@x.test" && ok {
+			write(w, "Found Bo Lindqvist")
+			return
+		}
+		write(w, "Nobody with that address")
+	})
+	mux.HandleFunc("/prefix", func(w http.ResponseWriter, r *http.Request) { // parseInt-style
+		id := r.URL.Query().Get("id")
+		n := len(id) - len(strings.TrimLeft(id, "0123456789"))
+		if body, found := reviews[id[:n]]; found {
+			write(w, "Review: "+body)
+			return
+		}
+		write(w, "No review yet")
+	})
+	mux.HandleFunc("/bound", func(w http.ResponseWriter, r *http.Request) { // bound parameter
+		if body, found := reviews[r.URL.Query().Get("id")]; found {
+			write(w, "Review: "+body)
+			return
+		}
+		write(w, "No review yet")
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	log := &active.RequestLog{}
+	env := idorEnv(t, srv, log)
+	scope, _ := active.NewScope(srv.URL, nil)
+	fs, _ := Run(context.Background(), env.Client, scope, []string{"active_sqli"}, nil, nil, nil, nil)
+	got := map[string]string{}
+	for _, f := range fs {
+		got[f.Params["path"]] = f.Params["technique"]
+	}
+	if len(got) != 2 || got["/review"] != "boolean" || got["/lookup"] != "boolean" {
+		t.Fatalf("findings = %+v, want boolean on /review and /lookup only", fs)
+	}
+	for _, f := range fs {
+		if f.Params["path"] == "/review" && !strings.Contains(f.Evidence.RedactedPayload, "id=3 AND 7=7") {
+			t.Errorf("evidence %q does not name the value sent", f.Evidence.RedactedPayload)
+		}
 	}
 }
