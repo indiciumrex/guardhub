@@ -26,6 +26,10 @@ x-api-env: &api-env
   SCANNER_ALLOW_PRIVATE_HOSTS: ${SCANNER_ALLOW_PRIVATE_HOSTS:-}
   AI_PROVIDER: ${AI_PROVIDER:-}
   AI_API_KEY: ${AI_API_KEY:-}
+  # Active testing, lock 1 of 4 (ADR-0008 §8): the founder's approval. Off unless the founder sets
+  # ACTIVE_TESTING_APPROVED=true in the env file; modules, the scanner switch and the kill switch
+  # are separate locks.
+  ACTIVE_TESTING_APPROVED: ${ACTIVE_TESTING_APPROVED:-false}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   # Error tracking: off unless SENTRY_DSN_API (or the SENTRY_DSN fallback) is set. The DSN host
   # is replaced by the relay (key and project id kept): api/api-worker have no internet.
@@ -171,6 +175,9 @@ services:
       # Repo scans (ADR-0006): empty = api.github.com / api.osv.dev.
       SCANNER_GITHUB_API_URL: ${SCANNER_GITHUB_API_URL:-}
       SCANNER_OSV_URL: ${SCANNER_OSV_URL:-}
+      # Active testing, lock 2 of 4 (ADR-0008): this scanner runs active_scan jobs only when this
+      # is exactly "true" (founder's go). Empty = every active_scan job is refused.
+      SCANNER_ACTIVE_ENABLED: ${SCANNER_ACTIVE_ENABLED:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SENTRY_DSN_SCANNER: ${SENTRY_DSN_SCANNER:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
