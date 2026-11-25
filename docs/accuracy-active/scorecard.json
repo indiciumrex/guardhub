@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "e31b3c017884",
+  "source": "03106298dd00",
   "gate": {
     "min_precision": 0.95,
     "min_recall": 0.8,
@@ -304,22 +304,22 @@
       "check_id": "active_sqli",
       "targets": 26,
       "clean_runs": 21,
-      "tp": 12,
+      "tp": 14,
       "fp": 0,
-      "fn": 2,
+      "fn": 0,
       "fn_outside": 1,
       "tolerated": 0,
       "errors": 0,
       "max_requests": 78,
       "precision": 1,
-      "recall": 0.8571428571428571,
-      "recall_all": 0.8,
+      "recall": 1,
+      "recall_all": 0.9333333333333333,
       "meets_gate": true,
       "by_key": {
         "sql_injection": {
-          "tp": 12,
+          "tp": 14,
           "fp": 0,
-          "fn": 3
+          "fn": 1
         }
       },
       "true_positives": [
@@ -350,8 +350,20 @@
         {
           "target": "av-sqli2",
           "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/lookup?email",
+          "why": "email is concatenated into a quoted WHERE string; errors are hidden and the linked value is an e-mail address (blind)."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
           "location": "http://av-sqli2.lab.test/price?max",
           "why": "max is concatenated into WHERE price \u003c= ... and the SQLite message is shown."
+        },
+        {
+          "target": "av-sqli2",
+          "key": "sql_injection",
+          "location": "http://av-sqli2.lab.test/review?id",
+          "why": "id is concatenated into WHERE id = ...; errors are hidden and the linked value is 3, so a condition must keep 3 to answer like the page (blind)."
         },
         {
           "target": "av-sqli2",
@@ -398,18 +410,6 @@
       ],
       "false_positives": null,
       "false_negatives": [
-        {
-          "target": "av-sqli2",
-          "key": "sql_injection",
-          "location": "http://av-sqli2.lab.test/lookup?email",
-          "why": "email is concatenated into a quoted WHERE string; errors are hidden and the linked value is an e-mail address (blind)."
-        },
-        {
-          "target": "av-sqli2",
-          "key": "sql_injection",
-          "location": "http://av-sqli2.lab.test/review?id",
-          "why": "id is concatenated into WHERE id = ...; errors are hidden and the linked value is 3, so a condition must keep 3 to answer like the page (blind)."
-        },
         {
           "target": "webgoat",
           "key": "sql_injection",
