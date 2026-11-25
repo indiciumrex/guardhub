@@ -70,6 +70,7 @@ export default async function ScanOrchestrationPage({
       : "-";
   const a = orch.active;
   const tConsole = await getTranslations("adminCenter.console");
+  const tSafety = await getTranslations("adminCenter.safety");
   const lock = (on: boolean) => (
     <StatusBadge tone={on ? "warn" : "locked"}>{on ? tc("on") : tc("off")}</StatusBadge>
   );
@@ -107,7 +108,7 @@ export default async function ScanOrchestrationPage({
                   value: a.modules_on.length ? (
                     <span className="font-mono text-xs">{a.modules_on.join(", ")}</span>
                   ) : (
-                    <StatusBadge tone="locked">{tc("none")}</StatusBadge>
+                    <StatusBadge tone="locked">{tSafety("modulesOn", { count: 0 })}</StatusBadge>
                   ),
                 },
                 { label: t("oob"), value: lock(a.oob_configured) },

@@ -53,7 +53,7 @@ export function StatusBadge({
   const s = size === "lg" ? "gap-2 px-3 py-1 text-sm" : "gap-1.5 px-2.5 py-0.5 text-xs";
   return (
     <span
-      className={`inline-flex items-center rounded-full border font-semibold ${s} ${toneClass[tone]}`}
+      className={`inline-flex items-center rounded-full border font-semibold whitespace-nowrap ${s} ${toneClass[tone]}`}
     >
       <ToneIcon tone={tone} className={size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5"} />
       <span>{children}</span>

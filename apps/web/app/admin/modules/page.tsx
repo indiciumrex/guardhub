@@ -51,7 +51,7 @@ export default async function ModuleCenterPage() {
 
       <Section id="modules-h" title={t("tableHeading")}>
         <div className="gh-panel overflow-x-auto">
-          <table className="gh-table-admin">
+          <table className="gh-table-admin min-w-[72rem]">
             <caption className="sr-only">{t("tableHeading")}</caption>
             <thead>
               <tr>
