@@ -554,3 +554,21 @@ export interface AdminBillingView {
   api_key_configured: boolean;
   charging_live: boolean;
 }
+
+// Verified sites (profile prompt, item 2)
+export type SiteStatus = "verified" | "expired" | "failed" | "pending";
+
+export interface SiteRow {
+  source: "trusted_domain" | "project";
+  id: string;
+  origin: string;
+  host: string;
+  name: string | null;
+  status: SiteStatus;
+  method: string | null;
+  last_verified_at: string | null;
+  last_checked_at: string | null;
+  last_error: string | null;
+  project_ids: string[];
+  trusted_domain_status: string | null;
+}

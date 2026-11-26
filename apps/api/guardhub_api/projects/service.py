@@ -66,12 +66,24 @@ def _view(project: Project, last_scan: ScanSummary | None) -> ProjectView:
     )
 
 
+async def _current_trust(claims: SessionClaims, view: ProjectView, method: str | None) -> ProjectView:
+    """A project proven through a trusted domain is verified only while that domain still covers
+    it (active, proven within 30 days): the same rule the scan path enforces (ADR-0003), so the
+    page never shows "verified" for a site that could not be scanned."""
+    if method != TRUSTED_DOMAIN_METHOD or not view.verified:
+        return view
+    if await trusted_domain_covers(claims.user_id, view.target_url):
+        return view
+    return view.model_copy(update={"verified": False})
+
+
 async def list_projects(claims: SessionClaims) -> list[ProjectView]:
     async with db_session(_ctx(claims)) as session:
         projects = await repository.list_for_user(session, claims.user_id)
         latest = await scan_repo.latest_for_projects(session, [p.id for p in projects])
         summaries = {s.id: s for s in await scan_service.summaries(session, list(latest.values()))}
-        return [_view(p, summaries.get(latest[p.id].id) if p.id in latest else None) for p in projects]
+        views = [_view(p, summaries.get(latest[p.id].id) if p.id in latest else None) for p in projects]
+    return [await _current_trust(claims, v, p.ownership_method) for v, p in zip(views, projects, strict=True)]
 
 
 async def _get_owned(session: AsyncSession, project_id: uuid.UUID, user_id: uuid.UUID) -> Project:
@@ -90,7 +102,8 @@ async def get_project(claims: SessionClaims, project_id: uuid.UUID) -> ProjectVi
         last = (
             (await scan_service.summaries(session, [latest[project.id]]))[0] if project.id in latest else None
         )
-        return _view(project, last)
+        view, method = _view(project, last), project.ownership_method
+    return await _current_trust(claims, view, method)
 
 
 async def create_project(claims: SessionClaims, *, name: str, target_url: str) -> ProjectView:

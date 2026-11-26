@@ -3,7 +3,7 @@
  *   non-admin → 404 · admin proves the demo site ONCE → "Scan now" with no proof prompt
  *   → the proof is withdrawn but trust holds (re-checked daily, not per scan)
  *   → a different port of the same host still needs its own proof (exact origin only)
- *   → removing the trusted domain makes the next rescan refuse instead of scanning.
+ *   → removing the trusted domain un-verifies its project, so a rescan cannot even be started.
  */
 import { expect, test } from "@playwright/test";
 import { expectFinishedReport, fill, newSignedInUser, readField } from "./flows";
@@ -81,22 +81,19 @@ test("trusted domains: hidden from non-admins, prove once, scan without a prompt
   await expect(page.getByRole("button", { name: "Rescan" })).toBeDisabled();
   await expect(page.getByText("File content (verification code)").first()).toBeVisible();
 
-  // removing the trusted domain: the next rescan refuses instead of scanning
+  // verified sites: the trusted domain is listed once, verified, with its project
+  await page.goto("/admin/sites");
+  const siteRow = page.getByRole("row", { name: /demo-target:8080/ });
+  await expect(siteRow).toContainText("Verified");
+  await expect(siteRow).toContainText("1 project uses it");
+
+  // removing the trusted domain: the project is no longer verified and nothing is scanned
   await page.goto("/admin/trusted-domains");
   await page.getByRole("button", { name: "Remove" }).first().click();
   await page.getByRole("button", { name: "Yes, remove it" }).click();
   await expect(page.getByText("You haven't added any trusted domains yet.")).toBeVisible();
 
   await page.goto(projectUrl);
-  const queued: string[] = [];
-  page.on("response", (r) => {
-    if (/\/projects\/[0-9a-f-]+\/scans$/.test(r.url()) && r.request().method() === "POST") {
-      queued.push(String(r.status()));
-    }
-  });
-  await page.getByRole("button", { name: "Rescan" }).click();
-  await expect(
-    page.getByText(/The trusted domain for this site isn't active right now/),
-  ).toBeVisible();
-  expect(queued).toEqual(["422"]);
+  await expect(page.getByRole("button", { name: "Rescan" })).toBeDisabled();
+  await expect(page.getByText("File content (verification code)").first()).toBeVisible();
 });

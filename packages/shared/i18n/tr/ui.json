@@ -754,7 +754,8 @@
       "alerts": "Uyarılar",
       "reports": "Raporlar",
       "integrations": "API ve entegrasyonlar",
-      "billing": "Faturalandırma"
+      "billing": "Faturalandırma",
+      "sites": "Doğrulanmış siteler"
     },
     "common": {
       "lifecycle": {
@@ -1701,5 +1702,49 @@
     "passwordHelp": "Güvenliğiniz için hem mevcut parolanızı hem de güncel iki adımlı doğrulama kodunu istiyoruz. Diğer tüm cihazlardan çıkış yapılır; bu cihazda oturumunuz açık kalır.",
     "changePassword": "Parolayı değiştir",
     "passwordChanged": "Parola değiştirildi. {count, plural, =0 {Başka cihazda açık oturum yoktu.} other {# başka cihazdan çıkış yapıldı.}}"
+  },
+  "sites": {
+    "title": "Doğrulanmış siteler",
+    "intro": "Kontrol ettiğinizi kanıtladığınız tüm siteler: güvenilir alan adlarınız ve kendi web sitesi projeleriniz, her biri tek bir durumla.",
+    "summary": "Duruma göre siteler",
+    "addDomain": "Güvenilir alan adı ekle",
+    "listTitle": "Siteleriniz",
+    "listIntro": "Önce sorunlu olanlar. Yeniden doğrula, olağan sahiplik kontrolünü bir kez çalıştırır (tarayıcı kanıt dosyanızı, etiketinizi veya DNS kaydınızı arar).",
+    "empty": "Henüz hiçbir siteyi kanıtlamadınız.",
+    "colSite": "Site",
+    "colStatus": "Durum",
+    "colSource": "Kanıt türü",
+    "colLastVerified": "Son kanıt",
+    "colLastChecked": "Son kontrol",
+    "colActions": "İşlemler",
+    "never": "Hiç",
+    "status": {
+      "verified": "Doğrulandı",
+      "expired": "Süresi doldu",
+      "failed": "Başarısız",
+      "pending": "Henüz doğrulanmadı"
+    },
+    "source": {
+      "trusted_domain": "Güvenilir alan adı",
+      "project": "Web sitesi projesi"
+    },
+    "linkedProjects": "{count, plural, other {# proje kullanıyor}}",
+    "reason": {
+      "timeout": "Site son kontrolde zamanında yanıt vermedi.",
+      "not_found": "Son kontrolde kanıt bulunamadı.",
+      "target_unreachable": "Son kontrolde siteye ulaşılamadı.",
+      "target_blocked": "Site son kontrolü engelledi.",
+      "ownership_lost": "Sahiplik kaybedildi: zamanlanmış taramalar duraklatıldı.",
+      "trusted_domain_gone": "Bunu kanıtlayan güvenilir alan adı kaldırıldı."
+    },
+    "reverify": "Yeniden doğrula",
+    "reverifyNamed": "{host} sitesini yeniden doğrula",
+    "checking": "Kontrol ediliyor…",
+    "reverified": "Kontrol edildi: {status}.",
+    "rulesTitle": "Durum nasıl belirlenir",
+    "ruleVerified": "Doğrulandı: kanıt son 30 gün içinde onaylandı.",
+    "ruleExpired": "Süresi doldu: kanıt 30 günden eski. Bir sonraki tarama önce kanıtı yeniden doğrular.",
+    "ruleFailed": "Başarısız: son kontrol kanıtı bulamadı. Yeniden geçene kadar hiçbir şey taranmaz.",
+    "ruleScan": "Bu sayfa hiçbir zaman tarama başlatmaz ve sahiplik kontrolünü atlamaz: her tarama sahipliği kendisi kanıtlar."
   }
 }
