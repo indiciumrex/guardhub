@@ -170,7 +170,9 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   // the control centre's sections: users, then the Module Center
   const nav = page.getByRole("navigation", { name: "Administration sections" });
   await nav.getByRole("link", { name: "Users" }).click();
-  const meRow = page.getByRole("row", { name: new RegExp(email.replace(/[.+]/g, "\\$&")) });
+  const meRow = page
+    .getByRole("region", { name: "Accounts" })
+    .getByRole("row", { name: new RegExp(email.replace(/[.+]/g, "\\$&")) });
   await expect(meRow).toBeVisible();
   await expect(meRow.getByRole("button", { name: /^Disable/ })).toHaveCount(0); // never yourself
   await expect(page.getByRole("region", { name: "Security policy" })).toContainText(
