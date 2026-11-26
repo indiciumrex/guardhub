@@ -2,7 +2,8 @@
 
 scans.trigger gains the value 'observe': a passive scan a super-admin started WITHOUT an
 ownership proof, limited to observe-only checks, with the authorisation statement in the audit
-log. The constraint is widened only; no row is changed.
+log. It has no project and no public token, so scans_check (project OR public token) gains a
+third case: trigger 'observe' with an owning user. Constraints are widened only; no row changes.
 
 Revision ID: 0029
 Revises: 0028
@@ -20,6 +21,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.execute("ALTER TABLE scans DROP CONSTRAINT IF EXISTS scans_check")
+    op.execute(
+        "ALTER TABLE scans ADD CONSTRAINT scans_check CHECK (project_id IS NOT NULL "
+        "OR public_token_hash IS NOT NULL OR (trigger = 'observe' AND user_id IS NOT NULL))"
+    )
     op.execute("ALTER TABLE scans DROP CONSTRAINT IF EXISTS scans_trigger_check")
     op.execute(
         "ALTER TABLE scans ADD CONSTRAINT scans_trigger_check "
@@ -32,4 +38,9 @@ def downgrade() -> None:
     op.execute("ALTER TABLE scans DROP CONSTRAINT IF EXISTS scans_trigger_check")
     op.execute(
         "ALTER TABLE scans ADD CONSTRAINT scans_trigger_check CHECK (trigger IN ('manual', 'scheduled', 'ci'))"
+    )
+    op.execute("ALTER TABLE scans DROP CONSTRAINT IF EXISTS scans_check")
+    op.execute(
+        "ALTER TABLE scans ADD CONSTRAINT scans_check "
+        "CHECK (project_id IS NOT NULL OR public_token_hash IS NOT NULL)"
     )
