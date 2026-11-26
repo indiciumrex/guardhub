@@ -1,24 +1,37 @@
 # Sahip-hedef aktif test: açma adımları (kurucu onayıyla)
 
-> **Durum: hazır, AÇILMADI.** Kanıt geçti (2026-11-25 11:27Z, `kanit-plani.md`). Kurucu
-> "aç" diyene kadar dört kilit de kapalı kalır. Kapsam: yalnızca GuardHub'a ait, kanıtlanmış
-> alan adları (yönetici güvenilir alan adları). Modüller: XSS, SQLi, açık yönlendirme, CORS,
-> IDOR. **SSRF kapalı** (OOB toplayıcı yok). **Müşteri hedefleri kapalı** (ToS + rıza arayüzü +
-> OOB gelmeden yolu yok). Karar kaydı: ADR-0008 §8 "Owner targets".
+> **Durum: AÇILDI (2026-11-25 20:41Z, kurucunun "onayla"sıyla).** Kanıt geçti (2026-11-25
+> 11:27Z, `kanit-plani.md`). Kapsam: yalnızca GuardHub'a ait, kanıtlanmış alan adları (yönetici
+> güvenilir alan adları); bugün yalnızca `guardhub.dev`. Modüller: XSS, SQLi, açık yönlendirme,
+> CORS, IDOR açık. **SSRF kapalı** (OOB toplayıcı yok). **Müşteri hedefleri kapalı** (ToS + rıza
+> arayüzü + OOB + kurucunun "git"i gelmeden yolu yok). Karar kaydı: ADR-0008 §8 "Owner targets".
 
-## Dört kilit ve bugünkü durumları (canlı, 2026-11-25)
+## Dört kilit ve bugünkü durumları (canlı, 2026-11-26)
 
 | Kilit | Nerede | Bugün |
 |---|---|---|
-| 1. Kurucu onayı | API: `ACTIVE_TESTING_APPROVED` (`/opt/guardhub/shared/.env`) | yok (= false) |
-| 2. Tarayıcı anahtarı | scanner: `SCANNER_ACTIVE_ENABLED` (aynı dosya) | yok (= kapalı) |
-| 3. Modüller | Yönetici → Modül Merkezi (her modül ayrı) | 6/6 kapalı |
-| 4. Durdurma anahtarı | Yönetici → Taramalar → Durdurma anahtarı | serbest |
+| 1. Kurucu onayı | API: `ACTIVE_TESTING_APPROVED` (`/opt/guardhub/shared/.env`) | `true` (2026-11-25 19:22Z) |
+| 2. Tarayıcı anahtarı | scanner: `SCANNER_ACTIVE_ENABLED` (aynı dosya) | `true` (2026-11-25 19:22Z) |
+| 3. Modüller | Yönetici → Modül Merkezi (her modül ayrı) | 5/6 açık (XSS, SQLi, redirect, CORS, IDOR); SSRF kapalı |
+| 4. Durdurma anahtarı | Yönetici → Taramalar → Durdurma anahtarı | serbest, her an çekilebilir |
 
-Hedef: canlıda tek yönetici güvenilir alan adı var: `sunizeka.net`, **askıda** (kanıt dosyası
-kalkmış). **guardhub.dev henüz güvenilir alan adı değil**: aşağıdaki 1. adım gerekir.
+Hedef: `guardhub.dev` yönetici güvenilir alan adı, **active** (well_known, 2026-11-25 15:14Z;
+jeton `/opt/guardhub/selfverify/guardhub-verify.txt` dosyasının 2. satırı). `sunizeka.net`
+askıda (kanıt dosyası kalkmış).
 
-## Adımlar ("aç" sonrası; her biri denetim kaydına düşer)
+## Açılış kaydı
+
+- **Kilit 3 açılırken bir hata çıktı:** modül açma kontrolü aktif modüllerde Gate L dosyasına
+  bakıyordu. Düzeltmesi PR #22: aktif modüller Gate M'e (`docs/accuracy-active`) bakar.
+- **İlk gerçek aktif tarama:** `951e72db-02c2-4b2a-9c93-4381515c56b4`, 2026-11-25
+  20:42:11–20:42:57Z. Sonuç:
+  - 47 GET isteği, hepsi kapsam içinde;
+  - nginx ile scanner kaydı birebir aynı;
+  - 0 bulgu, kill switch çekilmedi.
+  - Kanıt: `/opt/guardhub/proof/first-owner-scan-20261125T204211Z/`.
+- **IDOR** açık ama iki test hesabının çerezi olmadan çalışmaz. Bugüne kadar çalışmadı.
+
+## Adımlar (yapıldı; her biri denetim kaydına düştü; yeniden açmak gerekirse aynı sıra)
 
 1. **guardhub.dev'i güvenilir alan adı yap (kurucu, yönetici paneli).** Yönetici → Güvenilir
    alan adları → `guardhub.dev` ekle → verilen jetonu iletin. Jeton sunucuda
