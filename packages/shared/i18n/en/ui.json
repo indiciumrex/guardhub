@@ -754,7 +754,8 @@
       "alerts": "Alerts",
       "reports": "Reports",
       "integrations": "API & integrations",
-      "billing": "Billing"
+      "billing": "Billing",
+      "sites": "Verified sites"
     },
     "common": {
       "lifecycle": {
@@ -1701,5 +1702,49 @@
     "passwordHelp": "For your safety we ask for both your current password and a current two-factor code. Every other device is signed out; this one stays signed in.",
     "changePassword": "Change password",
     "passwordChanged": "Password changed. {count, plural, =0 {No other device was signed in.} one {# other device was signed out.} other {# other devices were signed out.}}"
+  },
+  "sites": {
+    "title": "Verified sites",
+    "intro": "Every site you have proven you control: your trusted domains and your own website projects, with one status each.",
+    "summary": "Sites by status",
+    "addDomain": "Add a trusted domain",
+    "listTitle": "Your sites",
+    "listIntro": "Problems first. Re-verify runs the normal ownership check once (the scanner looks for your proof file, tag or DNS record).",
+    "empty": "You have not proven any site yet.",
+    "colSite": "Site",
+    "colStatus": "Status",
+    "colSource": "Proven as",
+    "colLastVerified": "Last proof",
+    "colLastChecked": "Last check",
+    "colActions": "Actions",
+    "never": "Never",
+    "status": {
+      "verified": "Verified",
+      "expired": "Expired",
+      "failed": "Failed",
+      "pending": "Not verified yet"
+    },
+    "source": {
+      "trusted_domain": "Trusted domain",
+      "project": "Website project"
+    },
+    "linkedProjects": "{count, plural, one {# project uses it} other {# projects use it}}",
+    "reason": {
+      "timeout": "The site took too long to answer the last check.",
+      "not_found": "The proof was not found at the last check.",
+      "target_unreachable": "The site could not be reached at the last check.",
+      "target_blocked": "The site blocked the last check.",
+      "ownership_lost": "Ownership was lost: scheduled scans are paused.",
+      "trusted_domain_gone": "The trusted domain that proved it was removed."
+    },
+    "reverify": "Re-verify",
+    "reverifyNamed": "Re-verify {host}",
+    "checking": "Checking…",
+    "reverified": "Checked: {status}.",
+    "rulesTitle": "How the status works",
+    "ruleVerified": "Verified: the proof was confirmed within the last 30 days.",
+    "ruleExpired": "Expired: the proof is older than 30 days. The next scan proves it again first.",
+    "ruleFailed": "Failed: the last check did not find the proof. Nothing is scanned until it passes again.",
+    "ruleScan": "This page never starts a scan and never skips the ownership check: every scan proves ownership on its own."
   }
 }

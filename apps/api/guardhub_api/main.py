@@ -19,6 +19,7 @@ from guardhub_api.active.customer_router import router as customer_active_router
 from guardhub_api.admin.people import accept_router as admin_invite_router
 from guardhub_api.admin.people import router as people_router
 from guardhub_api.admin.router import router as admin_router
+from guardhub_api.admin.sites import router as sites_router
 from guardhub_api.admin.trusted_domains.router import router as trusted_domains_router
 from guardhub_api.alerts.router import router as alerts_router
 from guardhub_api.auth.router import router as auth_router
@@ -142,6 +143,7 @@ def create_app() -> FastAPI:
         scans_router,
         admin_router,
         trusted_domains_router,
+        sites_router,
         config_router,
         alerts_admin_router,
         reports_router,
