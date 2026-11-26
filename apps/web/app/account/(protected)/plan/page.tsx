@@ -1,8 +1,10 @@
 /**
  * The customer's plan (Phase 5C): the current plan and its limits with today's usage, the
- * public plans and a one-time trial. Payments are not switched on yet: no checkout is offered.
+ * public plans and a one-time trial. A checkout link appears only for plans the API offers one
+ * for (charging live and a provider price set); otherwise nothing can be bought here.
  */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { PageHeader, Panel, Stat, StatusBadge } from "@/components/admin/Stat";
 import { StartTrial } from "@/components/customer/BillingControls";
@@ -15,7 +17,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-export default async function PlanPage() {
+export default async function PlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const { checkout } = await searchParams;
   const billing = await loadProtected(() => serverApiFetch<BillingView>("/billing"));
   const t = await getTranslations("billing");
   const tp = await getTranslations("billing.plan");
@@ -27,6 +34,11 @@ export default async function PlanPage() {
   return (
     <>
       <PageHeader eyebrow={tc("eyebrow")} title={t("title")} intro={t("intro")} />
+      {checkout === "done" || checkout === "cancelled" ? (
+        <p role="status" className="gh-panel px-5 py-3 text-sm">
+          {checkout === "done" ? t("checkoutDone") : t("checkoutCancelled")}
+        </p>
+      ) : null}
       <Panel
         id="current-h"
         title={t("current", { plan: tp(billing.plan) })}
@@ -80,6 +92,15 @@ export default async function PlanPage() {
                 <td>
                   {billing.trial_available && p.trial_days > 0 && p.rank > current.rank ? (
                     <StartTrial plan={p.key} days={p.trial_days} label={tp(p.key)} />
+                  ) : null}
+                  {billing.checkout_plans.includes(p.key) ? (
+                    <Link
+                      href={`/account/plan/checkout?plan=${p.key}`}
+                      className="gh-btn-secondary mt-1 min-h-9 px-3 py-1.5 text-sm"
+                      aria-label={t("upgradeNamed", { plan: tp(p.key) })}
+                    >
+                      {t("upgrade")}
+                    </Link>
                   ) : null}
                 </td>
               </tr>

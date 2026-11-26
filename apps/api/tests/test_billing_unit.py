@@ -7,7 +7,11 @@ import hmac
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from guardhub_api.billing.service import effective_plan, verify_stripe_signature
+import pytest
+from pydantic import SecretStr
+
+from guardhub_api.billing.service import checkout_prices, effective_plan, verify_stripe_signature
+from guardhub_api.config import get_settings
 from guardhub_api.db.models import Subscription
 
 SECRET = "whsec_test"
@@ -48,3 +52,17 @@ def test_effective_plan() -> None:
         effective_plan(_sub(plan="pro", status="trialing", trial_ends_at=now - timedelta(seconds=1)), now)
         == "free"
     )
+
+
+def test_checkout_prices_exist_only_while_charging_is_live(monkeypatch: pytest.MonkeyPatch) -> None:
+    s = get_settings()
+    monkeypatch.setattr(s, "billing_price_ids", "pro=price_123,agency=price_456")
+    assert checkout_prices() == {}  # charging off (default): no checkout at all
+    monkeypatch.setattr(s, "billing_charging_enabled", True)
+    monkeypatch.setattr(s, "billing_provider", "stripe")
+    monkeypatch.setattr(s, "billing_webhook_secret", SecretStr(SECRET))
+    assert checkout_prices() == {}  # no API key yet
+    monkeypatch.setattr(s, "billing_api_key", SecretStr("sk_test_x"))
+    assert checkout_prices() == {"pro": "price_123", "agency": "price_456"}
+    monkeypatch.setattr(s, "billing_price_ids", " pro = price_1 , free=price_2, agency=nope, x")
+    assert checkout_prices() == {"pro": "price_1"}  # unknown plans and malformed ids are ignored

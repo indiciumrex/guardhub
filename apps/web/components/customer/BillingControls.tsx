@@ -41,6 +41,44 @@ function ErrorText({ error }: { error: string | null }) {
   ) : null;
 }
 
+/** Opens the payment provider's page for a plan (only rendered when the API offers a checkout). */
+export function StartCheckout({ plan, label }: { plan: string; label: string }) {
+  const t = useTranslations("checkout");
+  const errorMessage = useErrorMessage();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function start() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { url } = await apiFetch<{ url: string }>("/billing/checkout", {
+        method: "POST",
+        body: { plan },
+      });
+      if (!url.startsWith("https://checkout.stripe.com/"))
+        throw new Error("unexpected checkout URL");
+      window.location.assign(url);
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="space-y-1">
+      <button
+        type="button"
+        className="gh-btn-primary"
+        aria-label={t("continueNamed", { plan: label })}
+        disabled={busy}
+        onClick={() => void start()}
+      >
+        {t("continue")}
+      </button>
+      <ErrorText error={error} />
+    </div>
+  );
+}
+
 export function StartTrial({ plan, days, label }: { plan: string; days: number; label: string }) {
   const t = useTranslations("billing");
   const { busy, error, run } = useAction();

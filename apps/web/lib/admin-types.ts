@@ -534,6 +534,8 @@ export interface BillingView {
   usage: { sites: number; scans_today: number };
   plans: PlanLimits[];
   charging_live: boolean;
+  /** Paid plans a checkout can start for; empty while charging is off. */
+  checkout_plans: PlanLimits["key"][];
 }
 
 export interface AdminBillingView {

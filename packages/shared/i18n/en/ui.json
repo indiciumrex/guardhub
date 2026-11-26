@@ -165,7 +165,9 @@
     "invalid_display_name": "The name contains characters that are not allowed.",
     "observe_scan_off": "Observe-only scans are switched off on the server.",
     "statement_required": "Please read and accept the current authorisation statement first.",
-    "ownership_required": "These checks need a verified site. They never run without an ownership proof."
+    "ownership_required": "These checks need a verified site. They never run without an ownership proof.",
+    "plan_not_available": "This plan cannot be bought here.",
+    "checkout_unavailable": "The payment page could not be opened. Please try again in a moment."
   },
   "severity": {
     "critical": "Critical",
@@ -1688,7 +1690,11 @@
       "noSubs": "No subscriptions yet: every account is on the free plan.",
       "status": "Status",
       "trialEnds": "Trial ends"
-    }
+    },
+    "upgrade": "Upgrade",
+    "upgradeNamed": "Upgrade to {plan}",
+    "checkoutDone": "Thank you. Your plan changes as soon as the payment provider confirms the payment, usually within a minute.",
+    "checkoutCancelled": "The payment was cancelled. Nothing was charged and your plan is unchanged."
   },
   "profile": {
     "title": "Profile",
@@ -1885,5 +1891,17 @@
       "help": "Safe, read-only checks; the report opens live.",
       "cta": "Start a scan"
     }
+  },
+  "checkout": {
+    "title": "Upgrade",
+    "intro": "You pay on our payment provider's secure page; GuardHub never sees your card.",
+    "planTitle": "Plan: {plan}",
+    "payTitle": "Payment",
+    "providerNote": "The next step opens the provider's page, which shows the price, taxes and the billing period before you confirm. Your plan changes once the provider confirms the payment.",
+    "continue": "Continue to payment",
+    "continueNamed": "Continue to payment for {plan}",
+    "off": "Payments are not switched on",
+    "offHelp": "Paid plans cannot be bought online yet. Nothing is charged here. Contact us to upgrade.",
+    "back": "Back to your plan"
   }
 }
