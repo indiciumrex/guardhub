@@ -341,6 +341,10 @@
       "badge": "Gözlemsel tarama",
       "title": "Gözlemsel tarama: yalnızca pasif gözlem",
       "body": "Bu sitenin sahipliği kanıtlanmadı. Yalnızca herhangi bir tarayıcının veya e-posta sunucusunun gördükleri kontrol edildi (TLS, başlıklar, DNS ve e-posta, teknoloji), normal ve nazik istek hızında. Hiçbir aktif, yol yoklayan veya oturum açma denemesi yapan kontrol çalışmadı. Bu tarama için bir yetki beyanı kaydedildi."
+    },
+    "ssrfNotCovered": {
+      "label": "SSRF kapsanmıyor",
+      "body": "SSRF bu planda kapsanmıyor: bu aktif tarama sunucu taraflı istek sahteciliğini test etmedi; bu yüzden SSRF bulgusu olmaması bu konuda bir şey söylemez."
     }
   },
   "report": {
@@ -1614,7 +1618,6 @@
     "lock": {
       "customer_go": "GuardHub'ın müşteri siteleri için yayına alma kararı",
       "terms_final": "yayımlanmış aktif test şartları",
-      "oob_live": "bant dışı tespit hizmeti",
       "approval": "aktif testin platform genelinde onayı",
       "modules": "test modüllerinin açılması",
       "kill": "platform durdurma anahtarının serbest bırakılması",
@@ -1630,7 +1633,8 @@
     "start": "Aktif taramayı başlat",
     "running": "Bu sitede bir aktif tarama çalışıyor.",
     "stop": "Şimdi durdur",
-    "stopHelp": "Tüm test isteklerini yaklaşık bir saniye içinde durdurur."
+    "stopHelp": "Tüm test isteklerini yaklaşık bir saniye içinde durdurur.",
+    "ssrfNotCovered": "SSRF (sunucu taraflı istek sahteciliği) bu planda kapsanmıyor: henüz kurulmamış bir bant dışı tespit hizmeti gerektirir. Diğer aktif kontrollerin buna ihtiyacı yoktur."
   },
   "billing": {
     "title": "Plan",

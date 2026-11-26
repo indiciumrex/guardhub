@@ -47,9 +47,9 @@ class Settings(BaseSettings):
     # Off by default; the scanner has its own switch (SCANNER_ACTIVE_ENABLED) as well.
     active_testing_approved: bool = False
     # Phase 5B: active tests on CUSTOMER sites are built but stay off until all of these hold
-    # (and every owner-target lock above): the founder's go (CUSTOMER_ACTIVE_TESTING_GO=true), the
-    # published active-testing terms (version + SHA-256 of the exact text, set by the founder) and
-    # a live OOB collaborator reported by the scanner. Empty / false means "not yet".
+    # (and every owner-target lock above): the founder's go (CUSTOMER_ACTIVE_TESTING_GO=true) and
+    # the published active-testing terms (version + SHA-256 of the exact text, set by the founder).
+    # SSRF alone also needs a live OOB collaborator reported by the scanner. Empty / false = "not yet".
     customer_active_testing_go: bool = False
     # Profile prompt item 3: observe-only scans WITHOUT an ownership proof (TLS, headers, cookies,
     # DNS records, page content, library versions; nothing that probes, injects or signs in), by

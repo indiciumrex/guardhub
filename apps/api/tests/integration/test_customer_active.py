@@ -1,6 +1,7 @@
 """Active tests on a customer's own site (Phase 5B) against real PostgreSQL + Redis.
 
-By default nothing can start: the founder's go, the final terms and a live OOB are missing.
+By default nothing can start: the founder's go and the final terms are missing. A live OOB
+collaborator gates SSRF only: without it the other modules still run and SSRF is refused.
 With every lock opened in the test (never in production config), the scan is queued once per
 site, with the customer's consent to exactly the current terms, and the customer can stop it.
 """
@@ -42,16 +43,18 @@ async def _site(client: httpx.AsyncClient, *, verified: bool = True) -> str:
     return project_id
 
 
-async def _open_every_lock(redis: Redis, monkeypatch: pytest.MonkeyPatch) -> None:
+async def _open_every_lock(redis: Redis, monkeypatch: pytest.MonkeyPatch, *, oob: bool = True) -> None:
     s = get_settings()
     monkeypatch.setattr(s, "customer_active_testing_go", True)
     monkeypatch.setattr(s, "active_tos_version", TERMS[0])
     monkeypatch.setattr(s, "active_tos_sha256", TERMS[1])
     monkeypatch.setattr(s, "active_testing_approved", True)
-    info = {"consumer": "test", "active_enabled": True, "active_oob": True}
+    info = {"consumer": "test", "active_enabled": True, "active_oob": oob}
     await redis.set(owner_scan.SCANNER_INFO_PREFIX + "test", json.dumps(info))
     async with db_session(DbContext.system()) as session:
-        await session.execute(update(Module).where(Module.key.in_(CHECKS)).values(enabled_global=True))
+        await session.execute(
+            update(Module).where(Module.key.in_([*CHECKS, "active_ssrf"])).values(enabled_global=True)
+        )
 
 
 @pytest.fixture
@@ -80,7 +83,8 @@ async def test_off_by_default_nothing_is_queued(client: httpx.AsyncClient, redis
     assert r.status_code == 200
     body = r.json()
     assert body["available"] is False
-    assert {"customer_go", "terms_final", "oob_live", "approval"} <= set(body["blocked_by"])
+    assert {"customer_go", "terms_final", "approval"} <= set(body["blocked_by"])
+    assert "oob_live" not in body["blocked_by"]  # OOB gates SSRF only, never the whole plan
     assert "active_idor" not in body["checks"]
     r = await client.post(f"/api/v1/projects/{project_id}/active/scans", json=_body())
     assert r.status_code == 422 and r.json()["error"]["code"] == "customer_active_not_live"
@@ -143,3 +147,34 @@ async def test_the_global_kill_switch_still_wins(
     finally:
         await kill.release(redis, None)
     assert await _active_jobs(redis) == []
+
+
+async def test_without_oob_the_other_modules_run_and_ssrf_is_not_covered(
+    client: httpx.AsyncClient, redis: Redis, monkeypatch: pytest.MonkeyPatch, modules_restored: object
+) -> None:
+    await signed_in(client)
+    project_id = await _site(client)
+    await _open_every_lock(redis, monkeypatch, oob=False)
+    body = (await client.get(f"/api/v1/projects/{project_id}/active")).json()
+    assert body["available"] is True and body["blocked_by"] == []
+    assert body["ssrf_covered"] is False
+    assert "active_ssrf" not in body["checks"] and set(CHECKS) <= set(body["checks"])
+
+    r = await client.post(f"/api/v1/projects/{project_id}/active/scans", json=_body(checks=["active_ssrf"]))
+    assert r.status_code == 422 and r.json()["error"]["code"] == "oob_not_configured"
+    assert await _active_jobs(redis) == []
+
+    r = await client.post(f"/api/v1/projects/{project_id}/active/scans", json=_body())
+    assert r.status_code == 202, r.text
+    [job] = await _active_jobs(redis)
+    assert job["checks"] == CHECKS and "active_ssrf" not in job["checks"]
+
+
+async def test_with_oob_ssrf_is_offered(
+    client: httpx.AsyncClient, redis: Redis, monkeypatch: pytest.MonkeyPatch, modules_restored: object
+) -> None:
+    await signed_in(client)
+    project_id = await _site(client)
+    await _open_every_lock(redis, monkeypatch, oob=True)
+    body = (await client.get(f"/api/v1/projects/{project_id}/active")).json()
+    assert body["ssrf_covered"] is True and "active_ssrf" in body["checks"]

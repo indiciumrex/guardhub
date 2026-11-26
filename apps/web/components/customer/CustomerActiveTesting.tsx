@@ -1,8 +1,9 @@
 "use client";
 /**
  * Active testing on the customer's own site (Phase 5B, beta). Until every lock holds (the
- * founder's go, the final terms, a live OOB collaborator, approval, modules, kill switch,
- * scanner, a verified site) it only explains what is still missing; nothing can be started.
+ * founder's go, the final terms, approval, modules, kill switch, scanner, a verified site) it
+ * only explains what is still missing; nothing can be started. SSRF has its own gate (a live
+ * OOB collaborator): without it SSRF is not offered and the panel says it is not covered.
  * Once available: choose checks and excluded paths, accept exactly the current terms (by
  * version, linked, never paraphrased here), start, and a prominent "Stop now" while it runs.
  */
@@ -19,6 +20,12 @@ export interface ActiveReadiness {
   terms_version: string | null;
   checks: string[];
   running_scan_id: string | null;
+  ssrf_covered: boolean;
+}
+
+function SsrfNotCovered() {
+  const t = useTranslations("customerActive");
+  return <p className="gh-muted text-xs">{t("ssrfNotCovered")}</p>;
 }
 
 export function CustomerActiveTesting({
@@ -80,6 +87,7 @@ export function CustomerActiveTesting({
             <li key={b}>{t(`lock.${b}`)}</li>
           ))}
         </ul>
+        {readiness.ssrf_covered ? null : <SsrfNotCovered />}
       </div>
     );
   }
@@ -118,6 +126,11 @@ export function CustomerActiveTesting({
             </label>
           ))}
         </div>
+        {readiness.ssrf_covered ? null : (
+          <div className="mt-2">
+            <SsrfNotCovered />
+          </div>
+        )}
       </fieldset>
       <div>
         <label htmlFor="active-exclude" className="block font-medium">
