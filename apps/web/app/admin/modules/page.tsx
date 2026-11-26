@@ -144,6 +144,12 @@ export default async function ModuleCenterPage() {
                               {pct(s.success_rate_7d)} ({s.runs_7d})
                             </dd>
                           </div>
+                          {s.safe_stopped_7d ? (
+                            <div>
+                              <dt className="inline">{t("safeStopped7d")}: </dt>
+                              <dd className="inline">{s.safe_stopped_7d}</dd>
+                            </div>
+                          ) : null}
                           <div>
                             <dt className="inline">{t("prodFp")}: </dt>
                             <dd className="inline">

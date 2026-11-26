@@ -310,7 +310,8 @@
       "queued": "Waiting",
       "running": "Checking…",
       "done": "Done",
-      "failed": "Couldn't finish"
+      "failed": "Couldn't finish",
+      "safeStop": "Incomplete (safe stop)"
     }
   },
   "scanLive": {
@@ -361,7 +362,8 @@
     "partial": "Some checks couldn't finish ({names}), so this report may be incomplete.",
     "findingsHeading": "{count, plural, =0 {No issues found} one {# issue found} other {# issues found}}",
     "cleanTitle": "Great news: we didn't find any issues",
-    "cleanBody": "None of our checks found an exposed secret, open admin page or weak HTTPS setting. Rescan after big changes to stay on top of it."
+    "cleanBody": "None of our checks found an exposed secret, open admin page or weak HTTPS setting. Rescan after big changes to stay on top of it.",
+    "partialSafeStop": "Some checks stopped early on purpose to protect the site (safe stop: request budget or signs of strain): {names}. Their part of this report is incomplete; it is not an error."
   },
   "finding": {
     "whatsExposed": "What's exposed",
@@ -829,7 +831,7 @@
       "components": "Components",
       "queue": "Scan queue",
       "ratesHeading": "Module success rates (last 7 days)",
-      "ratesIntro": "How often each check could run to the end in completed scans. A low rate means the check often timed out or failed.",
+      "ratesIntro": "How often each check could run to the end in completed scans. A safe stop (the request budget or signs of strain on the site) is counted apart and not as a failure; a low rate means the check often timed out, could not reach the site or failed.",
       "noRuns": "No completed scans in the last 7 days.",
       "runs": "Scans",
       "couldNotRun": "Could not run",
@@ -839,7 +841,8 @@
       "errorsHeading": "Recent errors",
       "sentryUnavailable": "Sentry is configured but didn't answer; GuardHub's own error records are shown.",
       "sentryOn": "Includes unresolved Sentry issues from the last 24 hours.",
-      "sentryOff": "Sentry issues aren't connected (they need a read-only Sentry token); GuardHub's own error records are shown."
+      "sentryOff": "Sentry issues aren't connected (they need a read-only Sentry token); GuardHub's own error records are shown.",
+      "safeStopped": "Incomplete (safe stop)"
     },
     "modules": {
       "title": "Module Center",
@@ -884,7 +887,8 @@
         "free": "Free",
         "pro": "Pro",
         "agency": "Agency"
-      }
+      },
+      "safeStopped7d": "Incomplete (safe stop, 7 days)"
     },
     "kill": {
       "globalLabel": "All active tests",

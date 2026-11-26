@@ -238,3 +238,26 @@ async def test_orchestration_reports_active_testing_off(client: httpx.AsyncClien
     m = (await client.get(f"{ADMIN}/monitoring")).json()
     assert m["health"]["components"]["database"] == "ok"
     assert m["scanners"][0]["consumer"] == "t1" and m["sentry"]["configured"] is False
+
+
+async def test_a_safe_stop_is_incomplete_not_a_module_failure(redis: Redis, scanner: FakeScanner) -> None:
+    """A check the scanner stopped on purpose (request budget) is kept apart from failures."""
+    scanner.failed_checks, scanner.fail_reason = {"exposed_env"}, "budget_exceeded"
+    try:
+        async with new_client("198.51.100.183") as owner, new_client() as client:
+            scan_id = await customer_scan(owner, redis, scanner)
+            progress = (await owner.get(f"/api/v1/scans/{scan_id}")).json()["progress"]
+            item = next(p for p in progress if p["check_id"] == "exposed_env")
+            assert item["status"] == "failed" and item["reason"] == "budget_exceeded"
+            async with db_session(DbContext.system()) as session:
+                scan = await session.get(Scan, uuid.UUID(scan_id))
+                assert scan is not None and scan.check_errors == {"exposed_env": "budget_exceeded"}
+            await make_admin(client)
+            rates = {m["check_id"]: m for m in (await client.get(f"{ADMIN}/overview")).json()["modules"]}
+            ef = rates["exposed_env"]
+            assert ef["safe_stopped"] >= 1
+            assert ef["runs"] - ef["safe_stopped"] - ef["failed"] >= 0
+            stats = {s["check_id"]: s for s in (await client.get(f"{ADMIN}/modules/stats")).json()}
+            assert stats["exposed_env"]["safe_stopped_7d"] >= 1
+    finally:
+        scanner.failed_checks, scanner.fail_reason = set(), "timeout"

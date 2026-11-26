@@ -47,6 +47,7 @@ from guardhub_api.findings.taxonomy import Classification, classify
 from guardhub_api.health import service as health_svc
 from guardhub_api.projects.scanning import start_project_scan
 from guardhub_api.scans import repository as scan_repo
+from guardhub_api.scans.ingest import SAFE_STOP_REASONS
 from guardhub_api.scans.queue import JOBS_STREAM, SCANNER_GROUP
 
 log = logging.getLogger("guardhub.admin.center")
@@ -121,8 +122,9 @@ class SeverityCounts(BaseModel):
 class ModuleRate(BaseModel):
     check_id: str
     runs: int
-    failed: int
-    success_rate: float | None
+    failed: int  # could not run for another reason (unreachable, timeout, error, unknown)
+    safe_stopped: int  # incomplete on purpose (do-no-harm: request budget, stress breaker, stop)
+    success_rate: float | None  # finished / (runs - safe stops): a safe stop is not a failure
 
 
 class QueueView(BaseModel):
@@ -247,10 +249,31 @@ async def _module_rates(session: AsyncSession, days: int = 7) -> list[ModuleRate
             )
         ).all()
     )
+    safe: dict[str, int] = dict(
+        (
+            await session.execute(
+                text(
+                    "SELECT e.key, count(*) FROM scans, jsonb_each_text(check_errors) AS e "
+                    "WHERE status = 'done' AND created_at >= :since AND e.value = ANY(:safe) GROUP BY e.key"
+                ),
+                {"since": since, "safe": sorted(SAFE_STOP_REASONS)},
+            )
+        ).all()
+    )
     out = []
     for check_id in sorted(set(runs) | set(failed)):
-        n, f = int(runs.get(check_id, 0)), int(failed.get(check_id, 0))
-        out.append(ModuleRate(check_id=check_id, runs=n, failed=f, success_rate=(n - f) / n if n else None))
+        n, s = int(runs.get(check_id, 0)), int(safe.get(check_id, 0))
+        f = max(int(failed.get(check_id, 0)) - s, 0)
+        judged = n - s
+        out.append(
+            ModuleRate(
+                check_id=check_id,
+                runs=n,
+                failed=f,
+                safe_stopped=s,
+                success_rate=(judged - f) / judged if judged > 0 else None,
+            )
+        )
     return out
 
 
@@ -452,6 +475,7 @@ class ModuleStats(BaseModel):
     check_id: str
     runs_7d: int
     failed_7d: int
+    safe_stopped_7d: int
     success_rate_7d: float | None
     triage: TriageStats
 
@@ -492,6 +516,7 @@ async def module_stats(claims: SessionClaims) -> list[ModuleStats]:
                 check_id=check_id,
                 runs_7d=r.runs if r else 0,
                 failed_7d=r.failed if r else 0,
+                safe_stopped_7d=r.safe_stopped if r else 0,
                 success_rate_7d=r.success_rate if r else None,
                 triage=stats.get(check_id, TriageStats()),
             )

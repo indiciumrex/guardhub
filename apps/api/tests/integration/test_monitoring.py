@@ -294,6 +294,10 @@ async def test_schedule_scan_diff_and_change_alerts(
         diff = (await client.get(f"/api/v1/scans/{failed_id}/diff")).json()
         assert diff["fixed"] == [] and "exposed_env" in diff["skipped_checks"]
         assert "exposed_env" not in diff["compared_checks"]
+        progress = (await client.get(f"/api/v1/scans/{failed_id}")).json()["progress"]
+        env = next(p for p in progress if p["check_id"] == "exposed_env")
+        assert env["status"] == "failed" and env["reason"] == "timeout"  # the reason is kept
+        assert all(p["reason"] is None for p in progress if p["status"] == "done")
         scanner.failed_checks = set()
 
         # 9) trend: done scans, oldest first, with the trigger

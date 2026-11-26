@@ -310,7 +310,8 @@
       "queued": "Bekliyor",
       "running": "Kontrol ediliyor…",
       "done": "Tamamlandı",
-      "failed": "Tamamlanamadı"
+      "failed": "Tamamlanamadı",
+      "safeStop": "Eksik (güvenli durma)"
     }
   },
   "scanLive": {
@@ -361,7 +362,8 @@
     "partial": "Bazı kontroller tamamlanamadı ({names}), bu yüzden rapor eksik olabilir.",
     "findingsHeading": "{count, plural, =0 {Sorun bulunamadı} one {# sorun bulundu} other {# sorun bulundu}}",
     "cleanTitle": "Harika haber: hiçbir sorun bulmadık",
-    "cleanBody": "Kontrollerimizin hiçbiri açıkta kalmış bir gizli bilgi, erişime açık bir yönetim sayfası ya da zayıf bir HTTPS ayarı bulmadı. Büyük değişikliklerden sonra yeniden tarayarak durumu takip edin."
+    "cleanBody": "Kontrollerimizin hiçbiri açıkta kalmış bir gizli bilgi, erişime açık bir yönetim sayfası ya da zayıf bir HTTPS ayarı bulmadı. Büyük değişikliklerden sonra yeniden tarayarak durumu takip edin.",
+    "partialSafeStop": "Bazı kontroller siteyi korumak için bilerek erken durdu (güvenli durma: istek bütçesi veya sitede zorlanma belirtileri): {names}. Bu raporun onlara ait kısmı eksiktir; bu bir hata değildir."
   },
   "finding": {
     "whatsExposed": "Ne açıkta?",
@@ -829,7 +831,7 @@
       "components": "Bileşenler",
       "queue": "Tarama kuyruğu",
       "ratesHeading": "Modül başarı oranları (son 7 gün)",
-      "ratesIntro": "Her kontrolün tamamlanan taramalarda sonuna kadar ne sıklıkla çalışabildiği. Düşük oran, kontrolün sık sık zaman aşımına uğradığını veya hata verdiğini gösterir.",
+      "ratesIntro": "Tamamlanan taramalarda her kontrolün ne sıklıkla sonuna kadar çalışabildiği. Güvenli durma (istek bütçesi veya sitede zorlanma belirtileri) ayrı sayılır ve başarısızlık sayılmaz; düşük oran, kontrolün sık sık zaman aşımına uğradığını, siteye ulaşamadığını veya başarısız olduğunu gösterir.",
       "noRuns": "Son 7 günde tamamlanan tarama yok.",
       "runs": "Tarama",
       "couldNotRun": "Çalışamadı",
@@ -839,7 +841,8 @@
       "errorsHeading": "Son hatalar",
       "sentryUnavailable": "Sentry yapılandırılmış ama yanıt vermedi; GuardHub'ın kendi hata kayıtları gösteriliyor.",
       "sentryOn": "Son 24 saatin çözülmemiş Sentry kayıtları dahil.",
-      "sentryOff": "Sentry kayıtları bağlı değil (salt okunur bir Sentry anahtarı gerekir); GuardHub'ın kendi hata kayıtları gösteriliyor."
+      "sentryOff": "Sentry kayıtları bağlı değil (salt okunur bir Sentry anahtarı gerekir); GuardHub'ın kendi hata kayıtları gösteriliyor.",
+      "safeStopped": "Eksik (güvenli durma)"
     },
     "modules": {
       "title": "Modül Merkezi",
@@ -884,7 +887,8 @@
         "free": "Ücretsiz",
         "pro": "Pro",
         "agency": "Ajans"
-      }
+      },
+      "safeStopped7d": "Eksik (güvenli durma, 7 gün)"
     },
     "kill": {
       "globalLabel": "Tüm aktif testler",
