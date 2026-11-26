@@ -13,12 +13,14 @@ from dataclasses import dataclass
 
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from guardhub_api.auth.security import SessionClaims
+from guardhub_api.billing import service as billing
 from guardhub_api.common.errors import NotFoundError, ServiceUnavailableError, UnprocessableError
 from guardhub_api.config import get_settings
-from guardhub_api.db.models import Scan
+from guardhub_api.db.models import Module, Scan
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import check_name, render_finding
 from guardhub_api.findings.scoring import count_by_severity, severity_rank
@@ -48,6 +50,19 @@ class RepoJob:
     token: str
 
 
+async def _within_plan(
+    session: AsyncSession, user_id: uuid.UUID, checks: list[str], *, manual: bool
+) -> list[str]:
+    limits = (
+        await billing.check_manual_scan(session, user_id) if manual else await billing.limits_for(user_id)
+    )
+    ranks = await billing.plan_rank_for_checks(session)
+    tiers = dict(
+        (await session.execute(select(Module.key, Module.min_plan).where(Module.key.in_(checks)))).all()
+    )
+    return [c for c in checks if ranks.get(tiers.get(c, "free"), 0) <= limits.rank]
+
+
 async def create_and_enqueue(
     redis: Redis,
     *,
@@ -64,6 +79,8 @@ async def create_and_enqueue(
     deadline = await platform.int_value("scan.deadline_seconds")
     async with db_session(ctx) as session:
         checks = await enabled_check_ids(session, "repo" if repo else "site")
+        if user_id is not None:  # the account's plan (Phase 5C): module tier, manual-scan limits
+            checks = await _within_plan(session, user_id, checks, manual=trigger == "manual")
         if not checks:
             raise UnprocessableError("no_checks_enabled", "All checks are currently disabled.")
         scan = await repository.add(

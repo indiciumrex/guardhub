@@ -111,6 +111,12 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
     "Security",
   );
   await shoot(other, "customer-overview");
+  // Phase 5C: the plan page shows the free plan and that payments are not switched on
+  await other.getByRole("link", { name: "Plan" }).click();
+  await expect(other.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
+  await expect(other.getByText("Your plan: Free")).toBeVisible();
+  await expect(other.getByText(/not available to buy online yet/)).toBeVisible();
+  await other.goto("/account");
 
   await fill(other.getByLabel("Project name"), "Demo site (direct)");
   await fill(other.getByLabel("Website address"), DEMO_TARGET);
@@ -296,6 +302,11 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
     .click();
   await unmuted;
   await expect(rules.getByText(/Muted until/)).toHaveCount(0);
+
+  // billing: charging is off, keys are shown only as configured or not
+  await nav.getByRole("link", { name: "Billing" }).click();
+  await expect(page.getByRole("heading", { name: "Billing", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Payments" })).toContainText("Charging is off");
 
   // reports: customers are masked on screen and in the CSV export
   await nav.getByRole("link", { name: "Reports" }).click();

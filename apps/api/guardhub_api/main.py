@@ -22,6 +22,8 @@ from guardhub_api.admin.router import router as admin_router
 from guardhub_api.admin.trusted_domains.router import router as trusted_domains_router
 from guardhub_api.alerts.router import router as alerts_router
 from guardhub_api.auth.router import router as auth_router
+from guardhub_api.billing.router import admin_router as billing_admin_router
+from guardhub_api.billing.router import router as billing_router
 from guardhub_api.common import audit
 from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.errors import install_error_handlers
@@ -94,7 +96,10 @@ def create_app() -> FastAPI:
         )
         # CSRF: a cross-site form can't set custom headers, and a cross-site fetch with one would
         # need a CORS preflight that this API never approves.
-        if request.method not in SAFE_METHODS and request.headers.get(CSRF_HEADER) != "1":
+        # The provider webhook is called server-to-server without cookies or our header; it is
+        # authenticated by the provider's signature instead (billing/service.py).
+        webhook = request.url.path.startswith("/api/v1/billing/webhook/")
+        if request.method not in SAFE_METHODS and not webhook and request.headers.get(CSRF_HEADER) != "1":
             response: Response = JSONResponse(
                 {"error": {"code": "csrf_header_missing", "message": "Missing X-GuardHub-CSRF header."}},
                 status_code=403,
@@ -147,6 +152,8 @@ def create_app() -> FastAPI:
         people_router,
         admin_invite_router,
         customer_active_router,
+        billing_router,
+        billing_admin_router,
         platform_status_router,
         alerts_router,
         github_router,

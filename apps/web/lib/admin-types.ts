@@ -512,3 +512,45 @@ export interface FailedSignIns {
     ip_hash: string;
   }[];
 }
+
+// ---- billing (Phase 5C; charging off) ----
+
+export interface PlanLimits {
+  key: "free" | "pro" | "agency";
+  rank: number;
+  max_sites: number;
+  scans_per_day: number;
+  concurrent_scans: number;
+  trial_days: number;
+  public: boolean;
+}
+
+export interface BillingView {
+  plan: PlanLimits["key"];
+  status: string;
+  trial_ends_at: string | null;
+  trial_available: boolean;
+  limits: PlanLimits;
+  usage: { sites: number; scans_today: number };
+  plans: PlanLimits[];
+  charging_live: boolean;
+}
+
+export interface AdminBillingView {
+  plans: PlanLimits[];
+  subscriptions: {
+    user_id: string;
+    email: string;
+    plan: string;
+    effective_plan: string;
+    status: string;
+    trial_ends_at: string | null;
+    provider: string | null;
+    updated_at: string;
+  }[];
+  charging_enabled: boolean;
+  provider: string;
+  webhook_secret_configured: boolean;
+  api_key_configured: boolean;
+  charging_live: boolean;
+}

@@ -152,7 +152,15 @@
     "active_blocked": "Bu site için aktif test şu anda kullanılamıyor.",
     "terms_not_accepted": "Önce güncel aktif test şartlarını kabul edin.",
     "not_a_customer_active_check": "Bu kontrol müşteri siteleri için sunulmuyor.",
-    "active_sites_only": "Aktif testler yalnızca web sitelerinde çalışır."
+    "active_sites_only": "Aktif testler yalnızca web sitelerinde çalışır.",
+    "plan_limit_sites": "Planınızın web sitesi sınırına ulaşıldı.",
+    "plan_limit_scans_per_day": "Planınızın günlük tarama sınırına ulaşıldı. Yarın tekrar deneyin ya da yükseltin.",
+    "plan_limit_concurrency": "Başka bir tarama başlatmadan önce çalışan taramanın bitmesini bekleyin.",
+    "trial_not_offered": "Bu plan için deneme sunulmuyor.",
+    "trial_used": "Bu hesapta deneme zaten kullanıldı.",
+    "billing_not_live": "Ödemeler açık değil.",
+    "plan_not_found": "Bu plan yok.",
+    "free_plan_public": "Ücretsiz plan herkese açık kalır."
   },
   "severity": {
     "critical": "Kritik",
@@ -743,7 +751,8 @@
       "config": "Yapılandırma",
       "alerts": "Uyarılar",
       "reports": "Raporlar",
-      "integrations": "API ve entegrasyonlar"
+      "integrations": "API ve entegrasyonlar",
+      "billing": "Faturalandırma"
     },
     "common": {
       "lifecycle": {
@@ -1508,7 +1517,8 @@
   "customer": {
     "nav": {
       "overview": "Genel bakış",
-      "security": "Güvenlik"
+      "security": "Güvenlik",
+      "plan": "Plan"
     },
     "eyebrow": "GuardHub'ınız",
     "title": "Genel bakış",
@@ -1607,5 +1617,63 @@
     "running": "Bu sitede bir aktif tarama çalışıyor.",
     "stop": "Şimdi durdur",
     "stopHelp": "Tüm test isteklerini yaklaşık bir saniye içinde durdurur."
+  },
+  "billing": {
+    "title": "Plan",
+    "intro": "Planınız, sınırları ve bugün kullandıklarınız.",
+    "plan": {
+      "free": "Ücretsiz",
+      "pro": "Pro",
+      "agency": "Ajans"
+    },
+    "current": "Planınız: {plan}",
+    "active": "Etkin",
+    "trialUntil": "Deneme {when} tarihine kadar",
+    "sites": "Web siteleri",
+    "scansToday": "Bugünkü elle taramalar",
+    "scansPerDay": "Günlük elle tarama",
+    "concurrent": "Aynı anda tarama",
+    "plansTitle": "Planlar",
+    "colPlan": "Plan",
+    "colAction": "İşlem",
+    "yourPlan": "Planınız",
+    "startTrial": "{days} günlük denemeyi başlat",
+    "trialNamed": "{plan} için {days} günlük denemeyi başlat",
+    "chargingOff": "Ücretli planlar henüz çevrimiçi satın alınamıyor. Yükseltmek için bize ulaşın.",
+    "chargingLive": "Yükseltmeler ödeme sağlayıcımız üzerinden faturalandırılır.",
+    "admin": {
+      "title": "Faturalandırma",
+      "intro": "Plan sınırları, plan atamaları ve ödemelerin açık olup olmadığı.",
+      "chargingTitle": "Ödemeler",
+      "chargingLive": "Ücretlendirme açık",
+      "chargingOff": "Ücretlendirme kapalı",
+      "enabledFlag": "Ücretlendirme anahtarı (sunucu)",
+      "provider": "Sağlayıcı",
+      "webhookSecret": "Webhook imza anahtarı",
+      "apiKey": "Sağlayıcı API anahtarı",
+      "configured": "Ayarlı",
+      "notSet": "Ayarlı değil",
+      "chargingHelp": "Yalnızca sunucuda, sağlayıcının anahtarlarıyla, kurucu tarafından açılır. Anahtarlar asla gösterilmez ve depoda saklanmaz.",
+      "plansTitle": "Plan sınırları",
+      "plansIntro": "Fiyatlar ödeme sağlayıcısında tutulur. Herkese açık olmayan bir plan yine de buradan atanabilir.",
+      "field": {
+        "max_sites": "Web siteleri",
+        "scans_per_day": "Günlük elle tarama",
+        "concurrent_scans": "Aynı anda tarama",
+        "trial_days": "Deneme günü"
+      },
+      "public": "Herkese açık",
+      "save": "Kaydet",
+      "assignTitle": "Plan ata",
+      "assignIntro": "Platform dışında faturalanan müşteriler için. Gerekçesiyle kaydedilir.",
+      "email": "Hesap e-postası",
+      "planLabel": "Plan",
+      "reason": "Gerekçe",
+      "assign": "Ata",
+      "subsTitle": "Abonelikler",
+      "noSubs": "Henüz abonelik yok: her hesap ücretsiz planda.",
+      "status": "Durum",
+      "trialEnds": "Deneme bitişi"
+    }
   }
 }

@@ -20,6 +20,7 @@ from guardhub_api.admin.trusted_domains.ownership import (
     trusted_domain_covers,
 )
 from guardhub_api.auth.security import SessionClaims
+from guardhub_api.billing import service as billing
 from guardhub_api.common import audit, ratelimit
 from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.errors import ConflictError, NotFoundError, UnprocessableError
@@ -97,7 +98,9 @@ async def create_project(claims: SessionClaims, *, name: str, target_url: str) -
     # ADR-0003: an admin's ACTIVE trusted domain for exactly this origin counts as the proof.
     trusted = await trusted_domain_covers(claims.user_id, origin)
     async with db_session(_ctx(claims)) as session:
-        if await repository.count_for_user(session, claims.user_id) >= MAX_PROJECTS_PER_USER:
+        sites = await repository.count_for_user(session, claims.user_id)
+        await billing.check_new_site(claims.user_id, sites)  # the plan's limit (Phase 5C)
+        if sites >= MAX_PROJECTS_PER_USER:
             raise UnprocessableError("project_limit_reached", "Project limit reached.")
         if await repository.by_target(session, claims.user_id, origin) is not None:
             raise ConflictError("project_exists", "You already have a project for this address.")
@@ -212,7 +215,9 @@ async def claim_anonymous_scan(
     async with db_session(_ctx(claims)) as session:
         project = await repository.by_target(session, claims.user_id, origin)
         if project is None:
-            if await repository.count_for_user(session, claims.user_id) >= MAX_PROJECTS_PER_USER:
+            sites = await repository.count_for_user(session, claims.user_id)
+            await billing.check_new_site(claims.user_id, sites)  # the plan's limit (Phase 5C)
+            if sites >= MAX_PROJECTS_PER_USER:
                 raise UnprocessableError("project_limit_reached", "Project limit reached.")
             project = await repository.add(
                 session,
