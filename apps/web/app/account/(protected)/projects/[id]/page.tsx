@@ -8,6 +8,10 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { RescanButton, VerifyProjectButton } from "@/components/account/ProjectActions";
 import { ScheduleControl } from "@/components/account/ScheduleControl";
+import {
+  CustomerActiveTesting,
+  type ActiveReadiness,
+} from "@/components/customer/CustomerActiveTesting";
 import { ScoreTrendChart } from "@/components/account/ScoreTrendChart";
 import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
 import { OwnershipInstructions } from "@/components/scan/OwnershipInstructions";
@@ -26,13 +30,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const projectPath = `/projects/${encodeURIComponent(id)}`;
-  const [project, scans, trend] = await loadProtected(() =>
+  const [project, scans, trend, active] = await loadProtected(() =>
     Promise.all([
       serverApiFetch<Project>(projectPath),
       serverApiFetch<ScanSummary[]>(`${projectPath}/scans`),
       serverApiFetch<TrendPoint[]>(`${projectPath}/trend`, { query: { limit: TREND_LIMIT } }),
+      serverApiFetch<ActiveReadiness>(`${projectPath}/active`).catch(() => null),
     ]),
   );
+  const tActive = await getTranslations("customerActive");
   const t = await getTranslations("project");
   const tGitHub = await getTranslations("github");
   const tSchedule = await getTranslations("schedule");
@@ -91,6 +97,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           </>
         )}
       </section>
+
+      {active && project.kind !== "repo" ? (
+        <section aria-labelledby="active-heading" className="gh-panel">
+          <div className="gh-panel-head">
+            <div>
+              <h2 id="active-heading" className="text-base font-semibold">
+                {tActive("title")}
+              </h2>
+              <p className="gh-muted mt-0.5 text-xs">{tActive("intro")}</p>
+            </div>
+          </div>
+          <div className="gh-panel-body">
+            <CustomerActiveTesting projectId={project.id} readiness={active} />
+          </div>
+        </section>
+      ) : null}
 
       <section aria-labelledby="schedule-heading" className="space-y-4">
         <div>

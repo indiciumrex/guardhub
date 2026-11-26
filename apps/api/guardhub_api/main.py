@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
+from guardhub_api.active.customer_router import router as customer_active_router
 from guardhub_api.admin.people import accept_router as admin_invite_router
 from guardhub_api.admin.people import router as people_router
 from guardhub_api.admin.router import router as admin_router
@@ -145,6 +146,7 @@ def create_app() -> FastAPI:
         webhooks_router,
         people_router,
         admin_invite_router,
+        customer_active_router,
         platform_status_router,
         alerts_router,
         github_router,
