@@ -59,7 +59,11 @@ async def test_defaults_change_nothing_and_charging_is_off(client: httpx.AsyncCl
     assert body["trial_available"] is False  # no public paid plan yet: the founder decides
     async with new_client("198.51.100.95") as provider:  # no CSRF header, no cookie
         r = await provider.post("/api/v1/billing/webhook/stripe", content=b"{}")
-        assert r.status_code == 503 and r.json()["error"]["code"] == "billing_not_live"
+        assert r.status_code == 404  # quiet: never a 5xx, never an error report
+        r = await provider.post(
+            "/api/v1/billing/webhook/stripe", content=b"{}", headers={"Stripe-Signature": "t=1,v1=00"}
+        )
+        assert r.status_code == 404
 
 
 async def test_site_limit_and_one_trial_per_account(client: httpx.AsyncClient) -> None:
@@ -164,7 +168,13 @@ async def test_webhook_verified_applied_once_when_charging_is_on(
         bad = await provider.post(
             "/api/v1/billing/webhook/stripe", content=body, headers={"Stripe-Signature": sig + "0"}
         )
-        assert bad.status_code == 422
+        assert bad.status_code == 404  # a bad signature: quiet 404, nothing applied
+        unsigned = await provider.post("/api/v1/billing/webhook/stripe", content=body)
+        assert unsigned.status_code == 404
+        other = await provider.post(
+            "/api/v1/billing/webhook/paddle", content=body, headers={"Stripe-Signature": sig}
+        )
+        assert other.status_code == 404
         r = await provider.post(
             "/api/v1/billing/webhook/stripe", content=body, headers={"Stripe-Signature": sig}
         )

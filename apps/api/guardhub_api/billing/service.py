@@ -509,14 +509,25 @@ def verify_stripe_signature(secret: str, body: bytes, header: str, now: int) -> 
     return any(hmac.compare_digest(expected, s) for s in sigs)
 
 
+def _ignored(reason: str, provider: str) -> NotFoundError:
+    """A webhook call that is not a live provider event: a quiet 404, never a 5xx or an error
+    report. Charging off and unknown providers are routine (info); a bad or missing signature
+    while charging is on is worth a look (warning), but still below the Sentry event level."""
+    level = logging.WARNING if reason == "signature_invalid" else logging.INFO
+    log.log(level, "billing_webhook_ignored", extra={"reason": reason, "provider": provider[:32]})
+    return NotFoundError("not_found", "Not found.")
+
+
 async def handle_webhook(provider: str, body: bytes, signature: str, now: int) -> str:
     s = get_settings()
-    if not charging_live() or provider != s.billing_provider:
-        raise ServiceUnavailableError("billing_not_live", "Payments are not switched on.")
-    if provider != "stripe" or not verify_stripe_signature(
+    if not charging_live():
+        raise _ignored("charging_off", provider)
+    if provider != s.billing_provider or provider != "stripe":
+        raise _ignored("unknown_provider", provider)
+    if not signature or not verify_stripe_signature(
         s.billing_webhook_secret.get_secret_value(), body, signature, now
     ):
-        raise UnprocessableError("billing_signature_invalid", "The webhook signature is not valid.")
+        raise _ignored("signature_invalid", provider)
     try:
         event = json.loads(body)
         event_id, kind = str(event["id"]), str(event["type"])

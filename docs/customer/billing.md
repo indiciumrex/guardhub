@@ -24,7 +24,10 @@
   - Each event is stored once per id (`billing_events`, body hash only).
   - `customer.subscription.*` events tagged with `metadata.guardhub_user_id` and
     `metadata.guardhub_plan` update the subscription.
-  - While charging is off it answers `503 billing_not_live`.
+  - While charging is off, for another provider, or with a missing or invalid signature it
+    answers a quiet `404` and logs at info (charging off, unknown provider) or warning (bad
+    signature), below the Sentry event level: no 5xx, no error report, no `api_errors` count.
+    Signed events from the configured provider are processed as before.
 
 ## Taking money (the founder's gate)
 
