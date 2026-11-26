@@ -287,7 +287,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(page.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
   await page.getByRole("link", { name: "Customers" }).click();
   const report = page.getByRole("region", { name: /Customers · 30 days/ });
-  await expect(report.getByText("Masked")).toBeVisible();
+  await expect(report.getByText("Masked", { exact: true })).toBeVisible();
   await expect(report.getByRole("cell", { name: /\*\*\*@/ }).first()).toBeVisible();
   await expect(report.getByRole("cell", { name: /@example\.com$/ })).toHaveCount(0);
   const csvHref = await report.getByRole("link", { name: "Download CSV" }).getAttribute("href");
