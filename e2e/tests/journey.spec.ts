@@ -105,7 +105,7 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
   await expect(other.getByText("You don't have any projects yet.")).toBeVisible();
   // the customer panel: onboarding starts at "add a website"; ownership comes before any scan
   const onboarding = other.getByRole("region", { name: "Getting started" });
-  await expect(onboarding).toContainText("1 of 6 steps done");
+  await expect(onboarding).toContainText("2 of 6 steps done"); // account, and e-mail alerts are on by default
   await expect(onboarding.getByRole("link", { name: "Add a website" }).first()).toBeVisible();
   await expect(other.getByRole("navigation", { name: "Account navigation" })).toContainText(
     "Security",
