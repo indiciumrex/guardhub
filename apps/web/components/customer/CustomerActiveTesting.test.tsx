@@ -22,10 +22,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 const base: ActiveReadiness = {
   available: false,
-  blocked_by: ["customer_go", "terms_final", "oob_live"],
+  blocked_by: ["customer_go", "terms_final"],
   terms_version: null,
   checks: ["active_cors", "active_xss"],
   running_scan_id: null,
+  ssrf_covered: false,
 };
 
 describe("CustomerActiveTesting", () => {
@@ -36,6 +37,17 @@ describe("CustomerActiveTesting", () => {
     expect(waiting).toHaveTextContent("GuardHub's go-live decision for customer sites");
     expect(waiting).toHaveTextContent("the published active-testing terms");
     expect(screen.queryByRole("button", { name: "Start the active scan" })).toBeNull();
+    expect(screen.getByText(/is not covered in this plan/)).toBeInTheDocument();
+  });
+
+  it("does not mention SSRF as missing once the out-of-band service is live", () => {
+    renderWithIntl(
+      <CustomerActiveTesting
+        projectId="p1"
+        readiness={{ ...base, ssrf_covered: true, checks: ["active_cors", "active_ssrf"] }}
+      />,
+    );
+    expect(screen.queryByText(/is not covered in this plan/)).toBeNull();
   });
 
   it("needs the current terms accepted, then starts with them", async () => {

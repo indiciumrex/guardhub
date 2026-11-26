@@ -1,10 +1,12 @@
 """Active tests on a CUSTOMER's own site (Phase 5B). Built, and OFF: nothing is queued unless every
 lock holds, in this order, every time:
 
-Go-live (the founder's human gate, all three):
+Go-live (the founder's human gate, both):
  1. the founder's go:           CUSTOMER_ACTIVE_TESTING_GO=true;
  2. final, published terms:     ACTIVE_TOS_VERSION and ACTIVE_TOS_SHA256 set (empty = draft);
- 3. a live OOB collaborator:    a scanner reports active_oob (every module, not only SSRF);
+ 3. SSRF only: a live OOB collaborator (a scanner reports active_oob). Without it SSRF is neither
+    offered nor accepted (oob_not_configured) and the report says SSRF is not covered; the
+    other active modules do not need it (final prompt item 1);
 The owner-target locks, unchanged:
  4. the founder's approval:     ACTIVE_TESTING_APPROVED;
  5. every requested module switched on (not in maintenance);
@@ -53,10 +55,10 @@ from guardhub_api.projects.scanning import ScanTarget, ensure_fresh_ownership
 from guardhub_api.scans.queue import JOBS_STREAM, STREAM_MAXLEN
 
 CUSTOMER_CHECKS: tuple[str, ...] = tuple(c for c in ACTIVE_CHECK_IDS if c != "active_idor")
+SSRF = "active_ssrf"
 Lock = Literal[
     "customer_go",
     "terms_final",
-    "oob_live",
     "approval",
     "modules",
     "kill",
@@ -71,6 +73,7 @@ class Readiness(BaseModel):
     terms_version: str | None
     checks: list[str]
     running_scan_id: uuid.UUID | None
+    ssrf_covered: bool  # False: no live OOB collaborator, SSRF is not part of this plan
 
 
 class StartRequest(BaseModel):
@@ -120,13 +123,11 @@ async def _locks(redis: Redis, project: Project, checks: list[str]) -> list[Lock
     """Every lock that does not allow the scan, in order (empty: all hold)."""
     s = get_settings()
     blocked: list[Lock] = []
-    switch, oob = await _scanner_state(redis)
+    switch, _oob = await _scanner_state(redis)
     if not s.customer_active_testing_go:
         blocked.append("customer_go")
     if _terms() is None:
         blocked.append("terms_final")
-    if not oob:
-        blocked.append("oob_live")
     if not s.active_testing_approved:
         blocked.append("approval")
     if not checks or set(checks) - await _modules_on(checks):
@@ -152,7 +153,10 @@ async def _running(redis: Redis, project: Project) -> uuid.UUID | None:
 
 async def readiness(claims: SessionClaims, redis: Redis, project_id: uuid.UUID) -> Readiness:
     project = await _own_site(claims, project_id)
+    _switch, oob = await _scanner_state(redis)
     offered = sorted(await _modules_on(list(CUSTOMER_CHECKS)))  # only the modules switched on
+    if not oob:
+        offered = [c for c in offered if c != SSRF]  # SSRF has its own gate: a live OOB
     blocked = await _locks(redis, project, offered)
     terms = _terms()
     return Readiness(
@@ -161,6 +165,7 @@ async def readiness(claims: SessionClaims, redis: Redis, project_id: uuid.UUID) 
         terms_version=terms[0] if terms else None,
         checks=offered,
         running_scan_id=await _running(redis, project),
+        ssrf_covered=oob,
     )
 
 
@@ -171,12 +176,14 @@ async def start(claims: SessionClaims, redis: Redis, project_id: uuid.UUID, req:
         raise UnprocessableError("not_a_customer_active_check", f"Not offered: {', '.join(unknown)}")
     exclude = _valid_exclude(req.exclude)
     project = await _own_site(claims, project_id)
+    if SSRF in checks and not (await _scanner_state(redis))[1]:
+        raise UnprocessableError(
+            "oob_not_configured", "SSRF needs the out-of-band collaborator, which is not set up."
+        )
     blocked = await _locks(redis, project, checks)
     if blocked:
         raise UnprocessableError(
-            "customer_active_not_live"
-            if blocked[0] in ("customer_go", "terms_final", "oob_live")
-            else "active_blocked",
+            "customer_active_not_live" if blocked[0] in ("customer_go", "terms_final") else "active_blocked",
             "Active testing is not available for this site yet.",
             {"blocked_by": ",".join(blocked)},
         )

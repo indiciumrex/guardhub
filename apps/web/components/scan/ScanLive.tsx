@@ -43,6 +43,12 @@ function readToken(scanId: string): string | null {
   }
 }
 
+/** An active scan that did not include SSRF (no live out-of-band service in this plan). */
+function ssrfNotCovered(scan: ScanView): boolean {
+  const ids = scan.progress.map((p) => p.check_id);
+  return ids.some((id) => id.startsWith("active_")) && !ids.includes("active_ssrf");
+}
+
 export function ScanLive({ scanId, source, initial, renderActions }: ScanLiveProps) {
   const t = useTranslations("scanLive");
   const tCommon = useTranslations("common");
@@ -167,6 +173,11 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
       </header>
 
       {scan.trigger === "observe" ? <ObservationalNotice /> : null}
+      {ssrfNotCovered(scan) ? (
+        <Alert tone="info" label={t("ssrfNotCovered.label")}>
+          {t("ssrfNotCovered.body")}
+        </Alert>
+      ) : null}
 
       {isScanActive(scan.status) ? (
         <>

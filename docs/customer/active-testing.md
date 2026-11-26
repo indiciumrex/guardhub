@@ -11,7 +11,7 @@ The locks are checked in this order, on every request:
 |---|---|---|---|
 | 1 | The founder's go | `CUSTOMER_ACTIVE_TESTING_GO=true` (server `.env`) | not set: **off** |
 | 2 | Final, published terms | `ACTIVE_TOS_VERSION` + `ACTIVE_TOS_SHA256` (SHA-256 of the exact published text) | not set: **draft** |
-| 3 | Live OOB collaborator | a scanner reports `active_oob` (required for every module, not only SSRF) | **none** |
+| 3 | SSRF only: live OOB collaborator | a scanner reports `active_oob`. Without it SSRF is not offered, a request for it is refused (`oob_not_configured`), and the panel and the report say "SSRF is not covered in this plan". The other modules do not need it. | **none**: SSRF not covered |
 | 4 | Founder approval of active testing | `ACTIVE_TESTING_APPROVED` | on (owner targets) |
 | 5 | Every requested module on | Module Center | 5 on, SSRF off |
 | 6 | Kill switch released | Scans → kill switch (an unreadable switch counts as engaged) | released |
@@ -36,9 +36,12 @@ IDOR is not offered to customers (it needs test-account cookies).
 
 1. Publish the active-testing terms at `/legal/active-testing`. Set `ACTIVE_TOS_VERSION` and
    `ACTIVE_TOS_SHA256` to that exact text's version and hash. GuardHub does not write legal text.
-2. Deploy and verify the OOB collaborator, so that the scanner reports `active_oob`.
-3. Set `CUSTOMER_ACTIVE_TESTING_GO=true`.
-4. Recreate the serving colour's api and scanner, then re-run gates A–K.
+2. Set `CUSTOMER_ACTIVE_TESTING_GO=true`.
+3. Recreate the serving colour's api and scanner, then re-run gates A–K.
 
-To roll back, remove any one of these; each one alone blocks every new customer active scan. The
+The OOB collaborator is no longer a go-live step: it only adds SSRF later (deploy it, verify the
+scanner reports `active_oob`, switch the SSRF module on).
+
+To roll back, remove either the go or the terms; each one alone blocks every new customer active
+scan. The
 global kill switch stops running scans.

@@ -341,6 +341,10 @@
       "badge": "Observational scan",
       "title": "Observational scan: passive observation only",
       "body": "Ownership of this site was not proven. Only what any browser or mail server sees was checked (TLS, headers, DNS and e-mail, technology), at the normal gentle request rate. No active, path-probing or login checks ran. An authorisation statement was recorded for this scan."
+    },
+    "ssrfNotCovered": {
+      "label": "SSRF not covered",
+      "body": "SSRF is not covered in this plan: this active scan did not test for server-side request forgery, so the absence of an SSRF finding says nothing about it."
     }
   },
   "report": {
@@ -1614,7 +1618,6 @@
     "lock": {
       "customer_go": "GuardHub's go-live decision for customer sites",
       "terms_final": "the published active-testing terms",
-      "oob_live": "the out-of-band detection service",
       "approval": "the platform-wide approval of active testing",
       "modules": "the test modules being switched on",
       "kill": "the platform stop switch being released",
@@ -1630,7 +1633,8 @@
     "start": "Start the active scan",
     "running": "An active scan of this site is running.",
     "stop": "Stop now",
-    "stopHelp": "Stops every test request within about a second."
+    "stopHelp": "Stops every test request within about a second.",
+    "ssrfNotCovered": "SSRF (server-side request forgery) is not covered in this plan: it needs an out-of-band detection service that is not set up yet. The other active checks do not need it."
   },
   "billing": {
     "title": "Plan",
