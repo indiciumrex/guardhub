@@ -118,6 +118,7 @@ async def test_admin_invitation_only_for_the_invited_email_after_2fa_and_once(
     invited = f"invited-{uuid.uuid4().hex[:8]}@example.com"
     r = await client.post(f"{PEOPLE}/invites", json={"email": invited})
     assert r.status_code == 201
+    assert r.json()["emailed"] is False  # no SMTP in CI: the link is shown once instead
     link = r.json()["link"]
     token = link.split("token=", 1)[1]
     assert "/account/admin-invite?token=ghi_" in link

@@ -61,5 +61,10 @@
       "monthly": "[GuardHub] Monthly platform report"
     },
     "body": "Scans: {scans} (failed: {scans_failed}). New critical findings: {critical}, high: {high}. New accounts: {new_users}. Full report in the admin console:"
+  },
+  "adminInviteMail": {
+    "subject": "[GuardHub] You are invited to the admin console",
+    "body": "You were invited to manage GuardHub as an admin. Sign in (or sign up) with this e-mail address, complete two-factor sign-in, then open the link. It works once and expires in {hours} hours.",
+    "note": "If you did not expect this, ignore this e-mail: nothing changes unless the link is used by this address after two-factor sign-in."
   }
 }
