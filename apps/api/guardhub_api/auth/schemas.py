@@ -25,7 +25,15 @@ class TotpVerifyRequest(BaseModel):
 
 
 class UpdateMeRequest(BaseModel):
-    locale: str = Field(max_length=10)
+    locale: str | None = Field(default=None, max_length=10)
+    # "" clears the name; None leaves it unchanged.
+    display_name: str | None = Field(default=None, max_length=80)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=1, max_length=256)
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")  # a current authenticator code
 
 
 class UserView(BaseModel):
@@ -33,9 +41,11 @@ class UserView(BaseModel):
     email: str
     role: Literal["user", "admin"]
     locale: str
+    display_name: str | None = None
     totp_enabled: bool
     mfa_complete: bool
     created_at: datetime
+    password_changed_at: datetime | None = None
 
 
 class MfaState(BaseModel):

@@ -160,7 +160,9 @@
     "trial_used": "Bu hesapta deneme zaten kullanıldı.",
     "billing_not_live": "Ödemeler açık değil.",
     "plan_not_found": "Bu plan yok.",
-    "free_plan_public": "Ücretsiz plan herkese açık kalır."
+    "free_plan_public": "Ücretsiz plan herkese açık kalır.",
+    "wrong_current_password": "Mevcut parola doğru değil. Lütfen tekrar deneyin.",
+    "invalid_display_name": "Ad, izin verilmeyen karakterler içeriyor."
   },
   "severity": {
     "critical": "Kritik",
@@ -1517,7 +1519,7 @@
   "customer": {
     "nav": {
       "overview": "Genel bakış",
-      "security": "Güvenlik",
+      "security": "Profil ve güvenlik",
       "plan": "Plan"
     },
     "eyebrow": "GuardHub'ınız",
@@ -1577,7 +1579,7 @@
     "verifyNow": "Şimdi doğrula",
     "noSchedule": "Zamanlanmadı",
     "security": {
-      "title": "Güvenlik",
+      "title": "Profil ve güvenlik",
       "intro": "Nasıl giriş yaptığınız, kurtarma kodlarınız ve nerelerde oturumunuzun açık olduğu.",
       "mfaTitle": "İki adımlı giriş",
       "mfaOn": "Açık",
@@ -1675,5 +1677,29 @@
       "status": "Durum",
       "trialEnds": "Deneme bitişi"
     }
+  },
+  "profile": {
+    "title": "Profil",
+    "intro": "Adınız ve giriş bilgileriniz.",
+    "email": "E-posta",
+    "role": "Hesap türü",
+    "roleAdmin": "Yönetici",
+    "roleCustomer": "Müşteri",
+    "nameLabel": "Görünen ad (isteğe bağlı)",
+    "save": "Kaydet",
+    "saved": "Kaydedildi.",
+    "emailHelp": "Hesabınızın e-posta adresini değiştirmek için destekle iletişime geçin: bu adres giriş adınız ve kurtarma adresinizdir.",
+    "passwordTitle": "Parola",
+    "lastChanged": "Son değişiklik: {when} (UTC).",
+    "neverChanged": "Hesap oluşturulduğundan beri değiştirilmedi.",
+    "currentPassword": "Mevcut parola",
+    "newPassword": "Yeni parola",
+    "newPasswordHelp": "En az 12 karakter; yaygın bir parola olmasın ve e-postanızı içermesin.",
+    "confirmPassword": "Yeni parolayı tekrar girin",
+    "mismatch": "İki yeni parola aynı değil.",
+    "code": "Doğrulama uygulamanızdaki güncel kod",
+    "passwordHelp": "Güvenliğiniz için hem mevcut parolanızı hem de güncel iki adımlı doğrulama kodunu istiyoruz. Diğer tüm cihazlardan çıkış yapılır; bu cihazda oturumunuz açık kalır.",
+    "changePassword": "Parolayı değiştir",
+    "passwordChanged": "Parola değiştirildi. {count, plural, =0 {Başka cihazda açık oturum yoktu.} other {# başka cihazdan çıkış yapıldı.}}"
   }
 }
