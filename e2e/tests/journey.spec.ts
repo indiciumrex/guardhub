@@ -107,9 +107,9 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
   const onboarding = other.getByRole("region", { name: "Getting started" });
   await expect(onboarding).toContainText("2 of 6 steps done"); // account, and e-mail alerts are on by default
   await expect(onboarding.getByRole("link", { name: "Add a website" }).first()).toBeVisible();
-  await expect(other.getByRole("navigation", { name: "Account navigation" })).toContainText(
-    "Profile & security",
-  );
+  const menu = other.getByRole("navigation", { name: "Main menu" });
+  await expect(menu).toContainText("Profile & security");
+  await expect(menu).not.toContainText("Module Center"); // a customer sees no console groups
   await shoot(other, "customer-overview");
   // own profile: a display name; the password form asks for the current password and a code
   await other.getByRole("link", { name: "Profile & security" }).click();
@@ -150,12 +150,23 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
   await expect(active).toContainText("GuardHub's go-live decision for customer sites");
   await expect(active.getByRole("button", { name: "Start the active scan" })).toHaveCount(0);
 
+  // the primary action: "New scan" in the menu lists the verified site with one-click "Scan now"
+  await menu.getByRole("link", { name: "New scan" }).click();
+  await expect(other.getByRole("heading", { name: "New scan", level: 1 })).toBeVisible();
+  const ready = other.getByRole("region", { name: "Ready to scan" });
+  await expect(ready).toContainText("Demo site (direct)");
+  await shoot(other, "customer-new-scan");
+  await ready.getByRole("button", { name: "Scan Demo site (direct) now" }).click();
+  await other.waitForURL(/\/account\/scans\/[0-9a-f-]+$/);
+  await expectFinishedReport(other);
+  await other.getByRole("link", { name: "← Back to project" }).click();
+
   await rescan.click();
   await other.waitForURL(/\/account\/scans\/[0-9a-f-]+$/);
   await expectFinishedReport(other);
   await other.getByRole("link", { name: "← Back to project" }).click();
   await expect(other.getByRole("table", { name: /Previous scans/ }).getByRole("row")).toHaveCount(
-    2,
+    3,
   );
   await context.close();
 });
@@ -196,7 +207,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(page.getByText("Powered by").first()).toBeVisible(); // brand in the console, §8.1
   await shoot(page, "admin-overview");
   // the control centre's sections: users, then the Module Center
-  const nav = page.getByRole("navigation", { name: "Administration sections" });
+  const nav = page.getByRole("navigation", { name: "Main menu" });
   await nav.getByRole("link", { name: "Users" }).click();
   const meRow = page
     .getByRole("region", { name: "Accounts" })
@@ -280,7 +291,7 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   await expect(history.getByRole("row", { name: /Reverted/ }).first()).toContainText("8 → default");
 
   // alerts: four rules, a threshold change that persists, and a mute that shows until undone
-  await nav.getByRole("link", { name: "Alerts" }).click();
+  await nav.getByRole("link", { name: "Platform alerts" }).click();
   await expect(page.getByRole("heading", { name: "Alerts", level: 1 })).toBeVisible();
   await expect(page.getByRole("region", { name: "Open alerts" })).toBeVisible();
   const rules = page.getByRole("region", { name: "Rules" });

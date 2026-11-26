@@ -41,7 +41,7 @@ test("trusted domains: hidden from non-admins, prove once, scan without a prompt
 
   await page.goto("/admin");
   await page
-    .getByRole("navigation", { name: "Administration sections" })
+    .getByRole("navigation", { name: "Main menu" })
     .getByRole("link", { name: "Trusted domains" })
     .click();
   await expect(page.getByRole("heading", { name: "Trusted domains", level: 1 })).toBeVisible();

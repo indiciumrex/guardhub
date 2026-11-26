@@ -31,7 +31,7 @@ export function onboardingSteps(projects: Project[], alerts: NotificationSetting
     {
       key: "scan",
       done: Boolean(scanned),
-      href: verified ? `/account/projects/${verified.id}` : "/account#add-site",
+      href: verified ? "/account/new-scan" : "/account#add-site",
     },
     {
       key: "review",
