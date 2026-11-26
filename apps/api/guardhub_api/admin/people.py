@@ -22,13 +22,19 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from guardhub_api.auth import recovery, sessions
 from guardhub_api.auth import service as auth_service
-from guardhub_api.auth import sessions
 from guardhub_api.auth.deps import AdminSession, FullSession, set_session_cookie
 from guardhub_api.auth.security import SessionClaims
-from guardhub_api.common import audit
+from guardhub_api.common import audit, ratelimit
 from guardhub_api.common.crypto import keyed_hash, random_token
-from guardhub_api.common.errors import ConflictError, ForbiddenError, NotFoundError, UnprocessableError
+from guardhub_api.common.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    UnauthenticatedError,
+    UnprocessableError,
+)
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
@@ -106,6 +112,58 @@ async def enable(user_id: uuid.UUID, claims: AdminSession) -> AccountState:
             user.disabled_at, user.disabled_by = None, None
             await audit.record(session, actor=_actor(claims), action="user.enabled", target=str(user.id))
     return AccountState(id=user_id, disabled_at=None)
+
+
+class ResetTwoFactorRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=200)
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")  # the acting admin's own code
+
+
+@router.post("/{user_id}/reset-two-factor")
+async def reset_two_factor(
+    user_id: uuid.UUID, body: ResetTwoFactorRequest, claims: AdminSession
+) -> AccountState:
+    """Another admin (never yourself), confirming with their own current authenticator code, clears
+    an account's two-factor setup: its sessions end, its recovery codes are deleted, and it must
+    sign in with its password and set up two-factor again."""
+    if user_id == claims.user_id:
+        raise UnprocessableError(
+            "cannot_reset_self", "Use your recovery codes; another admin can reset yours."
+        )
+    redis = get_redis()
+    await ratelimit.enforce(redis, "totp", str(claims.user_id), limit=5, window=300)
+    async with db_session(_ctx(claims)) as session:
+        actor = await session.get(User, claims.user_id)
+        if actor is None or not actor.totp_secret:
+            raise ForbiddenError("mfa_required", "Complete two-factor authentication first.")
+        secret = get_settings().keyring.decrypt(actor.totp_secret, associated_data=str(actor.id).encode())
+        confirmed = await recovery.current_code_ok(redis, actor, body.code, secret)
+        if not confirmed:
+            await audit.record(
+                session,
+                actor=_actor(claims),
+                action="auth.totp_failed",
+                target=str(claims.user_id),
+                metadata={"via": "reset_two_factor"},
+            )
+    if not confirmed:
+        raise UnauthenticatedError("invalid_totp", "Your own authenticator code is not valid.")
+    async with db_session(_ctx(claims)) as session:
+        user = await session.get(User, user_id, with_for_update=True)
+        if user is None:
+            raise NotFoundError("user_not_found", "User not found.")
+        user.totp_enabled, user.totp_secret = False, None
+        await recovery.clear(session, user_id)
+        await audit.record(
+            session,
+            actor=_actor(claims),
+            action="user.two_factor_reset",
+            target=str(user_id),
+            metadata={"reason": body.reason.strip()[:200], "role": user.role},
+        )
+        disabled_at = user.disabled_at
+    ended = await sessions.end(redis, user_id)
+    return AccountState(id=user_id, disabled_at=disabled_at, sessions_ended=ended)
 
 
 # ---- sessions ----

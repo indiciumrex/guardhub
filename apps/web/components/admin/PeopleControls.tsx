@@ -57,6 +57,9 @@ export function AccountActions({
   const { busy, error, run } = useAction();
   const [reason, setReason] = useState("");
   const [list, setList] = useState<AccountSession[] | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetReason, setResetReason] = useState("");
+  const [ownCode, setOwnCode] = useState("");
   const base = `/admin/people/${encodeURIComponent(userId)}`;
   const loadSessions = async () => setList(await run<AccountSession[]>(`${base}/sessions`, "GET"));
   const at = (s: number) =>
@@ -114,7 +117,74 @@ export function AccountActions({
         >
           {list === null ? t("showSessions") : t("hideSessions")}
         </button>
+        {isSelf ? null : (
+          <button
+            type="button"
+            className="gh-btn-secondary min-h-9 px-3 py-1"
+            aria-expanded={resetOpen}
+            aria-label={t("resetTwoFactorNamed", { email })}
+            disabled={busy}
+            onClick={() => setResetOpen((v) => !v)}
+          >
+            {t("resetTwoFactor")}
+          </button>
+        )}
       </div>
+      {resetOpen ? (
+        <form
+          aria-label={t("resetTwoFactorNamed", { email })}
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const r = await run(`${base}/reset-two-factor`, "POST", {
+              reason: resetReason.trim(),
+              code: ownCode,
+            });
+            if (r) {
+              setResetOpen(false);
+              setOwnCode("");
+              setResetReason("");
+            }
+          }}
+        >
+          <div>
+            <label htmlFor={`reset-reason-${userId}`} className="block">
+              {t("resetReason")}
+            </label>
+            <input
+              id={`reset-reason-${userId}`}
+              value={resetReason}
+              maxLength={200}
+              disabled={busy}
+              onChange={(e) => setResetReason(e.target.value)}
+              className="gh-input w-40 py-1 text-xs"
+            />
+          </div>
+          <div>
+            <label htmlFor={`reset-code-${userId}`} className="block">
+              {t("resetYourCode")}
+            </label>
+            <input
+              id={`reset-code-${userId}`}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={ownCode}
+              disabled={busy}
+              onChange={(e) => setOwnCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="gh-input w-24 py-1 text-xs font-mono"
+            />
+          </div>
+          <button
+            type="submit"
+            className="gh-btn-primary min-h-9 px-3 py-1"
+            disabled={busy || resetReason.trim().length < 3 || ownCode.length !== 6}
+          >
+            {t("resetConfirm")}
+          </button>
+          <p className="gh-muted w-full">{t("resetHelp")}</p>
+        </form>
+      ) : null}
       {list !== null ? (
         list.length === 0 ? (
           <p className="gh-muted">{t("noSessions")}</p>

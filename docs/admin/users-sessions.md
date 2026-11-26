@@ -36,3 +36,24 @@ admin. The data boundary stays in the database (RLS). A full role matrix (RBAC) 
 Known limit: role and disabled state are protected in code (admin-only routes, system context),
 not by a database trigger. A trigger would also block the operator promotion CLI; that is a
 follow-up.
+
+## Two-factor recovery (2026-11-26)
+
+- **Recovery codes.** Ten single-use codes (`xxxxx-xxxxx`, about 49 bits each) are created when
+  two-factor sign-in is first set up and shown once. Only keyed hashes are stored (migration
+  0026). At sign-in, a code replaces the authenticator code once, under the same rate limit
+  (5 tries per 5 minutes). Making new codes needs a current authenticator code and voids the old
+  ones. Audited as `auth.recovery_code_used` and `auth.recovery_codes_regenerated`.
+- **Reset by another admin.** It is never available for yourself. The acting admin confirms with
+  their own current authenticator code (replay-protected), so a stolen session cookie is not
+  enough. The reset:
+  - clears the account's two-factor setup;
+  - deletes its recovery codes;
+  - ends every session.
+
+  The account must then sign in with its password and set up two-factor again. Audited as
+  `user.two_factor_reset`, with the reason.
+- **DB guard (migration 0025).** `users.role`, `disabled_at` and `disabled_by` change only in an
+  admin or system context, or from a maintenance connection that is not the application role. The
+  operator promotion CLI runs in the system context and keeps working. This closes the "known
+  limit" above.

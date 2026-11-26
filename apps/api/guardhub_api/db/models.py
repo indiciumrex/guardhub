@@ -370,6 +370,17 @@ class AdminInvite(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class RecoveryCode(Base):
+    """A single-use two-factor recovery code (migration 0026): keyed hash only."""
+
+    __tablename__ = "recovery_codes"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    code_hash: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = _now()
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

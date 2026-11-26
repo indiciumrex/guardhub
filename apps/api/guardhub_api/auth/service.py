@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 
 from redis.asyncio import Redis
 
-from guardhub_api.auth import repository
+from guardhub_api.auth import recovery, repository
 from guardhub_api.auth.schemas import UserView
 from guardhub_api.auth.security import (
     SessionClaims,
@@ -151,7 +151,9 @@ async def setup_totp(claims: SessionClaims) -> tuple[str, str]:
         return secret, totp_uri(secret, user.email)
 
 
-async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> User:
+async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> tuple[User, list[str] | None]:
+    """The user, and their first recovery codes when this code just enabled two-factor."""
+    codes: list[str] | None = None
     await ratelimit.enforce(redis, "totp", str(claims.user_id), limit=5, window=300)
     async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
         user = await repository.by_id(session, claims.user_id)
@@ -168,6 +170,7 @@ async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> User:
             await redis.set(replay_key, str(step), ex=300)
             if not user.totp_enabled:
                 user.totp_enabled = True
+                codes = await recovery.generate(session, user.id)  # shown once, right now
                 await audit.record(
                     session, actor=f"user:{user.id}", action="auth.totp_enabled", target=str(user.id)
                 )
@@ -179,7 +182,76 @@ async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> User:
             )
     if not accepted:
         raise UnauthenticatedError("invalid_totp", "The code is not valid.")
+    return user, codes
+
+
+async def recover(redis: Redis, claims: SessionClaims, code: str) -> User:
+    """Sign-in with a recovery code instead of the authenticator code (once per code)."""
+    await ratelimit.enforce(redis, "totp", str(claims.user_id), limit=5, window=300)
+    async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
+        user = await repository.by_id(session, claims.user_id)
+        if user is None or user.disabled_at is not None:
+            raise UnauthenticatedError("session_invalid", "Session is no longer valid.")
+        if not user.totp_enabled:
+            raise UnprocessableError("totp_not_setup", "Set up two-factor authentication first.")
+        ok = await recovery.consume(session, user.id, code)
+        if ok:
+            user.last_login_at = datetime.now(UTC)
+            left = await recovery.remaining(session, user.id)
+            await audit.record(
+                session,
+                actor=f"user:{user.id}",
+                action="auth.recovery_code_used",
+                target=str(user.id),
+                metadata={"remaining": str(left)},
+            )
+        else:
+            await audit.record(
+                session,
+                actor=f"user:{user.id}",
+                action="auth.totp_failed",
+                target=str(user.id),
+                metadata={"via": "recovery_code"},
+            )
+    if not ok:
+        raise UnauthenticatedError("invalid_recovery_code", "This recovery code is not valid.")
     return user
+
+
+async def recovery_status(claims: SessionClaims) -> int:
+    async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
+        return await recovery.remaining(session, claims.user_id)
+
+
+async def regenerate_recovery_codes(redis: Redis, claims: SessionClaims, code: str) -> list[str]:
+    """New codes for a signed-in account that proves a current authenticator code."""
+    await ratelimit.enforce(redis, "totp", str(claims.user_id), limit=5, window=300)
+    async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
+        user = await repository.by_id(session, claims.user_id)
+        if user is None or not user.totp_secret or not user.totp_enabled:
+            raise UnprocessableError("totp_not_setup", "Set up two-factor authentication first.")
+        secret = _cipher().decrypt(user.totp_secret, associated_data=str(user.id).encode())
+        if not await recovery.current_code_ok(redis, user, code, secret):
+            await audit.record(
+                session,
+                actor=f"user:{user.id}",
+                action="auth.totp_failed",
+                target=str(user.id),
+                metadata={"via": "recovery_regenerate"},
+            )
+            ok = False
+        else:
+            codes = await recovery.generate(session, user.id)
+            await audit.record(
+                session,
+                actor=f"user:{user.id}",
+                action="auth.recovery_codes_regenerated",
+                target=str(user.id),
+            )
+            ok = True
+    if not ok:
+        raise UnauthenticatedError("invalid_totp", "The code is not valid.")
+    return codes
 
 
 async def revoke(redis: Redis, claims: SessionClaims) -> None:

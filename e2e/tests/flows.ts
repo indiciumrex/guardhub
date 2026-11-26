@@ -69,6 +69,11 @@ export async function registerWith2fa(page: Page, address: string): Promise<stri
   expect(secret).toMatch(/^[A-Z2-7]{16,}$/);
   await fill(page.getByLabel("6-digit code"), totp(secret));
   await page.getByRole("button", { name: "Verify" }).click();
+  // first setup: the ten single-use recovery codes are shown once before going on
+  const codes = page.getByRole("list", { name: "Your recovery codes" });
+  await expect(codes.getByRole("listitem")).toHaveCount(10);
+  await expect(codes.getByRole("listitem").first()).toHaveText(/^[a-z2-9]{5}-[a-z2-9]{5}$/);
+  await page.getByRole("button", { name: "I saved them, continue" }).click();
   return secret;
 }
 
