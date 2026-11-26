@@ -278,6 +278,34 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   expect(await csv.text()).not.toMatch(/[a-z0-9-]+@example\.com/);
   await shoot(page, "admin-reports");
 
+  // integrations: a key is shown once, works on the integration API only, and can be revoked
+  await nav.getByRole("link", { name: "API & integrations" }).click();
+  await expect(page.getByRole("heading", { name: "API & integrations", level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "What a key can never do" })).toBeVisible();
+  const createForm = page.getByRole("form", { name: "Create an API key" });
+  await createForm.getByLabel("Name").fill("e2e pipeline");
+  await createForm.getByLabel("Read projects").check();
+  await createForm.getByRole("button", { name: "Create key" }).click();
+  const secretBox = page.getByLabel("New API key");
+  await expect(secretBox).toHaveText(/^ghk_/);
+  const apiKey = (await secretBox.textContent()) ?? "";
+  const asKey = await page.request.get("/api/v1/integrations/projects", {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  expect(asKey.status()).toBe(200);
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByText(apiKey)).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Endpoint traffic" })).toBeVisible();
+  await shoot(page, "admin-integrations");
+  const revoked = page.waitForResponse((r) => r.url().endsWith("/revoke") && r.ok());
+  await page.getByRole("button", { name: "Revoke key e2e pipeline" }).click();
+  await revoked;
+  await expect(page.getByRole("row", { name: /e2e pipeline/ }).getByText("Revoked")).toBeVisible();
+  const afterRevoke = await page.request.get("/api/v1/integrations/projects", {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  expect(afterRevoke.status()).toBe(401);
+
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,

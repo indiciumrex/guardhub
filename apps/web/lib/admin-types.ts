@@ -406,3 +406,38 @@ export interface ReportSchedule {
   last_sent_at: string | null;
   updated_at: string;
 }
+
+// ---- integrations (Prompt 2 §4) ----
+
+export const API_KEY_SCOPES = ["projects:read", "scans:read", "scans:trigger"] as const;
+export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+export const API_KEY_DAYS = [30, 90, 180, 365] as const;
+
+export interface ApiKeyView {
+  id: string;
+  name: string;
+  prefix: string;
+  owner_email: string | null;
+  scopes: ApiKeyScope[];
+  created_at: string;
+  expires_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  status: "active" | "expired" | "revoked";
+}
+
+export interface CreatedApiKey {
+  key: ApiKeyView;
+  secret: string;
+}
+
+export interface EndpointTraffic {
+  endpoint: string;
+  requests: number;
+  client_errors: number;
+  server_errors: number;
+  rate_limited: number;
+  error_rate: number;
+  avg_ms: number;
+  p95_ms: number | null;
+}

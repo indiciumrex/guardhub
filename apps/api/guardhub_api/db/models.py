@@ -303,6 +303,23 @@ class ReportSchedule(Base):
     updated_at: Mapped[datetime] = _now()
 
 
+class ApiKey(Base):
+    """An integration API key (migration 0022): keyed hash only. Admin/system only."""
+
+    __tablename__ = "api_keys"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str] = mapped_column(Text)
+    prefix: Mapped[str] = mapped_column(Text)
+    key_hash: Mapped[str] = mapped_column(Text)
+    scopes: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = _now()
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

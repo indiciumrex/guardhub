@@ -128,7 +128,13 @@
     "mute_invalid": "Mute for 1 hour, 4 hours or 24 hours, or unmute.",
     "report_unknown": "This report does not exist.",
     "report_days_invalid": "Choose 7, 30 or 90 days.",
-    "report_schedule_unknown": "Weekly or monthly only."
+    "report_schedule_unknown": "Weekly or monthly only.",
+    "api_key_expiry_invalid": "Choose 30, 90, 180 or 365 days.",
+    "api_key_name_invalid": "Give the key a short name.",
+    "api_key_not_found": "This API key does not exist.",
+    "api_key_missing": "Send an API key.",
+    "api_key_invalid": "This API key is unknown, expired or revoked.",
+    "api_key_scope_missing": "This API key does not have the scope for this request."
   },
   "severity": {
     "critical": "Critical",
@@ -705,7 +711,8 @@
       "trustedDomains": "Trusted domains",
       "config": "Configuration",
       "alerts": "Alerts",
-      "reports": "Reports"
+      "reports": "Reports",
+      "integrations": "API & integrations"
     },
     "common": {
       "lifecycle": {
@@ -1265,6 +1272,66 @@
         "monthly": "Monthly summary (on the 1st, 06:05 UTC)"
       },
       "lastSent": "Last sent: {when}"
+    },
+    "integrations": {
+      "title": "API & integrations",
+      "intro": "Keys for integrations such as a CI pipeline, and the traffic of every API endpoint.",
+      "boundaryTitle": "What a key can never do",
+      "enforced": "Enforced by the API",
+      "boundary": {
+        "noAdmin": "A key never opens a session: the admin console and its API refuse it.",
+        "userRole": "A key acts as its owner in the customer role, so it sees the owner's own projects and scans only, even when the owner is an admin.",
+        "proof": "A scan started with a key still needs a fresh ownership proof (§9.2). Active tests can never be started with a key.",
+        "hashed": "Only a hash of the key is stored. The key is shown once, when it is created.",
+        "limits": "Every key expires (at most 365 days), can be revoked at any time and is limited to 120 requests a minute. Creation, revocation and every scan it starts are audited."
+      },
+      "howTo": "Send the key as a bearer token. Requests that change something also need the X-GuardHub-CSRF header.",
+      "keysTitle": "API keys",
+      "keysIntro": "A key belongs to the admin who creates it.",
+      "createTitle": "Create an API key",
+      "keyName": "Name",
+      "scopesLabel": "Scopes",
+      "scope": {
+        "projects_read": "Read projects",
+        "scans_read": "Read scans",
+        "scans_trigger": "Start scans"
+      },
+      "expiresIn": "Expires in",
+      "daysOption": "{days} days",
+      "create": "Create key",
+      "secretOnce": "Key “{name}” created. Copy it now: it will not be shown again.",
+      "secretWarning": "Store it in your integration's secret store. If it is lost, revoke it and create a new one.",
+      "secretLabel": "New API key",
+      "copy": "Copy",
+      "copied": "Copied",
+      "done": "Done",
+      "noKeys": "No API keys yet.",
+      "colName": "Name and owner",
+      "colKey": "Key",
+      "colScopes": "Scopes",
+      "colStatus": "Status",
+      "colExpires": "Expires",
+      "colLastUsed": "Last used",
+      "status": {
+        "active": "Active",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "revoke": "Revoke",
+      "revokeNamed": "Revoke key {name}",
+      "trafficTitle": "Endpoint traffic",
+      "trafficIntro": "Per route, from every API process. Routes are shown as templates, never with identifiers.",
+      "hoursLabel": "Period",
+      "hours": "{hours, plural, one {# hour} other {# hours}}",
+      "noTraffic": "No traffic recorded in this period.",
+      "colEndpoint": "Endpoint",
+      "colRequests": "Requests",
+      "col4xx": "4xx",
+      "col5xx": "5xx",
+      "col429": "Rate limited",
+      "colAvg": "Average",
+      "colP95": "p95",
+      "over5s": "over 5 s"
     }
   },
   "platformBanner": {
