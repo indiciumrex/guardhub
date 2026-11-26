@@ -67,7 +67,7 @@ async def test_display_name_needs_a_full_session() -> None:
                 "/api/v1/auth/password",
                 json={"current_password": PASSWORD, "new_password": NEW_PASSWORD, "code": "123456"},
             )
-        ).status_code == 401
+        ).status_code == 403  # a pre-MFA session cannot change the password
 
 
 async def test_password_change_needs_password_and_code_and_ends_other_sessions(
