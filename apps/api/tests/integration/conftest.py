@@ -38,7 +38,8 @@ class FakeScanner:
     verify_ok: bool = True
     findings: list[dict[str, object]] = field(default_factory=list)
     fail_scan: str | None = None
-    failed_checks: set[str] = field(default_factory=set)  # checks reported as failed (timeout)
+    failed_checks: set[str] = field(default_factory=set)  # checks reported as failed
+    fail_reason: str = "timeout"  # the reason code sent for them
     last_id: str = "$"
     scan_jobs: list[dict[str, object]] = field(default_factory=list)
 
@@ -68,7 +69,7 @@ class FakeScanner:
             event = {"v": 1, "type": "scan.failed", "scan_id": sid, "at": now, "error": self.fail_scan}
         else:
             results = [{"check_id": c, "status": "failed" if c in self.failed_checks else "done",
-                        "error": "timeout" if c in self.failed_checks else None} for c in job["checks"]]  # type: ignore[union-attr]  # fmt: skip
+                        "error": self.fail_reason if c in self.failed_checks else None} for c in job["checks"]]  # type: ignore[union-attr]  # fmt: skip
             findings = [f for f in self.findings if f["check_id"] not in self.failed_checks]
             event = {"v": 1, "type": "scan.completed", "scan_id": sid, "at": now, "findings": findings,
                      "check_results": results}  # fmt: skip

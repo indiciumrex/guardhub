@@ -59,7 +59,11 @@ async def test_defaults_change_nothing_and_charging_is_off(client: httpx.AsyncCl
     assert body["trial_available"] is False  # no public paid plan yet: the founder decides
     async with new_client("198.51.100.95") as provider:  # no CSRF header, no cookie
         r = await provider.post("/api/v1/billing/webhook/stripe", content=b"{}")
-        assert r.status_code == 503 and r.json()["error"]["code"] == "billing_not_live"
+        assert r.status_code == 404  # quiet: never a 5xx, never an error report
+        r = await provider.post(
+            "/api/v1/billing/webhook/stripe", content=b"{}", headers={"Stripe-Signature": "t=1,v1=00"}
+        )
+        assert r.status_code == 404
 
 
 async def test_site_limit_and_one_trial_per_account(client: httpx.AsyncClient) -> None:
@@ -164,7 +168,13 @@ async def test_webhook_verified_applied_once_when_charging_is_on(
         bad = await provider.post(
             "/api/v1/billing/webhook/stripe", content=body, headers={"Stripe-Signature": sig + "0"}
         )
-        assert bad.status_code == 422
+        assert bad.status_code == 404  # a bad signature: quiet 404, nothing applied
+        unsigned = await provider.post("/api/v1/billing/webhook/stripe", content=body)
+        assert unsigned.status_code == 404
+        other = await provider.post(
+            "/api/v1/billing/webhook/paddle", content=body, headers={"Stripe-Signature": sig}
+        )
+        assert other.status_code == 404
         r = await provider.post(
             "/api/v1/billing/webhook/stripe", content=body, headers={"Stripe-Signature": sig}
         )
@@ -183,3 +193,47 @@ async def test_webhook_verified_applied_once_when_charging_is_on(
         "stripe",
         "cus_1",
     )
+
+
+async def test_checkout_is_inert_while_charging_is_off_and_opens_the_provider_page_when_on(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pydantic import SecretStr
+
+    from guardhub_api.billing import service as billing_service
+
+    await signed_in(client)
+    r = await client.post("/api/v1/billing/checkout", json={"plan": "pro"})
+    assert r.status_code == 409 and r.json()["error"]["code"] == "billing_not_live"
+    assert (await client.get("/api/v1/billing")).json()["checkout_plans"] == []
+
+    s = get_settings()
+    for key, value in (
+        ("billing_charging_enabled", True),
+        ("billing_provider", "stripe"),
+        ("billing_webhook_secret", SecretStr("whsec_test")),
+        ("billing_api_key", SecretStr("sk_test_only")),
+        ("billing_price_ids", "pro=price_test_pro"),
+    ):
+        monkeypatch.setattr(s, key, value)
+    sent: list[tuple[str, str]] = []
+
+    async def fake_session(price: str, user: object, plan: str) -> str:
+        sent.append((price, plan))
+        return "https://checkout.stripe.com/c/pay/cs_test_1"
+
+    monkeypatch.setattr(billing_service, "_stripe_session", fake_session)
+    async with db_session(DbContext.system()) as session:
+        await session.execute(update(BillingPlan).where(BillingPlan.key == "pro").values(public=True))
+    try:
+        assert (await client.get("/api/v1/billing")).json()["checkout_plans"] == ["pro"]
+        r = await client.post("/api/v1/billing/checkout", json={"plan": "agency"})
+        assert r.status_code == 422 and r.json()["error"]["code"] == "plan_not_available"  # no price
+        r = await client.post("/api/v1/billing/checkout", json={"plan": "free"})
+        assert r.status_code == 422  # not an upgrade
+        r = await client.post("/api/v1/billing/checkout", json={"plan": "pro"})
+        assert r.status_code == 200 and r.json() == {"url": "https://checkout.stripe.com/c/pay/cs_test_1"}
+        assert sent == [("price_test_pro", "pro")]
+    finally:
+        async with db_session(DbContext.system()) as session:
+            await session.execute(update(BillingPlan).where(BillingPlan.key == "pro").values(public=False))

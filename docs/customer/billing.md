@@ -24,7 +24,10 @@
   - Each event is stored once per id (`billing_events`, body hash only).
   - `customer.subscription.*` events tagged with `metadata.guardhub_user_id` and
     `metadata.guardhub_plan` update the subscription.
-  - While charging is off it answers `503 billing_not_live`.
+  - While charging is off, for another provider, or with a missing or invalid signature it
+    answers a quiet `404` and logs at info (charging off, unknown provider) or warning (bad
+    signature), below the Sentry event level: no 5xx, no error report, no `api_errors` count.
+    Signed events from the configured provider are processed as before.
 
 ## Taking money (the founder's gate)
 
@@ -35,11 +38,34 @@ Charging is live only when all of these are set **on the server** (never in the 
 | `BILLING_CHARGING_ENABLED=true` | the founder's switch |
 | `BILLING_PROVIDER` | e.g. `stripe` (the first supported webhook format) |
 | `BILLING_WEBHOOK_SECRET` | the provider's webhook signing secret |
-| `BILLING_API_KEY` | the provider key, for checkout (only needed when checkout is added) |
+| `BILLING_API_KEY` | the provider's secret API key, used by the checkout |
+| `BILLING_PRICE_IDS` | `pro=price_...,agency=price_...`: the provider price for each paid plan |
+| `BILLING_EGRESS_PROXY` | the CONNECT egress proxy the API reaches the provider through |
 
-Prices and the plan line-up are the founder's decision and live with the provider. The checkout
-itself (sending a customer to pay) is deliberately not built yet:
-- the API container has no internet route, and the provider's API would need to be added to the
-  egress allow-list;
-- until the founder decides, customers upgrade by contacting GuardHub and an admin assigns the
-  plan.
+Prices and the plan line-up are the founder's decision and live with the provider: no price is
+in the repository or shown by GuardHub; the provider's page shows it.
+
+## The checkout (built, inert)
+
+- `POST /api/v1/billing/checkout {plan}` answers `409 billing_not_live` unless charging is live,
+  the provider is `stripe`, the API key is set and the plan has a price in `BILLING_PRICE_IDS`.
+  The plan must be public and above the customer's current plan (`422 plan_not_available`).
+- When it is live, the API creates a Stripe Checkout Session (subscription mode, one line item,
+  `subscription_data.metadata.guardhub_user_id` / `guardhub_plan`, the signed-in e-mail), and
+  returns only Stripe's URL. The browser follows it only if it is `https://checkout.stripe.com/…`.
+- The plan changes only when the signed webhook `customer.subscription.*` arrives; the return
+  page (`/account/plan?checkout=done|cancelled`) never changes anything by itself.
+- `/account/plan/checkout?plan=…` shows the plan's limits and, while charging is off, only
+  "Payments are not switched on" with no button. The plan page links to it only for the plans in
+  `checkout_plans` (empty while off).
+
+### Switching it on (the founder, on the server)
+
+1. Create the products and prices in the provider; set `BILLING_PRICE_IDS`.
+2. Set `BILLING_PROVIDER=stripe`, `BILLING_API_KEY`, `BILLING_WEBHOOK_SECRET` (webhook URL
+   `https://guardhub.dev/api/v1/billing/webhook/stripe`, events `customer.subscription.*`).
+3. Add `api.stripe.com` to the egress proxy allow-list and set `BILLING_EGRESS_PROXY`.
+4. Make the paid plans public (Admin → Billing), set `BILLING_CHARGING_ENABLED=true`, recreate
+   the serving colour's api and re-run gates A–K.
+
+Until then customers upgrade by contacting GuardHub and an admin assigns the plan.

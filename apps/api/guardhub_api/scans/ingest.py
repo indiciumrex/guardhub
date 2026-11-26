@@ -224,6 +224,7 @@ async def _apply_completed(session: AsyncSession, scan: Scan, event: dict[str, A
         )
         await repository.add_finding_with_evidence(session, finding, evidence)
     scan.failed_checks = failed_check_ids(event.get("check_results"), scan.checks)
+    scan.check_errors = failed_check_reasons(event.get("check_results"), scan.failed_checks)
     scan.score = compute_score(f.severity for f in findings)
     scan.status = "done"
     scan.started_at = scan.started_at or at
@@ -246,6 +247,29 @@ def failed_check_ids(check_results: object, requested: list[str]) -> list[str]:
             and item.get("status") == "done"
         }
     return [c for c in requested if c not in done]
+
+
+_REASON_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
+# A check that stopped on purpose to protect the target (do-no-harm): the per-scan request budget,
+# the target-stress breaker, or a stop/kill. "Incomplete (safe stop)", not a module failure.
+SAFE_STOP_REASONS = frozenset({"budget_exceeded", "target_stressed", "active_killed"})
+
+
+def failed_check_reasons(check_results: object, failed: list[str]) -> dict[str, str]:
+    """The scanner's reason code for every failed check; "no_result" if it sent none.
+
+    Codes are kept only in their expected shape (lower-case identifier); anything else is
+    recorded as "internal", never stored verbatim.
+    """
+    reasons: dict[str, str] = {}
+    if isinstance(check_results, list):
+        for item in check_results:
+            if not isinstance(item, dict) or item.get("status") == "done":
+                continue
+            check_id, code = item.get("check_id"), item.get("error")
+            if isinstance(check_id, str) and check_id in failed:
+                reasons[check_id] = code if isinstance(code, str) and _REASON_RE.match(code) else "internal"
+    return {c: reasons.get(c, "no_result") for c in failed}
 
 
 async def _record_check_health(redis: Redis, check_results: object) -> None:

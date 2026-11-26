@@ -29,6 +29,16 @@ async def start_trial(body: TrialRequest, claims: FullSession) -> service.Billin
     return await service.start_trial(claims, body.plan)
 
 
+class CheckoutRequest(BaseModel):
+    plan: service.PlanKey
+
+
+@router.post("/checkout")
+async def start_checkout(body: CheckoutRequest, claims: FullSession) -> service.CheckoutStarted:
+    """Refused (409 billing_not_live) unless charging is live and the plan has a provider price."""
+    return await service.start_checkout(claims, body.plan)
+
+
 @router.post("/webhook/{provider}")
 async def webhook(provider: str, request: Request) -> dict[str, str]:
     body = await request.body()

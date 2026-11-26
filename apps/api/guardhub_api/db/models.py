@@ -102,6 +102,7 @@ class Scan(Base):
     trigger: Mapped[str] = mapped_column(String, default="manual")
     checks: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
     failed_checks: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)  # could not run
+    check_errors: Mapped[dict[str, str]] = mapped_column(JSONB, default=dict)  # failed check -> reason
     public_token_hash: Mapped[str | None] = mapped_column(Text)
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _now()

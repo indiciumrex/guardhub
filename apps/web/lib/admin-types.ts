@@ -44,6 +44,7 @@ export interface ModuleRate {
   check_id: string;
   runs: number;
   failed: number;
+  safe_stopped: number;
   success_rate: number | null;
 }
 
@@ -150,6 +151,7 @@ export interface ModuleStats {
   check_id: string;
   runs_7d: number;
   failed_7d: number;
+  safe_stopped_7d: number;
   success_rate_7d: number | null;
   triage: TriageStats;
 }
@@ -534,6 +536,8 @@ export interface BillingView {
   usage: { sites: number; scans_today: number };
   plans: PlanLimits[];
   charging_live: boolean;
+  /** Paid plans a checkout can start for; empty while charging is off. */
+  checkout_plans: PlanLimits["key"][];
 }
 
 export interface AdminBillingView {

@@ -200,6 +200,7 @@ export default async function AdminOverviewPage() {
                       <th scope="col">{tc("module")}</th>
                       <th scope="col">{t("runs")}</th>
                       <th scope="col">{t("couldNotRun")}</th>
+                      <th scope="col">{t("safeStopped")}</th>
                       <th scope="col">{t("successRate")}</th>
                     </tr>
                   </thead>
@@ -211,6 +212,7 @@ export default async function AdminOverviewPage() {
                         </th>
                         <td className="tabular-nums">{m.runs}</td>
                         <td className="tabular-nums">{m.failed}</td>
+                        <td className="tabular-nums">{m.safe_stopped}</td>
                         <td>
                           <StatusBadge
                             tone={

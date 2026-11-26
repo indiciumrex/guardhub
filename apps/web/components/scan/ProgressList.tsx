@@ -3,7 +3,7 @@
  * text + icon (not colour alone); a polite live region announces overall progress.
  */
 import { useTranslations } from "next-intl";
-import type { CheckRunStatus, ProgressItem } from "@/lib/types";
+import { isSafeStop, type CheckRunStatus, type ProgressItem } from "@/lib/types";
 
 const statusClasses: Record<CheckRunStatus, string> = {
   queued: "text-slate-600 dark:text-slate-300",
@@ -85,11 +85,15 @@ export function ProgressList({ items }: { items: ProgressItem[] }) {
             <li key={item.check_id} className="flex items-center justify-between gap-3 py-3">
               <span className="font-medium">{nameOf(item)}</span>
               <span
-                className={`inline-flex items-center gap-2 text-sm font-semibold ${statusClasses[item.status]}`}
-                data-status={item.status}
+                className={`inline-flex items-center gap-2 text-sm font-semibold ${
+                  isSafeStop(item)
+                    ? "text-amber-800 dark:text-amber-200"
+                    : statusClasses[item.status]
+                }`}
+                data-status={isSafeStop(item) ? "safe_stop" : item.status}
               >
                 <StatusIcon status={item.status} />
-                {t(`status.${item.status}`)}
+                {isSafeStop(item) ? t("status.safeStop") : t(`status.${item.status}`)}
               </span>
             </li>
           ))}

@@ -114,6 +114,19 @@ export interface ProgressItem {
   check_id: string;
   name: string;
   status: CheckRunStatus;
+  /** A failed check's reason code from the scanner (e.g. budget_exceeded, target_unreachable). */
+  reason?: string | null;
+}
+
+/** Reasons a check stopped on purpose to protect the site (do-no-harm): incomplete, not broken. */
+export const SAFE_STOP_REASONS: readonly string[] = [
+  "budget_exceeded",
+  "target_stressed",
+  "active_killed",
+];
+
+export function isSafeStop(item: ProgressItem): boolean {
+  return item.status === "failed" && SAFE_STOP_REASONS.includes(item.reason ?? "");
 }
 
 export interface FindingView {
