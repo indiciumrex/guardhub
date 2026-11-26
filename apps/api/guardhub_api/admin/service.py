@@ -17,6 +17,7 @@ from guardhub_api.active import kill
 from guardhub_api.ai.provider import AIStatus
 from guardhub_api.ai.provider import status as ai_status
 from guardhub_api.auth import repository as user_repo
+from guardhub_api.auth import sessions
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit
 from guardhub_api.common.redis import get_redis
@@ -36,6 +37,9 @@ class AdminUserView(BaseModel):
     locale: str
     totp_enabled: bool
     created_at: datetime
+    disabled_at: datetime | None = None
+    last_login_at: datetime | None = None
+    sessions: int = 0
 
 
 def _ctx(claims: SessionClaims) -> DbContext:
@@ -53,6 +57,9 @@ async def list_users(claims: SessionClaims, limit: int, offset: int) -> list[Adm
             locale=u.locale,
             totp_enabled=u.totp_enabled,
             created_at=u.created_at,
+            disabled_at=u.disabled_at,
+            last_login_at=u.last_login_at,
+            sessions=len(await sessions.list_sessions(get_redis(), u.id)),
         )
         for u in users
     ]

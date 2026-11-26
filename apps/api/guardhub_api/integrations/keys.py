@@ -199,7 +199,15 @@ async def api_key_principal(request: Request) -> KeyPrincipal:
         key = (
             await session.execute(select(ApiKey).where(ApiKey.key_hash == _hash(token)))
         ).scalar_one_or_none()
-        if key is None or key.revoked_at is not None or key.expires_at <= now:
+        owner = await session.get(User, key.user_id) if key is not None else None
+        if (
+            key is None
+            or key.revoked_at is not None
+            or key.expires_at <= now
+            or owner is None
+            or owner.disabled_at
+        ):
+            # a disabled account's keys stop working at once (Prompt 2 section 5)
             raise UnauthenticatedError("api_key_invalid", "This API key is unknown, expired or revoked.")
         principal = KeyPrincipal(key_id=key.id, owner_id=key.user_id, scopes=frozenset(key.scopes))
     redis = get_redis()

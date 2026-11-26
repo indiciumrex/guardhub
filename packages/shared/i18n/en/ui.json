@@ -138,7 +138,14 @@
     "webhook_url_invalid": "Use a public https:// address on port 443 (no IP address, no internal name).",
     "webhook_name_invalid": "Give the webhook a short name.",
     "webhook_not_found": "This webhook does not exist.",
-    "webhook_disabled": "Switch the webhook on first."
+    "webhook_disabled": "Switch the webhook on first.",
+    "account_disabled": "This account is disabled. Contact support if you think this is a mistake.",
+    "cannot_disable_self": "You cannot disable your own account.",
+    "last_admin": "The last active admin cannot be disabled.",
+    "already_admin": "This account is already an admin.",
+    "invite_not_found": "This invitation does not exist.",
+    "invite_invalid": "This invitation is unknown, used, revoked or expired.",
+    "invite_wrong_account": "Sign in with the invited e-mail address to accept."
   },
   "severity": {
     "critical": "Critical",
@@ -1378,10 +1385,96 @@
         "failed": "Failed"
       },
       "verifyHelp": "Verify a request: HMAC-SHA256 of \"<t>.<body>\" with the signing secret must equal v1, and t must be recent (5 minutes). Failed deliveries are retried up to 3 times for network errors, 429 and 5xx."
+    },
+    "people": {
+      "title": "Users & sessions",
+      "intro": "Accounts, sessions, admin invitations and failed sign-ins. Customers and admins only: there is no role matrix.",
+      "policyTitle": "Security policy",
+      "enforced": "Enforced by the API",
+      "policy": {
+        "mfa": "Two-factor sign-in is required for every account before it can use GuardHub.",
+        "adminMfa": "The admin console needs a two-factor session and an admin role read from the database on every request.",
+        "disabled": "A disabled account cannot sign in. Its sessions end at once, its API keys stop and its scheduled scans wait.",
+        "invites": "An admin invitation works once, for 72 hours, only for the invited e-mail after two-factor sign-in.",
+        "rbac": "Roles are customer and admin. Data boundaries are enforced by the database (row-level security). A full role matrix is not part of this release."
+      },
+      "invitesTitle": "Admin invitations",
+      "invitesIntro": "Send the link through a channel you trust. It is shown once.",
+      "inviteTitle": "Invite an admin",
+      "inviteEmail": "E-mail address",
+      "createInvite": "Create invitation",
+      "linkOnce": "Invitation created. Copy the link now: it will not be shown again.",
+      "linkHelp": "The person signs in (or signs up) with exactly this e-mail, completes two-factor sign-in, then opens the link.",
+      "inviteLink": "Invitation link",
+      "done": "Done",
+      "invite": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "revokeInvite": "Revoke",
+      "revokeInviteNamed": "Revoke the invitation for {email}",
+      "accountsTitle": "Accounts",
+      "colEmail": "E-mail",
+      "colRole": "Role",
+      "colStatus": "Status",
+      "colTwoFactor": "Two-factor",
+      "colLastSignIn": "Last sign-in",
+      "colSessions": "Sessions",
+      "colActions": "Actions",
+      "colExpires": "Expires",
+      "joined": "Joined {when}",
+      "role": {
+        "user": "Customer",
+        "admin": "Admin"
+      },
+      "active": "Active",
+      "disabled": "Disabled",
+      "mfaOn": "On",
+      "mfaPending": "Not set up yet",
+      "reason": "Reason",
+      "reasonPlaceholder": "Reason (audit log)",
+      "disable": "Disable",
+      "enable": "Enable",
+      "disableNamed": "Disable {email}",
+      "enableNamed": "Enable {email}",
+      "showSessions": "Sessions",
+      "hideSessions": "Hide sessions",
+      "sessionsNamed": "Sessions of {email}",
+      "sessionsOf": "Sessions of {email}",
+      "noSessions": "No active sessions.",
+      "sessionSince": "since {when}",
+      "sessionUntil": "until {when}",
+      "endSession": "End",
+      "endAll": "End all sessions",
+      "failedTitle": "Failed sign-ins (24 hours)",
+      "failedIntro": "Wrong passwords and wrong two-factor codes. Addresses are shown as a keyed hash.",
+      "failedTotal": "{count, plural, one {# failed sign-in} other {# failed sign-ins}}",
+      "noFailed": "No failed sign-ins in the last 24 hours.",
+      "byAccount": "By account",
+      "unknownAccount": "An address with no account",
+      "colWhen": "When",
+      "colAccount": "Account",
+      "colKind": "What failed",
+      "colIp": "Address (hash)",
+      "kind": {
+        "password": "Password",
+        "two_factor": "Two-factor code"
+      }
     }
   },
   "platformBanner": {
     "maintenance": "Maintenance: new scans are paused for a short while.",
     "label": "Service notice"
+  },
+  "adminInvite": {
+    "title": "Admin invitation",
+    "intro": "You were invited to manage GuardHub as an admin.",
+    "ruleEmail": "You must be signed in with the e-mail address the invitation was sent for.",
+    "ruleMfa": "Two-factor sign-in must be complete.",
+    "ruleOnce": "The invitation works once and expires after 72 hours.",
+    "accept": "Accept and open the admin console",
+    "noToken": "This link has no invitation in it. Ask the admin for a new one."
   }
 }

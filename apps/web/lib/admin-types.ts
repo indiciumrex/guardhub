@@ -470,3 +470,45 @@ export interface CreatedWebhook {
   webhook: WebhookView;
   secret: string;
 }
+
+// ---- users & sessions (Prompt 2 §5) ----
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  role: "user" | "admin";
+  locale: string;
+  totp_enabled: boolean;
+  created_at: string;
+  disabled_at: string | null;
+  last_login_at: string | null;
+  sessions: number;
+}
+
+export interface AccountSession {
+  jti: string;
+  issued_at: number;
+  expires_at: number;
+  ip_hash: string;
+  client: string;
+}
+
+export interface AdminInviteView {
+  id: string;
+  email: string;
+  created_at: string;
+  expires_at: string;
+  status: "pending" | "accepted" | "expired" | "revoked";
+}
+
+export interface FailedSignIns {
+  hours: number;
+  total: number;
+  by_account: Record<string, number>;
+  recent: {
+    at: string;
+    kind: "password" | "two_factor";
+    account: string | null;
+    ip_hash: string;
+  }[];
+}

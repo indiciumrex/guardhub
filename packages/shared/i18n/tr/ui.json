@@ -138,7 +138,14 @@
     "webhook_url_invalid": "443 numaralı portta herkese açık bir https:// adresi kullanın (IP adresi ya da iç ad olmaz).",
     "webhook_name_invalid": "Webhook'a kısa bir ad verin.",
     "webhook_not_found": "Bu webhook yok.",
-    "webhook_disabled": "Önce webhook'u açın."
+    "webhook_disabled": "Önce webhook'u açın.",
+    "account_disabled": "Bu hesap devre dışı. Bunun bir hata olduğunu düşünüyorsanız destekle iletişime geçin.",
+    "cannot_disable_self": "Kendi hesabınızı devre dışı bırakamazsınız.",
+    "last_admin": "Son etkin yönetici devre dışı bırakılamaz.",
+    "already_admin": "Bu hesap zaten yönetici.",
+    "invite_not_found": "Bu davet yok.",
+    "invite_invalid": "Bu davet bilinmiyor, kullanılmış, iptal edilmiş ya da süresi dolmuş.",
+    "invite_wrong_account": "Kabul etmek için davet edilen e-posta adresiyle giriş yapın."
   },
   "severity": {
     "critical": "Kritik",
@@ -1378,10 +1385,96 @@
         "failed": "Başarısız"
       },
       "verifyHelp": "Bir isteği doğrulayın: \"<t>.<gövde>\" değerinin imza anahtarıyla HMAC-SHA256'sı v1'e eşit olmalı ve t yakın zamanlı olmalı (5 dakika). Başarısız teslimatlar ağ hataları, 429 ve 5xx için en çok 3 kez yeniden denenir."
+    },
+    "people": {
+      "title": "Kullanıcılar ve oturumlar",
+      "intro": "Hesaplar, oturumlar, yönetici davetleri ve başarısız girişler. Yalnızca müşteri ve yönetici: rol matrisi yok.",
+      "policyTitle": "Güvenlik politikası",
+      "enforced": "API tarafından uygulanır",
+      "policy": {
+        "mfa": "Her hesap GuardHub'ı kullanmadan önce iki adımlı doğrulamayla giriş yapmak zorundadır.",
+        "adminMfa": "Yönetim konsolu, iki adımlı doğrulanmış bir oturum ve her istekte veritabanından okunan yönetici rolü ister.",
+        "disabled": "Devre dışı bir hesap giriş yapamaz. Oturumları anında sona erer, API anahtarları durur ve zamanlanmış taramaları bekletilir.",
+        "invites": "Yönetici daveti bir kez, 72 saat boyunca ve yalnızca davet edilen e-postayla iki adımlı girişten sonra çalışır.",
+        "rbac": "Roller müşteri ve yöneticidir. Veri sınırları veritabanı tarafından uygulanır (satır düzeyi güvenlik). Tam bir rol matrisi bu sürümün parçası değildir."
+      },
+      "invitesTitle": "Yönetici davetleri",
+      "invitesIntro": "Bağlantıyı güvendiğiniz bir kanaldan gönderin. Yalnızca bir kez gösterilir.",
+      "inviteTitle": "Yönetici davet et",
+      "inviteEmail": "E-posta adresi",
+      "createInvite": "Davet oluştur",
+      "linkOnce": "Davet oluşturuldu. Bağlantıyı şimdi kopyalayın: bir daha gösterilmeyecek.",
+      "linkHelp": "Kişi tam olarak bu e-postayla giriş yapar (ya da kaydolur), iki adımlı girişi tamamlar ve bağlantıyı açar.",
+      "inviteLink": "Davet bağlantısı",
+      "done": "Tamam",
+      "invite": {
+        "pending": "Bekliyor",
+        "accepted": "Kabul edildi",
+        "expired": "Süresi doldu",
+        "revoked": "İptal edildi"
+      },
+      "revokeInvite": "İptal et",
+      "revokeInviteNamed": "{email} davetini iptal et",
+      "accountsTitle": "Hesaplar",
+      "colEmail": "E-posta",
+      "colRole": "Rol",
+      "colStatus": "Durum",
+      "colTwoFactor": "İki adımlı doğrulama",
+      "colLastSignIn": "Son giriş",
+      "colSessions": "Oturumlar",
+      "colActions": "İşlemler",
+      "colExpires": "Bitiş",
+      "joined": "Katılım: {when}",
+      "role": {
+        "user": "Müşteri",
+        "admin": "Yönetici"
+      },
+      "active": "Etkin",
+      "disabled": "Devre dışı",
+      "mfaOn": "Açık",
+      "mfaPending": "Henüz kurulmadı",
+      "reason": "Gerekçe",
+      "reasonPlaceholder": "Gerekçe (denetim kaydı)",
+      "disable": "Devre dışı bırak",
+      "enable": "Etkinleştir",
+      "disableNamed": "{email} hesabını devre dışı bırak",
+      "enableNamed": "{email} hesabını etkinleştir",
+      "showSessions": "Oturumlar",
+      "hideSessions": "Oturumları gizle",
+      "sessionsNamed": "{email} oturumları",
+      "sessionsOf": "{email} oturumları",
+      "noSessions": "Etkin oturum yok.",
+      "sessionSince": "başlangıç {when}",
+      "sessionUntil": "bitiş {when}",
+      "endSession": "Sonlandır",
+      "endAll": "Tüm oturumları sonlandır",
+      "failedTitle": "Başarısız girişler (24 saat)",
+      "failedIntro": "Yanlış parolalar ve yanlış iki adımlı doğrulama kodları. Adresler anahtarlı özet olarak gösterilir.",
+      "failedTotal": "{count, plural, one {# başarısız giriş} other {# başarısız giriş}}",
+      "noFailed": "Son 24 saatte başarısız giriş yok.",
+      "byAccount": "Hesaba göre",
+      "unknownAccount": "Hesabı olmayan bir adres",
+      "colWhen": "Ne zaman",
+      "colAccount": "Hesap",
+      "colKind": "Başarısız olan",
+      "colIp": "Adres (özet)",
+      "kind": {
+        "password": "Parola",
+        "two_factor": "İki adımlı doğrulama kodu"
+      }
     }
   },
   "platformBanner": {
     "maintenance": "Bakım: yeni taramalar kısa bir süre için durduruldu.",
     "label": "Hizmet bildirimi"
+  },
+  "adminInvite": {
+    "title": "Yönetici daveti",
+    "intro": "GuardHub'ı yönetici olarak yönetmeye davet edildiniz.",
+    "ruleEmail": "Davetin gönderildiği e-posta adresiyle giriş yapmış olmalısınız.",
+    "ruleMfa": "İki adımlı giriş tamamlanmış olmalıdır.",
+    "ruleOnce": "Davet bir kez çalışır ve 72 saat sonra sona erer.",
+    "accept": "Kabul et ve yönetim konsolunu aç",
+    "noToken": "Bu bağlantıda davet yok. Yöneticiden yeni bir davet isteyin."
   }
 }

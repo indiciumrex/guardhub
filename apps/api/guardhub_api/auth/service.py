@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from datetime import UTC, datetime
 
 from redis.asyncio import Redis
 
@@ -28,6 +29,7 @@ from guardhub_api.common import audit, ratelimit
 from guardhub_api.common.crypto import Keyring, keyed_hash
 from guardhub_api.common.errors import (
     ConflictError,
+    ForbiddenError,
     NotFoundError,
     UnauthenticatedError,
     UnprocessableError,
@@ -121,13 +123,15 @@ async def login(redis: Redis, *, email: str, password: str, ip: str) -> User:
             )
     if not ok or user is None:
         raise UnauthenticatedError("invalid_credentials", "Email or password is incorrect.")
+    if user.disabled_at is not None:  # only after the right password: no account probing
+        raise ForbiddenError("account_disabled", "This account is disabled.")
     return user
 
 
 async def _load(user_id: uuid.UUID) -> User:
     async with db_session(DbContext.system()) as session:
         user = await repository.by_id(session, user_id)
-    if user is None:
+    if user is None or user.disabled_at is not None:
         raise UnauthenticatedError("session_invalid", "Session is no longer valid.")
     return user
 
@@ -151,7 +155,7 @@ async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> User:
     await ratelimit.enforce(redis, "totp", str(claims.user_id), limit=5, window=300)
     async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
         user = await repository.by_id(session, claims.user_id)
-        if user is None:
+        if user is None or user.disabled_at is not None:
             raise UnauthenticatedError("session_invalid", "Session is no longer valid.")
         if not user.totp_secret:
             raise UnprocessableError("totp_not_setup", "Set up two-factor authentication first.")
@@ -167,6 +171,7 @@ async def verify_totp(redis: Redis, claims: SessionClaims, code: str) -> User:
                 await audit.record(
                     session, actor=f"user:{user.id}", action="auth.totp_enabled", target=str(user.id)
                 )
+            user.last_login_at = datetime.now(UTC)
             await audit.record(session, actor=f"user:{user.id}", action="auth.login", target=str(user.id))
         else:
             await audit.record(

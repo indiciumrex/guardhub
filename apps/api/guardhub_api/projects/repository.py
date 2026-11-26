@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from guardhub_api.db.models import Project, TargetVerification
+from guardhub_api.db.models import Project, TargetVerification, User
 
 
 async def list_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[Project]:
@@ -33,6 +33,8 @@ async def lock_due(session: AsyncSession, now: datetime, limit: int) -> list[Pro
             Project.schedule_paused_reason.is_(None),
             Project.next_scan_at.is_not(None),
             Project.next_scan_at <= now,
+            # a disabled account's projects wait (Prompt 2 section 5); they run again once enabled
+            Project.user_id.not_in(select(User.id).where(User.disabled_at.is_not(None))),
         )
         .order_by(Project.next_scan_at)
         .limit(limit)

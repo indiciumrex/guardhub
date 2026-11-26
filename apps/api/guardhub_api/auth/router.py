@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response, status
 
-from guardhub_api.auth import service
+from guardhub_api.auth import service, sessions
 from guardhub_api.auth.deps import AnySession, clear_session_cookie, set_session_cookie
 from guardhub_api.auth.schemas import (
     LoginRequest,
@@ -17,8 +17,10 @@ from guardhub_api.auth.schemas import (
     UpdateMeRequest,
     UserView,
 )
+from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip
+from guardhub_api.config import get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,17 +50,27 @@ async def totp_setup(claims: AnySession) -> TotpSetupResponse:
 
 
 @router.post("/2fa/verify")
-async def totp_verify(body: TotpVerifyRequest, claims: AnySession, response: Response) -> SessionResponse:
+async def totp_verify(
+    body: TotpVerifyRequest, claims: AnySession, request: Request, response: Response
+) -> SessionResponse:
     redis = get_redis()
     user = await service.verify_totp(redis, claims, body.code)
     await service.revoke(redis, claims)  # rotate: the pre-MFA token dies, a fresh full token is issued
-    set_session_cookie(response, service.full_session(user))
+    fresh = service.full_session(user)
+    set_session_cookie(response, fresh)
+    await sessions.record(  # the admin can see and end it (Prompt 2 section 5)
+        redis,
+        fresh,
+        ip_hash=keyed_hash(get_settings().hash_pepper.get_secret_value(), client_ip(request)),
+        user_agent=request.headers.get("user-agent", ""),
+    )
     return SessionResponse(user=service.user_view(user, mfa_complete=True))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(claims: AnySession, response: Response) -> None:
     await service.logout(get_redis(), claims)
+    await sessions.forget(get_redis(), claims.user_id, claims.jti)
     clear_session_cookie(response)
 
 

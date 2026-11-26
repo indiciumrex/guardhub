@@ -36,6 +36,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String, default="user")
     locale: Mapped[str] = mapped_column(String, default="en")
     created_at: Mapped[datetime] = _now()
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    disabled_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Project(Base):
@@ -350,6 +353,21 @@ class WebhookDelivery(Base):
     payload_sha256: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _now()
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AdminInvite(Base):
+    """A one-time admin invitation (migration 0024): only the token's keyed hash. Admin/system only."""
+
+    __tablename__ = "admin_invites"
+    id: Mapped[uuid.UUID] = _pk()
+    email: Mapped[str] = mapped_column(Text)
+    token_hash: Mapped[str] = mapped_column(Text)
+    invited_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = _now()
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    accepted_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class FindingTriage(Base):
