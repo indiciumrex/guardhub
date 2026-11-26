@@ -54,3 +54,16 @@ active scans keep every lock they had.
 
 To roll back, set `OBSERVE_SCAN_ENABLED=false`, or empty `SUPER_ADMIN_IDS`; either one alone
 stops new observe-only scans.
+
+## Conditions set at go-live (2026-11-26)
+
+- **Passive rate limit.** An `observe_scan` job runs through the same `runScan` path as every
+  passive scan: a fresh `NewScanProbe` client with the shared per-host limiter
+  (`SCANNER_HOST_RPS`, `SCANNER_HOST_BURST`) and the per-scan request budget
+  (`SCANNER_MAX_REQUESTS_PER_SCAN`). There is no separate or faster path.
+- **Labelled report.** Every report of an observe scan carries an "Observational scan" badge
+  under the heading and a notice that ownership was not proven and that no active, path-probing
+  or login check ran (live view, final report and print). Admin scan lists and trend charts
+  show the trigger as "Observational".
+- §9.2 and the active-testing locks are unchanged: any non-observe check is refused with
+  `ownership_required`, and the scanner rejects an `observe_scan` job that lists one.
