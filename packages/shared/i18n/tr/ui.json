@@ -134,7 +134,11 @@
     "api_key_not_found": "Bu API anahtarı yok.",
     "api_key_missing": "Bir API anahtarı gönderin.",
     "api_key_invalid": "Bu API anahtarı bilinmiyor, süresi dolmuş ya da iptal edilmiş.",
-    "api_key_scope_missing": "Bu API anahtarının bu istek için yetkisi yok."
+    "api_key_scope_missing": "Bu API anahtarının bu istek için yetkisi yok.",
+    "webhook_url_invalid": "443 numaralı portta herkese açık bir https:// adresi kullanın (IP adresi ya da iç ad olmaz).",
+    "webhook_name_invalid": "Webhook'a kısa bir ad verin.",
+    "webhook_not_found": "Bu webhook yok.",
+    "webhook_disabled": "Önce webhook'u açın."
   },
   "severity": {
     "critical": "Kritik",
@@ -1283,7 +1287,8 @@
         "userRole": "Anahtar, sahibinin yerine müşteri rolünde çalışır; sahibi yönetici olsa bile yalnızca sahibinin kendi projelerini ve taramalarını görür.",
         "proof": "Anahtarla başlatılan bir tarama da güncel bir sahiplik kanıtı (§9.2) ister. Aktif testler bir anahtarla asla başlatılamaz.",
         "hashed": "Anahtarın yalnızca özeti saklanır. Anahtar yalnızca oluşturulduğu anda bir kez gösterilir.",
-        "limits": "Her anahtarın süresi dolar (en çok 365 gün), her an iptal edilebilir ve dakikada 120 istekle sınırlıdır. Oluşturma, iptal ve başlattığı her tarama denetim kaydına yazılır."
+        "limits": "Her anahtarın süresi dolar (en çok 365 gün), her an iptal edilebilir ve dakikada 120 istekle sınırlıdır. Oluşturma, iptal ve başlattığı her tarama denetim kaydına yazılır.",
+        "webhooks": "Webhook'lar yalnızca 443 numaralı porttaki herkese açık https:// adreslerine gider: adın çözümlendiği her adres denetlenir, istek denetlenen adrese gider ve yönlendirmeler asla izlenmez. Tarama olayları yalnızca taramanın sahibinin webhook'larına gider."
       },
       "howTo": "Anahtarı bearer token olarak gönderin. Bir şeyi değiştiren istekler X-GuardHub-CSRF başlığını da ister.",
       "keysTitle": "API anahtarları",
@@ -1332,6 +1337,47 @@
       "colAvg": "Ortalama",
       "colP95": "p95",
       "over5s": "5 sn üstü"
+    },
+    "webhooks": {
+      "title": "Webhook'lar",
+      "intro": "Bir şey olduğunda imzalı HTTPS çağrıları. Her istek bir X-GuardHub-Signature başlığı taşır.",
+      "createTitle": "Webhook ekle",
+      "name": "Ad",
+      "url": "Adres",
+      "urlHelp": "Yalnızca https://, 443 numaralı port, herkese açık bir alan adı.",
+      "eventsLabel": "Olaylar",
+      "event": {
+        "scan_completed": "Tarama tamamlandı (kendi taramalarınız)",
+        "ops_alert_opened": "Operasyonel uyarı açıldı",
+        "ping": "Test ping'i"
+      },
+      "create": "Webhook ekle",
+      "secretOnce": "“{name}” webhook'u eklendi. İmza anahtarını şimdi kopyalayın: bir daha gösterilmeyecek.",
+      "secretHelp": "Her istekteki X-GuardHub-Signature başlığını doğrulamak için kullanın.",
+      "secretLabel": "İmza anahtarı",
+      "done": "Tamam",
+      "none": "Henüz webhook yok.",
+      "on": "Açık",
+      "off": "Kapalı",
+      "enable": "Aç",
+      "disable": "Kapat",
+      "enableNamed": "{name} webhook'unu aç",
+      "disableNamed": "{name} webhook'unu kapat",
+      "ping": "Test gönder",
+      "pingNamed": "{name} webhook'una test gönder",
+      "deliveriesFor": "{name} için son teslimatlar",
+      "noDeliveries": "Henüz teslimat yok.",
+      "colWhen": "Ne zaman",
+      "colEvent": "Olay",
+      "colStatus": "Durum",
+      "colAttempts": "Deneme",
+      "colResponse": "Yanıt",
+      "delivery": {
+        "pending": "Bekliyor",
+        "sent": "Teslim edildi",
+        "failed": "Başarısız"
+      },
+      "verifyHelp": "Bir isteği doğrulayın: \"<t>.<gövde>\" değerinin imza anahtarıyla HMAC-SHA256'sı v1'e eşit olmalı ve t yakın zamanlı olmalı (5 dakika). Başarısız teslimatlar ağ hataları, 429 ve 5xx için en çok 3 kez yeniden denenir."
     }
   },
   "platformBanner": {

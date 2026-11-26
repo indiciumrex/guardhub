@@ -82,3 +82,22 @@ async def enqueue_notify_paused(project_id: uuid.UUID, paused_at: datetime) -> b
 
 async def enqueue_test_notification(user_id: uuid.UUID, channel: str) -> None:
     await (await get_arq()).enqueue_job(SEND_TEST_NOTIFICATION, str(user_id), channel)
+
+
+WEBHOOK_FANOUT = "webhook_fanout"
+WEBHOOK_DELIVER = "deliver_webhook"
+
+
+async def enqueue_webhook_fanout(event: str, event_id: str) -> bool:
+    """Queue the webhook fan-out for one event (Prompt 2 section 4). One job per event."""
+    job = await (await get_arq()).enqueue_job(
+        WEBHOOK_FANOUT, event, event_id, _job_id=f"webhook-fanout:{event}:{event_id}"
+    )
+    return job is not None
+
+
+async def enqueue_webhook_delivery(delivery_id: uuid.UUID) -> bool:
+    job = await (await get_arq()).enqueue_job(
+        WEBHOOK_DELIVER, str(delivery_id), _job_id=f"webhook-delivery:{delivery_id}"
+    )
+    return job is not None

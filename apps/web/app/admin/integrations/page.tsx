@@ -7,10 +7,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { CreateApiKey, RevokeApiKey } from "@/components/admin/ApiKeyControls";
+import { CreateWebhook, WebhookActions } from "@/components/admin/WebhookControls";
 import { PageHeader, Panel, StatusBadge, type Tone } from "@/components/admin/Stat";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
-import type { ApiKeyView, EndpointTraffic } from "@/lib/admin-types";
+import type { ApiKeyView, EndpointTraffic, WebhookView } from "@/lib/admin-types";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("adminCenter.integrations");
@@ -31,14 +32,17 @@ export default async function AdminIntegrationsPage({
 }) {
   const sp = await searchParams;
   const hours = (HOURS as readonly number[]).includes(Number(sp.hours)) ? Number(sp.hours) : 24;
-  const [keysR, trafficR] = await loadProtected(() =>
+  const [keysR, trafficR, hooksR] = await loadProtected(() =>
     Promise.allSettled([
       serverApiFetch<ApiKeyView[]>("/admin/integrations/keys"),
       serverApiFetch<EndpointTraffic[]>("/admin/integrations/traffic", { query: { hours } }),
+      serverApiFetch<WebhookView[]>("/admin/webhooks"),
     ]),
   );
   const keys = keysR.status === "fulfilled" ? keysR.value : null;
   const trafficRows = trafficR.status === "fulfilled" ? trafficR.value : null;
+  const hooks = hooksR.status === "fulfilled" ? hooksR.value : null;
+  const tw = await getTranslations("adminCenter.webhooks");
   const t = await getTranslations("adminCenter.integrations");
   const tConsole = await getTranslations("adminCenter.console");
   const tAdmin = await getTranslations("admin");
@@ -60,7 +64,7 @@ export default async function AdminIntegrationsPage({
         actions={<StatusBadge tone="locked">{t("enforced")}</StatusBadge>}
       >
         <ul className="space-y-2 text-sm">
-          {(["noAdmin", "userRole", "proof", "hashed", "limits"] as const).map((k) => (
+          {(["noAdmin", "userRole", "proof", "hashed", "limits", "webhooks"] as const).map((k) => (
             <li key={k} className="flex gap-2">
               <span aria-hidden="true">•</span>
               <span>{t(`boundary.${k}`)}</span>
@@ -127,6 +131,79 @@ curl -X POST -H "Authorization: Bearer ghk_…" -H "X-GuardHub-CSRF: 1" \\
             </table>
           </div>
         )}
+      </Panel>
+
+      <Panel id="webhooks-h" title={tw("title")} intro={tw("intro")}>
+        <CreateWebhook />
+        {!hooks ? (
+          <p className="gh-muted mt-4 text-sm">{tAdmin("unavailable")}</p>
+        ) : hooks.length === 0 ? (
+          <p className="gh-muted mt-4 text-sm">{tw("none")}</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-slate-200 dark:divide-navy-800">
+            {hooks.map((h) => (
+              <li key={h.id} className="space-y-2 py-4 first:pt-0">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 font-semibold">
+                      {h.name}
+                      <StatusBadge tone={h.enabled ? "ok" : "neutral"}>
+                        {h.enabled ? tw("on") : tw("off")}
+                      </StatusBadge>
+                    </p>
+                    <p className="gh-muted font-mono text-xs break-all">{h.url}</p>
+                    <p className="gh-muted text-xs">
+                      {h.events.map((e) => tw(`event.${e.replace(/\./g, "_")}`)).join(", ")}
+                    </p>
+                  </div>
+                  <WebhookActions webhookId={h.id} name={h.name} enabled={h.enabled} />
+                </div>
+                {h.deliveries.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="gh-table-admin">
+                      <caption className="sr-only">{tw("deliveriesFor", { name: h.name })}</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">{tw("colWhen")}</th>
+                          <th scope="col">{tw("colEvent")}</th>
+                          <th scope="col">{tw("colStatus")}</th>
+                          <th scope="col">{tw("colAttempts")}</th>
+                          <th scope="col">{tw("colResponse")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {h.deliveries.map((d) => (
+                          <tr key={d.id}>
+                            <td className="text-xs whitespace-nowrap">{when(d.created_at)}</td>
+                            <td className="font-mono text-xs">{d.event}</td>
+                            <td>
+                              <StatusBadge
+                                tone={
+                                  d.status === "sent"
+                                    ? "ok"
+                                    : d.status === "failed"
+                                      ? "crit"
+                                      : "info"
+                                }
+                              >
+                                {tw(`delivery.${d.status}`)}
+                              </StatusBadge>
+                            </td>
+                            <td className="text-xs tabular-nums">{d.attempts}</td>
+                            <td className="font-mono text-xs">{d.error ?? d.http_status ?? "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="gh-muted text-xs">{tw("noDeliveries")}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="gh-muted mt-3 text-xs">{tw("verifyHelp")}</p>
       </Panel>
 
       <Panel

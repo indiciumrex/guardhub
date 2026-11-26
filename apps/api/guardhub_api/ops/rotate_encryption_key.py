@@ -49,6 +49,7 @@ ENCRYPTED_COLUMNS: tuple[EncryptedColumn, ...] = (
     EncryptedColumn("users", "id", "totp_secret", "id"),
     EncryptedColumn("evidence", "id", "redacted_payload", "id"),
     EncryptedColumn("notification_settings", "user_id", "slack_webhook_enc", "user_id"),
+    EncryptedColumn("webhooks", "id", "secret_enc", "id"),  # signing secrets (Prompt 2 section 4)
 )
 
 

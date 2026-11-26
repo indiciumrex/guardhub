@@ -306,6 +306,20 @@ test("admin: hidden (404) for a normal user, first admin promoted by the operato
   });
   expect(afterRevoke.status()).toBe(401);
 
+  // webhooks: an unsafe address is refused; a public one is added with a one-time secret.
+  // The .invalid name never resolves, so nothing leaves the test network.
+  const hookForm = page.getByRole("form", { name: "Add a webhook" });
+  await hookForm.getByLabel("Name").fill("e2e hook");
+  await hookForm.getByLabel("Address").fill("https://10.0.0.5/in");
+  await hookForm.getByRole("button", { name: "Add webhook" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "public https://" })).toBeVisible();
+  await hookForm.getByLabel("Address").fill("https://hooks.guardhub-e2e.invalid/in");
+  await hookForm.getByRole("button", { name: "Add webhook" }).click();
+  await expect(page.getByLabel("Signing secret")).toHaveText(/^whsec_/);
+  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: "Switch off webhook e2e hook" }).click();
+  await expect(page.getByRole("button", { name: "Switch on webhook e2e hook" })).toBeVisible();
+
   await nav.getByRole("link", { name: "Module Center" }).click();
 
   // toggle a module off and back on (both are audited server-side); the switch is optimistic,
