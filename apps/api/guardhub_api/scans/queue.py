@@ -35,11 +35,19 @@ class VerifyResult:
 
 
 async def enqueue_scan(
-    redis: Redis, *, scan_id: uuid.UUID, target: str, checks: list[str], deadline_seconds: int
+    redis: Redis,
+    *,
+    scan_id: uuid.UUID,
+    target: str,
+    checks: list[str],
+    deadline_seconds: int,
+    observe: bool = False,
 ) -> str:
+    """Queue a site scan. `observe=True` sends the `observe_scan` kind: the scanner then refuses
+    the whole job unless every check is observe-only (profile prompt item 3)."""
     payload = {
         "v": 1,
-        "kind": "scan",
+        "kind": "observe_scan" if observe else "scan",
         "job_id": str(uuid.uuid4()),
         "scan_id": str(scan_id),
         "target": target,

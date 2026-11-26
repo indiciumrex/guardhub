@@ -23,6 +23,7 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.models import Module, Scan
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.catalog import check_name, render_finding
+from guardhub_api.findings.contract_gen import OBSERVE_CHECK_IDS
 from guardhub_api.findings.scoring import count_by_severity, severity_rank
 from guardhub_api.modules.registry import enabled_check_ids
 from guardhub_api.platform import service as platform
@@ -74,12 +75,22 @@ async def create_and_enqueue(
     ctx: DbContext,
     trigger: ScanTrigger = "manual",
     repo: RepoJob | None = None,
+    observe_checks: list[str] | None = None,
 ) -> Scan:
+    """`observe_checks`: a super-admin observe-only scan (admin/observe.py). Only observe-only
+    checks that are switched on run, and the job goes out as `observe_scan`."""
+    observe = observe_checks is not None
+    if observe and (repo is not None or project_id is not None or trigger != "observe"):
+        raise ValueError("an observe-only scan has no project or repository and uses trigger 'observe'")
+    if trigger == "observe" and not observe:
+        raise ValueError("trigger 'observe' is only for observe-only scans")
     await platform.require_no_maintenance()
     deadline = await platform.int_value("scan.deadline_seconds")
     async with db_session(ctx) as session:
         checks = await enabled_check_ids(session, "repo" if repo else "site")
-        if user_id is not None:  # the account's plan (Phase 5C): module tier, manual-scan limits
+        if observe_checks is not None:
+            checks = [c for c in checks if c in OBSERVE_CHECK_IDS and c in observe_checks]
+        elif user_id is not None:  # the account's plan (Phase 5C): module tier, manual-scan limits
             checks = await _within_plan(session, user_id, checks, manual=trigger == "manual")
         if not checks:
             raise UnprocessableError("no_checks_enabled", "All checks are currently disabled.")
@@ -113,6 +124,7 @@ async def create_and_enqueue(
                 target=target,
                 checks=checks,
                 deadline_seconds=deadline,
+                observe=observe,
             )
     except RedisError as exc:
         log.exception("enqueue_failed", extra={"scan_id": str(scan.id)})

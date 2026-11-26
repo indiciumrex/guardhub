@@ -27,3 +27,5 @@ export const REPO_CHECK_IDS: readonly CheckId[] = ["dependency_vulns", "repo_sec
 /** Active checks (check-ids.json "target": "active", ADR-0008). */
 export const ACTIVE_CHECK_IDS: readonly CheckId[] = ["active_xss", "active_sqli", "active_redirect", "active_cors", "active_ssrf", "active_idor"];
 export const SITE_CHECK_IDS: readonly CheckId[] = ["exposed_env", "security_headers", "tls_cert", "open_admin", "default_creds", "info_leak", "tls_config", "http_hardening", "dns_email", "subdomain_takeover", "tls_depth", "header_quality", "dns_depth", "cookie_depth", "exposed_files", "js_libraries", "content_signals", "js_secrets"];
+/** Observe-only site checks (check-ids.json "observe": true). */
+export const OBSERVE_CHECK_IDS: readonly CheckId[] = ["security_headers", "tls_cert", "tls_config", "http_hardening", "tls_depth", "header_quality", "dns_depth", "cookie_depth", "js_libraries", "content_signals"];

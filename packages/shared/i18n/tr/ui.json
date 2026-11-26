@@ -162,7 +162,10 @@
     "plan_not_found": "Bu plan yok.",
     "free_plan_public": "Ücretsiz plan herkese açık kalır.",
     "wrong_current_password": "Mevcut parola doğru değil. Lütfen tekrar deneyin.",
-    "invalid_display_name": "Ad, izin verilmeyen karakterler içeriyor."
+    "invalid_display_name": "Ad, izin verilmeyen karakterler içeriyor.",
+    "observe_scan_off": "Yalnızca gözlem taramaları sunucuda kapalı.",
+    "statement_required": "Lütfen önce güncel yetki beyanını okuyup onaylayın.",
+    "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar."
   },
   "severity": {
     "critical": "Kritik",
@@ -550,7 +553,8 @@
     "trigger": {
       "manual": "Elle",
       "scheduled": "Zamanlanmış",
-      "ci": "CI"
+      "ci": "CI",
+      "observe": "Yalnızca gözlem"
     }
   },
   "compare": {
@@ -1746,5 +1750,30 @@
     "ruleExpired": "Süresi doldu: kanıt 30 günden eski. Bir sonraki tarama önce kanıtı yeniden doğrular.",
     "ruleFailed": "Başarısız: son kontrol kanıtı bulamadı. Yeniden geçene kadar hiçbir şey taranmaz.",
     "ruleScan": "Bu sayfa hiçbir zaman tarama başlatmaz ve sahiplik kontrolünü atlamaz: her tarama sahipliği kendisi kanıtlar."
+  },
+  "observe": {
+    "title": "Yalnızca gözlem taraması",
+    "intro": "Doğrulanmamış bir siteye pasif bakış: yalnızca herhangi bir tarayıcının veya e-posta sunucusunun gördüğü. Süper yöneticiler için, kaydedilen bir yetki beyanıyla.",
+    "boundaryTitle": "Sınır",
+    "on": "Açık",
+    "off": "Kapalı",
+    "offHelp": "Yalnızca gözlem taramaları sunucuda kapalı. Kurucu bu sınırı onayladıktan sonra açar.",
+    "allowedTitle": "Sahiplik kanıtı olmadan çalışır (yalnızca gözlem)",
+    "needsProofTitle": "Her zaman doğrulanmış site gerektirir (istisna yok)",
+    "formLabel": "Yalnızca gözlem taraması başlat",
+    "targetLabel": "Web sitesi adresi",
+    "relationshipLabel": "Siteyle ilişkiniz",
+    "relationship": {
+      "owner": "Bizim ya da biz işletiyoruz",
+      "client": "Bir müşteri istedi",
+      "employer": "Çalıştığım kurumun sitesi",
+      "other": "Diğer"
+    },
+    "noteLabel": "Sahibi kim ve kim istedi (kaydedilir)",
+    "noteHelp": "En az 10 karakter. Örneğin: \"Site sahibi Ayşe Yılmaz 26 Kasım'da e-postayla TLS kurulumunun kontrolünü istedi.\"",
+    "statementTitle": "Yetki beyanı",
+    "accept": "Yukarıdaki beyanı onaylıyorum (sürüm {version}). Hesabımla birlikte kaydedilir.",
+    "runs": "Çalışacak kontroller",
+    "start": "Yalnızca gözlem taramasını başlat"
   }
 }

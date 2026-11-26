@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/hksolutions/guardhub/apps/scanner/internal/evidence"
 )
 
 func TestParseJobValid(t *testing.T) {
@@ -53,5 +55,36 @@ func TestParseJobMalformed(t *testing.T) {
 	j, err := ParseJob(`{"v":1,"kind":"scan","job_id":"a","scan_id":"s1","target":"nope"}`)
 	if err == nil || j.ScanID != "s1" {
 		t.Fatalf("partial job not returned: %+v %v", j, err)
+	}
+}
+
+// observe_scan (profile prompt item 3): a target without an ownership proof may
+// receive observe-only checks and nothing else.
+func TestParseObserveScanAllowsOnlyObserveChecks(t *testing.T) {
+	ok := `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com","checks":["tls_cert","security_headers","dns_depth"]}`
+	if _, err := ParseJob(ok); err != nil {
+		t.Fatalf("observe-only checks refused: %v", err)
+	}
+	for name, payload := range map[string]string{
+		"no checks":       `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com"}`,
+		"path probing":    `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com","checks":["tls_cert","exposed_env"]}`,
+		"credentials":     `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com","checks":["default_creds"]}`,
+		"zone transfer":   `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com","checks":["dns_email"]}`,
+		"active payloads": `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s1","target":"https://example.com","checks":["active_xss"]}`,
+		"bad scan_id":     `{"v":1,"kind":"observe_scan","job_id":"o1","scan_id":"s:1","target":"https://example.com","checks":["tls_cert"]}`,
+	} {
+		if _, err := ParseJob(payload); !errors.Is(err, ErrMalformedJob) {
+			t.Errorf("%s: want ErrMalformedJob, got %v", name, err)
+		}
+	}
+	for id := range evidence.ObserveChecks {
+		if evidence.ActiveChecks[id] || evidence.RepoChecks[id] {
+			t.Errorf("%s is observe-only but also active/repo", id)
+		}
+	}
+	for _, forbidden := range []string{"exposed_env", "exposed_files", "open_admin", "default_creds", "info_leak", "dns_email", "subdomain_takeover", "js_secrets"} {
+		if evidence.ObserveChecks[forbidden] {
+			t.Errorf("%s probes, harvests or tries access: it must not be observe-only", forbidden)
+		}
 	}
 }

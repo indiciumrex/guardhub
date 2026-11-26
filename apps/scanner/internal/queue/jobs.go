@@ -37,6 +37,14 @@ const (
 	// KindRepoScan scans a connected GitHub repository (ADR-0006): the job
 	// names the repository and the one-time Redis key holding its token.
 	KindRepoScan = "repo_scan"
+	// KindObserveScan is a passive scan of a target WITHOUT an ownership
+	// proof, started by a super-admin with a recorded authorisation statement
+	// (profile prompt item 3). Only observe-only checks (check-ids.json
+	// "observe": true: TLS, headers, cookies, DNS records, page content and
+	// library versions; no payloads, no path probing, no credential attempts)
+	// may run; any other check makes the whole job malformed, so a bug on the
+	// API side can never widen what an unverified target receives.
+	KindObserveScan = "observe_scan"
 )
 
 // RepoTokenPrefix is the one-time Redis key prefix for repo scan tokens
@@ -110,6 +118,18 @@ func ParseJob(payload string) (Job, error) {
 	case KindScan:
 		if !idRe.MatchString(j.ScanID) {
 			return bad("invalid scan_id")
+		}
+	case KindObserveScan:
+		if !idRe.MatchString(j.ScanID) {
+			return bad("invalid scan_id")
+		}
+		if len(j.Checks) == 0 {
+			return bad("observe_scan needs its checks listed")
+		}
+		for _, id := range j.Checks {
+			if !evidence.ObserveChecks[id] {
+				return bad("not an observe-only check: %q", id)
+			}
 		}
 	case KindRepoScan:
 		if !idRe.MatchString(j.ScanID) {
