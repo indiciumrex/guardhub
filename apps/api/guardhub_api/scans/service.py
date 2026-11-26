@@ -160,8 +160,8 @@ def _progress(scan: Scan, live: dict[str, str], locale: str) -> list[ProgressIte
     items: list[ProgressItem] = []
     for check_id in scan.checks:
         state = live.get(check_id)
-        if scan.status == "done":
-            state = state if state in ("done", "failed") else "done"
+        if scan.status == "done":  # the stored result is the truth; the live hash may have expired
+            state = "failed" if check_id in (scan.failed_checks or []) else "done"
         elif state not in _CHECK_STATUSES:
             state = "failed" if scan.status in ("failed", "cancelled") else "queued"
         reason = (scan.check_errors or {}).get(check_id) if state == "failed" else None
