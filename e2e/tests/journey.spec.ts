@@ -129,6 +129,11 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
   publishOwnershipToken(await readField(other, "File content (verification code)"));
   await other.getByRole("button", { name: "Verify", exact: true }).click();
   await expect(other.getByText(/Ownership verified on/)).toBeVisible({ timeout: 60_000 });
+  // Phase 5B: active testing on a customer site is built but off: it only says what is missing
+  const active = other.getByRole("region", { name: "Active testing (beta)" });
+  await expect(active).toContainText("Not available yet");
+  await expect(active).toContainText("GuardHub's go-live decision for customer sites");
+  await expect(active.getByRole("button", { name: "Start the active scan" })).toHaveCount(0);
 
   await rescan.click();
   await other.waitForURL(/\/account\/scans\/[0-9a-f-]+$/);

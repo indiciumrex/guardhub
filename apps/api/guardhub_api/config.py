@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # checkpoint (live scope-guard/kill-switch proof, reviewed consent text, OOB infrastructure).
     # Off by default; the scanner has its own switch (SCANNER_ACTIVE_ENABLED) as well.
     active_testing_approved: bool = False
+    # Phase 5B: active tests on CUSTOMER sites are built but stay off until all of these hold
+    # (and every owner-target lock above): the founder's go (CUSTOMER_ACTIVE_TESTING_GO=true), the
+    # published active-testing terms (version + SHA-256 of the exact text, set by the founder) and
+    # a live OOB collaborator reported by the scanner. Empty / false means "not yet".
+    customer_active_testing_go: bool = False
+    active_tos_version: str = ""
+    active_tos_sha256: str = ""
     # Admin "recent errors" from Sentry (optional): a READ-ONLY API token (project:read), the org and
     # project slugs, and the egress proxy the API must use to reach sentry.io (the API container has
     # no internet route of its own, ADR-0006). Unset: the panel shows GuardHub's own error records.

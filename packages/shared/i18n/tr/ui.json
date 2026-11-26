@@ -147,7 +147,12 @@
     "invite_invalid": "Bu davet bilinmiyor, kullanılmış, iptal edilmiş ya da süresi dolmuş.",
     "invite_wrong_account": "Kabul etmek için davet edilen e-posta adresiyle giriş yapın.",
     "invalid_recovery_code": "Bu kurtarma kodu geçerli değil ya da zaten kullanılmış.",
-    "cannot_reset_self": "Kendi iki adımlı girişinizi sıfırlayamazsınız. Bir kurtarma kodu kullanın ya da başka bir yöneticiden isteyin."
+    "cannot_reset_self": "Kendi iki adımlı girişinizi sıfırlayamazsınız. Bir kurtarma kodu kullanın ya da başka bir yöneticiden isteyin.",
+    "customer_active_not_live": "Müşteri siteleri için aktif test henüz açılmadı.",
+    "active_blocked": "Bu site için aktif test şu anda kullanılamıyor.",
+    "terms_not_accepted": "Önce güncel aktif test şartlarını kabul edin.",
+    "not_a_customer_active_check": "Bu kontrol müşteri siteleri için sunulmuyor.",
+    "active_sites_only": "Aktif testler yalnızca web sitelerinde çalışır."
   },
   "severity": {
     "critical": "Kritik",
@@ -1575,5 +1580,32 @@
       "end": "Çıkış yap",
       "endAll": "Her yerden çıkış yap"
     }
+  },
+  "customerActive": {
+    "title": "Aktif test (beta)",
+    "intro": "Doğrulanmış kendi sitenize, yalnızca izninizle, tek seferde bir tane ve bir durdurma düğmesiyle güvenli test istekleri gönderen daha derin kontroller.",
+    "notAvailable": "Henüz kullanılamıyor",
+    "notAvailableIntro": "Müşteri siteleri için aktif test hazır ama açılmadı. Yalnızca aşağıdakilerin hepsi tamamlandığında başlar:",
+    "waitingFor": "Hâlâ beklenenler",
+    "lock": {
+      "customer_go": "GuardHub'ın müşteri siteleri için yayına alma kararı",
+      "terms_final": "yayımlanmış aktif test şartları",
+      "oob_live": "bant dışı tespit hizmeti",
+      "approval": "aktif testin platform genelinde onayı",
+      "modules": "test modüllerinin açılması",
+      "kill": "platform durdurma anahtarının serbest bırakılması",
+      "scanner": "aktif testi açık bir tarayıcı",
+      "site_verified": "bu sitenin sahibi olduğunuzun kanıtı"
+    },
+    "formLabel": "Aktif tarama başlat",
+    "checksLabel": "Kontroller",
+    "excludeLabel": "Dışarıda bırakılacak yollar",
+    "excludeHelp": "Her satıra bir tane, / ile başlayarak. Veri değiştiren sayfalar dışarıda bırakılmalıdır.",
+    "acceptTerms": "Bu sitenin sahibiyim ve aktif test şartlarının {version} sürümünü kabul ediyorum.",
+    "readTerms": "Şartları okuyun",
+    "start": "Aktif taramayı başlat",
+    "running": "Bu sitede bir aktif tarama çalışıyor.",
+    "stop": "Şimdi durdur",
+    "stopHelp": "Tüm test isteklerini yaklaşık bir saniye içinde durdurur."
   }
 }

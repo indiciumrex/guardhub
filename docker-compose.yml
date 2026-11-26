@@ -30,6 +30,10 @@ x-api-env: &api-env
   # ACTIVE_TESTING_APPROVED=true in the env file; modules, the scanner switch and the kill switch
   # are separate locks.
   ACTIVE_TESTING_APPROVED: ${ACTIVE_TESTING_APPROVED:-false}
+  # Phase 5B, customer sites: off until the founder's go, published terms and live OOB
+  CUSTOMER_ACTIVE_TESTING_GO: ${CUSTOMER_ACTIVE_TESTING_GO:-false}
+  ACTIVE_TOS_VERSION: ${ACTIVE_TOS_VERSION:-}
+  ACTIVE_TOS_SHA256: ${ACTIVE_TOS_SHA256:-}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   # Error tracking: off unless SENTRY_DSN_API (or the SENTRY_DSN fallback) is set. The DSN host
   # is replaced by the relay (key and project id kept): api/api-worker have no internet.

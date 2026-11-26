@@ -147,7 +147,12 @@
     "invite_invalid": "This invitation is unknown, used, revoked or expired.",
     "invite_wrong_account": "Sign in with the invited e-mail address to accept.",
     "invalid_recovery_code": "This recovery code is not valid or was already used.",
-    "cannot_reset_self": "You cannot reset your own two-factor sign-in. Use a recovery code, or ask another admin."
+    "cannot_reset_self": "You cannot reset your own two-factor sign-in. Use a recovery code, or ask another admin.",
+    "customer_active_not_live": "Active testing for customer sites is not switched on yet.",
+    "active_blocked": "Active testing is not available for this site right now.",
+    "terms_not_accepted": "Accept the current active-testing terms first.",
+    "not_a_customer_active_check": "This check is not offered for customer sites.",
+    "active_sites_only": "Active tests run on websites only."
   },
   "severity": {
     "critical": "Critical",
@@ -1575,5 +1580,32 @@
       "end": "Sign out",
       "endAll": "Sign out everywhere"
     }
+  },
+  "customerActive": {
+    "title": "Active testing (beta)",
+    "intro": "Deeper checks that send safe test requests to your own verified site, only with your consent, one at a time, and with a stop button.",
+    "notAvailable": "Not available yet",
+    "notAvailableIntro": "Active testing for customer sites is built but not switched on. It starts only when all of the following are in place:",
+    "waitingFor": "Still waiting for",
+    "lock": {
+      "customer_go": "GuardHub's go-live decision for customer sites",
+      "terms_final": "the published active-testing terms",
+      "oob_live": "the out-of-band detection service",
+      "approval": "the platform-wide approval of active testing",
+      "modules": "the test modules being switched on",
+      "kill": "the platform stop switch being released",
+      "scanner": "a scanner with active testing switched on",
+      "site_verified": "proof that you own this site"
+    },
+    "formLabel": "Start an active scan",
+    "checksLabel": "Checks",
+    "excludeLabel": "Paths to leave out",
+    "excludeHelp": "One per line, each starting with /. Pages that change data should be left out.",
+    "acceptTerms": "I own this site and accept the active-testing terms, version {version}.",
+    "readTerms": "Read the terms",
+    "start": "Start the active scan",
+    "running": "An active scan of this site is running.",
+    "stop": "Stop now",
+    "stopHelp": "Stops every test request within about a second."
   }
 }
