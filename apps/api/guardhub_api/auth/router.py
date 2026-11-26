@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response, status
+from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 
 from guardhub_api.auth import service, sessions
@@ -22,11 +23,13 @@ from guardhub_api.auth.schemas import (
     UserView,
 )
 from guardhub_api.auth.security import SessionClaims
+from guardhub_api.common import audit
 from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import User
+from guardhub_api.db.session import DbContext, db_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -98,6 +101,30 @@ async def recovery_status(claims: FullSession) -> RecoveryStatus:
 @router.post("/2fa/recovery-codes")
 async def regenerate_recovery_codes(body: TotpVerifyRequest, claims: FullSession) -> RecoveryCodes:
     return RecoveryCodes(codes=await service.regenerate_recovery_codes(get_redis(), claims, body.code))
+
+
+class EndOwnSessions(BaseModel):
+    jti: str | None = Field(default=None, max_length=64)  # None: every session, this one included
+
+
+@router.get("/sessions")
+async def own_sessions(claims: FullSession) -> list[sessions.SessionView]:
+    """The signed-in account's own sessions (customer panel, Phase 5A). Never anyone else's."""
+    return await sessions.list_sessions(get_redis(), claims.user_id)
+
+
+@router.post("/sessions/end")
+async def end_own_sessions(body: EndOwnSessions, claims: FullSession) -> dict[str, int]:
+    ended = await sessions.end(get_redis(), claims.user_id, body.jti)
+    async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
+        await audit.record(
+            session,
+            actor=f"user:{claims.user_id}",
+            action="auth.sessions_ended",
+            target=str(claims.user_id),
+            metadata={"count": str(ended), "scope": "one" if body.jti else "all"},
+        )
+    return {"ended": ended}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
