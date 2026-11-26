@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     # published active-testing terms (version + SHA-256 of the exact text, set by the founder) and
     # a live OOB collaborator reported by the scanner. Empty / false means "not yet".
     customer_active_testing_go: bool = False
+    # Phase 5C billing: the mechanism is built, charging stays OFF until the founder sets the
+    # provider and its keys on the server and switches BILLING_CHARGING_ENABLED on. Keys never
+    # live in the repository; the admin console shows them only as configured / not set.
+    billing_charging_enabled: bool = False
+    billing_provider: str = ""  # "" = none yet; "stripe" is the first supported webhook format
+    billing_webhook_secret: SecretStr = SecretStr("")
+    billing_api_key: SecretStr = SecretStr("")
     active_tos_version: str = ""
     active_tos_sha256: str = ""
     # Admin "recent errors" from Sentry (optional): a READ-ONLY API token (project:read), the org and

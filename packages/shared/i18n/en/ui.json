@@ -152,7 +152,15 @@
     "active_blocked": "Active testing is not available for this site right now.",
     "terms_not_accepted": "Accept the current active-testing terms first.",
     "not_a_customer_active_check": "This check is not offered for customer sites.",
-    "active_sites_only": "Active tests run on websites only."
+    "active_sites_only": "Active tests run on websites only.",
+    "plan_limit_sites": "Your plan's website limit is reached.",
+    "plan_limit_scans_per_day": "Your plan's daily scan limit is reached. Try again tomorrow or upgrade.",
+    "plan_limit_concurrency": "Wait for a running scan to finish before starting another.",
+    "trial_not_offered": "No trial is offered for this plan.",
+    "trial_used": "A trial was already used on this account.",
+    "billing_not_live": "Payments are not switched on.",
+    "plan_not_found": "This plan does not exist.",
+    "free_plan_public": "The free plan stays public."
   },
   "severity": {
     "critical": "Critical",
@@ -743,7 +751,8 @@
       "config": "Configuration",
       "alerts": "Alerts",
       "reports": "Reports",
-      "integrations": "API & integrations"
+      "integrations": "API & integrations",
+      "billing": "Billing"
     },
     "common": {
       "lifecycle": {
@@ -1508,7 +1517,8 @@
   "customer": {
     "nav": {
       "overview": "Overview",
-      "security": "Security"
+      "security": "Security",
+      "plan": "Plan"
     },
     "eyebrow": "Your GuardHub",
     "title": "Overview",
@@ -1607,5 +1617,63 @@
     "running": "An active scan of this site is running.",
     "stop": "Stop now",
     "stopHelp": "Stops every test request within about a second."
+  },
+  "billing": {
+    "title": "Plan",
+    "intro": "Your plan, its limits and what you use today.",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "agency": "Agency"
+    },
+    "current": "Your plan: {plan}",
+    "active": "Active",
+    "trialUntil": "Trial until {when}",
+    "sites": "Websites",
+    "scansToday": "Manual scans today",
+    "scansPerDay": "Manual scans per day",
+    "concurrent": "Scans at once",
+    "plansTitle": "Plans",
+    "colPlan": "Plan",
+    "colAction": "Action",
+    "yourPlan": "Your plan",
+    "startTrial": "Start a {days}-day trial",
+    "trialNamed": "Start a {days}-day trial of {plan}",
+    "chargingOff": "Paid plans are not available to buy online yet. Contact us to upgrade.",
+    "chargingLive": "Upgrades are billed through our payment provider.",
+    "admin": {
+      "title": "Billing",
+      "intro": "Plan limits, plan assignments and whether payments are switched on.",
+      "chargingTitle": "Payments",
+      "chargingLive": "Charging is live",
+      "chargingOff": "Charging is off",
+      "enabledFlag": "Charging switch (server)",
+      "provider": "Provider",
+      "webhookSecret": "Webhook signing secret",
+      "apiKey": "Provider API key",
+      "configured": "Configured",
+      "notSet": "Not set",
+      "chargingHelp": "Switched on only on the server, with the provider's keys, by the founder. Keys are never shown or stored in the repository.",
+      "plansTitle": "Plan limits",
+      "plansIntro": "Prices live with the payment provider. A non-public plan can still be assigned here.",
+      "field": {
+        "max_sites": "Websites",
+        "scans_per_day": "Manual scans / day",
+        "concurrent_scans": "Scans at once",
+        "trial_days": "Trial days"
+      },
+      "public": "Public",
+      "save": "Save",
+      "assignTitle": "Assign a plan",
+      "assignIntro": "For customers billed outside the platform. Recorded with the reason.",
+      "email": "Account e-mail",
+      "planLabel": "Plan",
+      "reason": "Reason",
+      "assign": "Assign",
+      "subsTitle": "Subscriptions",
+      "noSubs": "No subscriptions yet: every account is on the free plan.",
+      "status": "Status",
+      "trialEnds": "Trial ends"
+    }
   }
 }

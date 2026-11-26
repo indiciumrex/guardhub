@@ -24,6 +24,11 @@ export function CustomerNav({ isAdmin }: { isAdmin: boolean }) {
       match: (p: string) => p.startsWith("/account/notifications"),
     },
     {
+      href: "/account/plan",
+      label: tc("plan"),
+      match: (p: string) => p.startsWith("/account/plan"),
+    },
+    {
       href: "/account/security",
       label: tc("security"),
       match: (p: string) => p.startsWith("/account/security"),

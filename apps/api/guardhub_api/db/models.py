@@ -381,6 +381,49 @@ class RecoveryCode(Base):
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class BillingPlan(Base):
+    """Per-plan limits (migration 0027). Readable by everyone, changed by admins only."""
+
+    __tablename__ = "billing_plans"
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    rank: Mapped[int] = mapped_column(Integer)
+    max_sites: Mapped[int] = mapped_column(Integer)
+    scans_per_day: Mapped[int] = mapped_column(Integer)
+    concurrent_scans: Mapped[int] = mapped_column(Integer)
+    trial_days: Mapped[int] = mapped_column(Integer, default=0)
+    public: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    updated_at: Mapped[datetime] = _now()
+
+
+class Subscription(Base):
+    """One account's plan (migration 0001, extended in 0027). Changed only in admin/system context."""
+
+    __tablename__ = "subscriptions"
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    plan: Mapped[str] = mapped_column(Text, default="free")
+    status: Mapped[str] = mapped_column(Text, default="active")
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    trial_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    provider: Mapped[str | None] = mapped_column(Text)
+    provider_customer_id: Mapped[str | None] = mapped_column(Text)
+    provider_subscription_id: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = _now()
+
+
+class BillingEvent(Base):
+    """An incoming provider webhook, stored once (migration 0027): a hash of the body only."""
+
+    __tablename__ = "billing_events"
+    provider: Mapped[str] = mapped_column(Text, primary_key=True)
+    event_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    type: Mapped[str] = mapped_column(Text)
+    payload_sha256: Mapped[str] = mapped_column(Text)
+    received_at: Mapped[datetime] = _now()
+
+
 class FindingTriage(Base):
     """The admin's verdict on one finding group (fingerprint), migration 0017. Admin/system only."""
 

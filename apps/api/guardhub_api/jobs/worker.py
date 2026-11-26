@@ -23,6 +23,7 @@ from guardhub_api.admin import invite_mail
 from guardhub_api.admin.trusted_domains.jobs import recheck_trusted_domains
 from guardhub_api.alerts import notifier
 from guardhub_api.alerts.delivery import EmailNotConfiguredError
+from guardhub_api.billing import service as billing
 from guardhub_api.common.logging import configure_logging
 from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.config import get_settings
@@ -117,6 +118,11 @@ async def send_admin_invite(ctx: JobContext, email: str, link: str, locale: str)
     return "sent"
 
 
+async def end_expired_trials(ctx: JobContext) -> int:
+    """Phase 5C: trials past their end go back to the free plan (audited)."""
+    return await billing.end_expired_trials()
+
+
 async def startup(ctx: JobContext) -> None:
     configure_logging(get_settings().log_level)
 
@@ -137,6 +143,8 @@ FUNCTIONS: list[Function] = [
 ]
 
 CRON_JOBS: list[CronJob] = [
+    # Phase 5C: end expired trials once a day
+    cron(end_expired_trials, hour={0}, minute={15}, second=0, unique=True, run_at_startup=False, timeout=300),
     # Prompt 2 §3: scheduled admin report summaries (06:05 UTC; due weekly / monthly)
     cron(
         send_scheduled_reports, hour={6}, minute={5}, second=0, unique=True, run_at_startup=False, timeout=600

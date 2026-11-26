@@ -169,7 +169,12 @@ def test_worker_registration() -> None:
                      client.WEBHOOK_FANOUT, client.WEBHOOK_DELIVER, client.SEND_ADMIN_INVITE}  # fmt: skip
     notify = next(f for f in worker.FUNCTIONS if f.name == client.NOTIFY_SCAN)
     assert notify.max_tries == 3
-    reports, alerts, tick, recheck, purge = worker.CRON_JOBS
+    trials, reports, alerts, tick, recheck, purge = worker.CRON_JOBS
+    assert (
+        trials.name == "cron:end_expired_trials"
+        and trials.unique
+        and (trials.hour, trials.minute) == ({0}, {15})
+    )
     assert reports.name == "cron:send_scheduled_reports" and reports.unique and not reports.run_at_startup
     assert (reports.hour, reports.minute) == ({6}, {5})
     # Prompt 2 §2: admin operational alerts are evaluated every minute, one run at a time

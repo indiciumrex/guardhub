@@ -32,6 +32,11 @@ x-api-env: &api-env
   ACTIVE_TESTING_APPROVED: ${ACTIVE_TESTING_APPROVED:-false}
   # Phase 5B, customer sites: off until the founder's go, published terms and live OOB
   CUSTOMER_ACTIVE_TESTING_GO: ${CUSTOMER_ACTIVE_TESTING_GO:-false}
+  # Phase 5C, billing: charging off until the founder sets the provider and its keys
+  BILLING_CHARGING_ENABLED: ${BILLING_CHARGING_ENABLED:-false}
+  BILLING_PROVIDER: ${BILLING_PROVIDER:-}
+  BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:-}
+  BILLING_API_KEY: ${BILLING_API_KEY:-}
   ACTIVE_TOS_VERSION: ${ACTIVE_TOS_VERSION:-}
   ACTIVE_TOS_SHA256: ${ACTIVE_TOS_SHA256:-}
   LOG_LEVEL: ${LOG_LEVEL:-info}
