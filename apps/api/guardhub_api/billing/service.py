@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
+import httpx
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -30,7 +31,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit
-from guardhub_api.common.errors import NotFoundError, UnprocessableError
+from guardhub_api.common.errors import (
+    ConflictError,
+    NotFoundError,
+    ServiceUnavailableError,
+    UnprocessableError,
+)
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import BillingEvent, BillingPlan, Project, Scan, Subscription, User
 from guardhub_api.db.session import DbContext, db_session
@@ -147,6 +153,7 @@ class BillingView(BaseModel):
     usage: dict[str, int]
     plans: list[PlanView]
     charging_live: bool
+    checkout_plans: list[str]  # paid plans a checkout can start for (empty while charging is off)
 
 
 def _plan_view(p: BillingPlan) -> PlanView:
@@ -208,7 +215,87 @@ async def view(claims: SessionClaims) -> BillingView:
         usage={"sites": sites, "scans_today": scans},
         plans=[_plan_view(p) for p in plans if p.public],
         charging_live=charging_live(),
+        checkout_plans=[
+            p.key for p in plans if p.public and p.rank > current.rank and p.key in checkout_prices()
+        ],
     )
+
+
+# ---- the checkout (final prompt item 7): inert until the founder switches charging on ----
+
+CHECKOUT_HOST = "checkout.stripe.com"
+
+
+def checkout_prices() -> dict[str, str]:
+    """Plan -> provider price id from BILLING_PRICE_IDS, only while charging is live with an API
+    key (empty otherwise: no checkout exists). Malformed entries are ignored."""
+    s = get_settings()
+    if not charging_live() or s.billing_provider != "stripe" or not s.billing_api_key.get_secret_value():
+        return {}
+    out: dict[str, str] = {}
+    for part in s.billing_price_ids.split(","):
+        key, _, price = part.strip().partition("=")
+        key, price = key.strip(), price.strip()
+        if key in ("pro", "agency") and price.startswith("price_") and len(price) <= 255:
+            out[key] = price
+    return out
+
+
+class CheckoutStarted(BaseModel):
+    url: str
+
+
+async def _stripe_session(price: str, user: User, plan: str) -> str:
+    s = get_settings()
+    base = s.public_base_url.rstrip("/")
+    form = {
+        "mode": "subscription",
+        "line_items[0][price]": price,
+        "line_items[0][quantity]": "1",
+        "success_url": f"{base}/account/plan?checkout=done",
+        "cancel_url": f"{base}/account/plan?checkout=cancelled",
+        "client_reference_id": str(user.id),
+        "customer_email": user.email,
+        "subscription_data[metadata][guardhub_user_id]": str(user.id),
+        "subscription_data[metadata][guardhub_plan]": plan,
+    }
+    async with httpx.AsyncClient(timeout=10.0, proxy=s.billing_egress_proxy or None) as client:
+        r = await client.post(
+            f"{s.billing_api_url.rstrip('/')}/v1/checkout/sessions",
+            data=form,
+            headers={"Authorization": f"Bearer {s.billing_api_key.get_secret_value()}"},
+        )
+    url = r.json().get("url") if r.status_code == 200 else None
+    if not isinstance(url, str) or not url.startswith(f"https://{CHECKOUT_HOST}/"):
+        log.warning("billing_checkout_failed", extra={"status": r.status_code})
+        raise ServiceUnavailableError("checkout_unavailable", "The payment page could not be opened.")
+    return url
+
+
+async def start_checkout(claims: SessionClaims, plan: str) -> CheckoutStarted:
+    prices = checkout_prices()
+    if not prices:
+        raise ConflictError("billing_not_live", "Payments are not switched on.")
+    now = datetime.now(UTC)
+    async with db_session(DbContext.system()) as session:
+        row = await session.get(BillingPlan, plan)
+        sub = (
+            await session.execute(select(Subscription).where(Subscription.user_id == claims.user_id))
+        ).scalar()
+        current = await _plan_row(session, effective_plan(sub, now))
+        user = await session.get(User, claims.user_id)
+    if row is None or not row.public or row.rank <= current.rank or plan not in prices or user is None:
+        raise UnprocessableError("plan_not_available", "This plan cannot be bought here.")
+    url = await _stripe_session(prices[plan], user, plan)
+    async with db_session(DbContext.system()) as session:
+        await audit.record(
+            session,
+            actor=f"user:{claims.user_id}",
+            action="billing.checkout_started",
+            target=str(claims.user_id),
+            metadata={"plan": plan},
+        )
+    return CheckoutStarted(url=url)
 
 
 async def start_trial(claims: SessionClaims, plan: str) -> BillingView:

@@ -165,7 +165,9 @@
     "invalid_display_name": "Ad, izin verilmeyen karakterler içeriyor.",
     "observe_scan_off": "Yalnızca gözlem taramaları sunucuda kapalı.",
     "statement_required": "Lütfen önce güncel yetki beyanını okuyup onaylayın.",
-    "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar."
+    "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar.",
+    "plan_not_available": "Bu plan buradan satın alınamaz.",
+    "checkout_unavailable": "Ödeme sayfası açılamadı. Lütfen biraz sonra tekrar deneyin."
   },
   "severity": {
     "critical": "Kritik",
@@ -1696,7 +1698,11 @@
       "noSubs": "Henüz abonelik yok: her hesap ücretsiz planda.",
       "status": "Durum",
       "trialEnds": "Deneme bitişi"
-    }
+    },
+    "upgrade": "Yükselt",
+    "upgradeNamed": "{plan} planına yükselt",
+    "checkoutDone": "Teşekkürler. Planınız, ödeme sağlayıcısı ödemeyi onaylar onaylamaz (genellikle bir dakika içinde) değişir.",
+    "checkoutCancelled": "Ödeme iptal edildi. Hiçbir ücret alınmadı ve planınız değişmedi."
   },
   "profile": {
     "title": "Profil",
@@ -1893,5 +1899,17 @@
       "help": "Güvenli, salt okunur kontroller; rapor canlı açılır.",
       "cta": "Tarama başlat"
     }
+  },
+  "checkout": {
+    "title": "Yükselt",
+    "intro": "Ödemeyi ödeme sağlayıcımızın güvenli sayfasında yaparsınız; GuardHub kartınızı hiç görmez.",
+    "planTitle": "Plan: {plan}",
+    "payTitle": "Ödeme",
+    "providerNote": "Sonraki adım, onaylamadan önce fiyatı, vergileri ve fatura dönemini gösteren sağlayıcı sayfasını açar. Planınız, sağlayıcı ödemeyi onayladığında değişir.",
+    "continue": "Ödemeye devam et",
+    "continueNamed": "{plan} için ödemeye devam et",
+    "off": "Ödemeler açık değil",
+    "offHelp": "Ücretli planlar henüz çevrim içi satın alınamıyor. Burada hiçbir ücret alınmaz. Yükseltmek için bizimle iletişime geçin.",
+    "back": "Planınıza dönün"
   }
 }

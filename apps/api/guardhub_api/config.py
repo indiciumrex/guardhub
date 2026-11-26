@@ -64,6 +64,13 @@ class Settings(BaseSettings):
     billing_provider: str = ""  # "" = none yet; "stripe" is the first supported webhook format
     billing_webhook_secret: SecretStr = SecretStr("")
     billing_api_key: SecretStr = SecretStr("")
+    # The checkout (final prompt item 7): which provider price each paid plan uses, set by the
+    # founder on the server ("pro=price_...,agency=price_..."); no price lives in the repository
+    # (the provider's own page shows it). The API reaches the provider only through the egress
+    # proxy (its allowlist needs the provider's API host first). Empty = no checkout.
+    billing_price_ids: str = ""
+    billing_egress_proxy: str = ""
+    billing_api_url: str = "https://api.stripe.com"
     active_tos_version: str = ""
     active_tos_sha256: str = ""
     # Admin "recent errors" from Sentry (optional): a READ-ONLY API token (project:read), the org and
