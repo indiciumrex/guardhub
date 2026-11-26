@@ -55,11 +55,11 @@ test("trusted domains: hidden from non-admins, prove once, scan without a prompt
   await expect(
     page.getByText("We couldn't confirm that you control this website yet."),
   ).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText("Active")).toHaveCount(0);
+  await expect(page.getByText("Active", { exact: true })).toHaveCount(0);
 
   publishOwnershipToken(await readField(page, "File content (verification code)"));
   await page.getByRole("button", { name: "Verify", exact: true }).click();
-  await expect(page.getByText("Active").first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("Active", { exact: true }).first()).toBeVisible({ timeout: 60_000 });
 
   // the proof is withdrawn: trust holds until the daily re-check, so the scan needs no prompt
   removeOwnershipToken();
