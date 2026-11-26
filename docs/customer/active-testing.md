@@ -10,7 +10,7 @@ The locks are checked in this order, on every request:
 | # | Lock | Where | Today |
 |---|---|---|---|
 | 1 | The founder's go | `CUSTOMER_ACTIVE_TESTING_GO=true` (server `.env`) | not set: **off** |
-| 2 | Final, published terms | `ACTIVE_TOS_VERSION` + `ACTIVE_TOS_SHA256` (SHA-256 of the exact published text) | not set: **draft** |
+| 2 | Final, published terms | `ACTIVE_TOS_VERSION` + `ACTIVE_TOS_SHA256`, and the file with exactly that hash in `LEGAL_DIR` (served at `/legal/active-testing`) | not set: **draft** |
 | 3 | SSRF only: live OOB collaborator | a scanner reports `active_oob`. Without it SSRF is not offered, a request for it is refused (`oob_not_configured`), and the panel and the report say "SSRF is not covered in this plan". The other modules do not need it. | **none**: SSRF not covered |
 | 4 | Founder approval of active testing | `ACTIVE_TESTING_APPROVED` | on (owner targets) |
 | 5 | Every requested module on | Module Center | 5 on, SSRF off |
@@ -34,8 +34,13 @@ IDOR is not offered to customers (it needs test-account cookies).
 
 ## Going live (the founder's gate; nothing here is done without the founder's "go")
 
-1. Publish the active-testing terms at `/legal/active-testing`. Set `ACTIVE_TOS_VERSION` and
-   `ACTIVE_TOS_SHA256` to that exact text's version and hash. GuardHub does not write legal text.
+1. Place the approved terms on the server as
+   `/opt/guardhub/shared/legal/active-testing-<version>.txt` (UTF-8, LF; world-readable), and the
+   Turkish translation as `active-testing-<version>.tr.txt`. Set `ACTIVE_TOS_VERSION=<version>` and
+   `ACTIVE_TOS_SHA256=<sha256 of the English file>`. The API serves it at `/legal/active-testing`
+   only while the file's hash matches (`apps/api/guardhub_api/legal.py`); a missing or changed
+   file keeps the `terms_final` lock closed. The text never goes into the repository, and
+   GuardHub does not write legal text (the draft is in Claude Docs).
 2. Set `CUSTOMER_ACTIVE_TESTING_GO=true`.
 3. Recreate the serving colour's api and scanner, then re-run gates A–K.
 

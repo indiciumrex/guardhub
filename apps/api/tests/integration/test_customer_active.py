@@ -8,9 +8,12 @@ site, with the customer's consent to exactly the current terms, and the customer
 
 from __future__ import annotations
 
+import hashlib
 import json
+import tempfile
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 import pytest
@@ -25,7 +28,8 @@ from guardhub_api.scans.queue import JOBS_STREAM
 
 from .conftest import new_client, signed_in
 
-TERMS = ("2026-12-01", "a" * 64)
+TERMS_TEXT = b"GuardHub active-testing terms (test only)\n"
+TERMS = ("2026-12-01", hashlib.sha256(TERMS_TEXT).hexdigest())
 CHECKS = ["active_cors", "active_xss"]
 
 
@@ -48,6 +52,9 @@ async def _open_every_lock(redis: Redis, monkeypatch: pytest.MonkeyPatch, *, oob
     monkeypatch.setattr(s, "customer_active_testing_go", True)
     monkeypatch.setattr(s, "active_tos_version", TERMS[0])
     monkeypatch.setattr(s, "active_tos_sha256", TERMS[1])
+    legal = tempfile.mkdtemp()  # the published text, exactly as hashed (legal.py)
+    (Path(legal) / f"active-testing-{TERMS[0]}.txt").write_bytes(TERMS_TEXT)
+    monkeypatch.setattr(s, "legal_dir", legal)
     monkeypatch.setattr(s, "active_testing_approved", True)
     info = {"consumer": "test", "active_enabled": True, "active_oob": oob}
     await redis.set(owner_scan.SCANNER_INFO_PREFIX + "test", json.dumps(info))
@@ -178,3 +185,17 @@ async def test_with_oob_ssrf_is_offered(
     await _open_every_lock(redis, monkeypatch, oob=True)
     body = (await client.get(f"/api/v1/projects/{project_id}/active")).json()
     assert body["ssrf_covered"] is True and "active_ssrf" in body["checks"]
+
+
+async def test_terms_must_be_the_published_file(
+    client: httpx.AsyncClient, redis: Redis, monkeypatch: pytest.MonkeyPatch, modules_restored: object
+) -> None:
+    await signed_in(client)
+    project_id = await _site(client)
+    await _open_every_lock(redis, monkeypatch)
+    r = await client.get("/api/v1/legal/active-testing")
+    assert r.status_code == 200 and r.json()["text"] == TERMS_TEXT.decode() and r.json()["sha256"] == TERMS[1]
+    monkeypatch.setattr(get_settings(), "active_tos_sha256", "b" * 64)  # hash set, file differs
+    assert (await client.get("/api/v1/legal/active-testing")).status_code == 404
+    body = (await client.get(f"/api/v1/projects/{project_id}/active")).json()
+    assert "terms_final" in body["blocked_by"] and body["terms_version"] is None

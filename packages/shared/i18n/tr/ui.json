@@ -165,7 +165,8 @@
     "invalid_display_name": "Ad, izin verilmeyen karakterler içeriyor.",
     "observe_scan_off": "Yalnızca gözlem taramaları sunucuda kapalı.",
     "statement_required": "Lütfen önce güncel yetki beyanını okuyup onaylayın.",
-    "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar."
+    "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar.",
+    "terms_not_published": "Aktif test koşulları henüz yayımlanmadı."
   },
   "severity": {
     "critical": "Kritik",
@@ -1889,5 +1890,13 @@
       "help": "Güvenli, salt okunur kontroller; rapor canlı açılır.",
       "cta": "Tarama başlat"
     }
+  },
+  "legalTerms": {
+    "title": "Aktif test koşulları",
+    "version": "Sürüm",
+    "fingerprint": "SHA-256 parmak izi",
+    "notPublished": "Aktif test koşulları henüz yayımlanmadı. Yayımlanana kadar müşteri sitelerinde aktif test yapılamaz.",
+    "englishOnly": "Bu sürüm için Türkçe çeviri yayımlanmadı; geçerli olan aşağıdaki İngilizce metindir.",
+    "translationNote": "Bu bir çeviridir. Geçerli olan İngilizce metindir; parmak izi yukarıda gösterilir."
   }
 }

@@ -165,7 +165,8 @@
     "invalid_display_name": "The name contains characters that are not allowed.",
     "observe_scan_off": "Observe-only scans are switched off on the server.",
     "statement_required": "Please read and accept the current authorisation statement first.",
-    "ownership_required": "These checks need a verified site. They never run without an ownership proof."
+    "ownership_required": "These checks need a verified site. They never run without an ownership proof.",
+    "terms_not_published": "The active-testing terms are not published yet."
   },
   "severity": {
     "critical": "Critical",
@@ -1889,5 +1890,13 @@
       "help": "Safe, read-only checks; the report opens live.",
       "cta": "Start a scan"
     }
+  },
+  "legalTerms": {
+    "title": "Active testing terms",
+    "version": "Version",
+    "fingerprint": "SHA-256 fingerprint",
+    "notPublished": "The active-testing terms are not published yet. Active testing of customer sites is not available until they are.",
+    "englishOnly": "A Turkish translation is not published for this version; the English text below is the one that applies.",
+    "translationNote": "This is a translation. The English text is the one that applies; its fingerprint is shown above."
   }
 }

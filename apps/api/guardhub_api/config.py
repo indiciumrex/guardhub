@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     billing_api_key: SecretStr = SecretStr("")
     active_tos_version: str = ""
     active_tos_sha256: str = ""
+    # Where the founder places the approved terms file(s) (read-only mount; see legal.py). Empty =
+    # no terms are published, whatever ACTIVE_TOS_VERSION / ACTIVE_TOS_SHA256 say.
+    legal_dir: str = ""
     # Admin "recent errors" from Sentry (optional): a READ-ONLY API token (project:read), the org and
     # project slugs, and the egress proxy the API must use to reach sentry.io (the API container has
     # no internet route of its own, ADR-0006). Unset: the panel shows GuardHub's own error records.

@@ -3,7 +3,8 @@ lock holds, in this order, every time:
 
 Go-live (the founder's human gate, both):
  1. the founder's go:           CUSTOMER_ACTIVE_TESTING_GO=true;
- 2. final, published terms:     ACTIVE_TOS_VERSION and ACTIVE_TOS_SHA256 set (empty = draft);
+ 2. final, published terms:     ACTIVE_TOS_VERSION and ACTIVE_TOS_SHA256 set AND the file with
+    exactly that hash placed in LEGAL_DIR (served at /legal/active-testing; legal.py);
  3. SSRF only: a live OOB collaborator (a scanner reports active_oob). Without it SSRF is neither
     offered nor accepted (oob_not_configured) and the report says SSRF is not covered; the
     other active modules do not need it (final prompt item 1);
@@ -51,6 +52,7 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.models import ActiveConsent, Module, Project, Scan
 from guardhub_api.db.session import DbContext, db_session
 from guardhub_api.findings.contract_gen import ACTIVE_CHECK_IDS
+from guardhub_api.legal import published_terms
 from guardhub_api.projects.scanning import ScanTarget, ensure_fresh_ownership
 from guardhub_api.scans.queue import JOBS_STREAM, STREAM_MAXLEN
 
@@ -92,11 +94,9 @@ def _ctx(claims: SessionClaims) -> DbContext:
 
 
 def _terms() -> tuple[str, str] | None:
-    s = get_settings()
-    version, digest = s.active_tos_version.strip(), s.active_tos_sha256.strip().lower()
-    if not version or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
-        return None
-    return version, digest
+    """The terms version and hash, only while that exact text is published (legal.py)."""
+    terms = published_terms()
+    return (terms.version, terms.sha256) if terms else None
 
 
 async def _own_site(claims: SessionClaims, project_id: uuid.UUID) -> Project:

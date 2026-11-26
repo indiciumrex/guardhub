@@ -41,6 +41,7 @@ from guardhub_api.integrations import traffic
 from guardhub_api.integrations.router import admin_router as integrations_admin_router
 from guardhub_api.integrations.router import router as integrations_router
 from guardhub_api.jobs.client import close_arq
+from guardhub_api.legal import router as legal_router
 from guardhub_api.opsalerts.counters import count_5xx
 from guardhub_api.opsalerts.router import router as alerts_admin_router
 from guardhub_api.platform.router import router as config_router
@@ -161,6 +162,7 @@ def create_app() -> FastAPI:
         platform_status_router,
         alerts_router,
         github_router,
+        legal_router,
     ):
         api.include_router(r)
     app.include_router(api)
