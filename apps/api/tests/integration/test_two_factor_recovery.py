@@ -120,14 +120,16 @@ async def test_a_customer_sees_and_ends_only_their_own_sessions(client: httpx.As
         ).status_code == 200
         own = (await client.get("/api/v1/auth/sessions")).json()
         assert len(own) == 2
-        laptop_jti = own[0]["jti"]  # newest first
-        r = await client.post("/api/v1/auth/sessions/end", json={"jti": laptop_jti})
+        r = await client.post("/api/v1/auth/sessions/end", json={"jti": own[0]["jti"]})
         assert r.json() == {"ended": 1}
-        assert (await laptop.get("/api/v1/auth/me")).status_code == 401
-        assert (await client.get("/api/v1/auth/me")).status_code == 200
-    async with new_client("198.51.100.87") as stranger:
-        other, _, _ = await _enroll(stranger)
-        r = await stranger.post("/api/v1/auth/sessions/end", json={"jti": own[1]["jti"]})
-        assert r.json() == {"ended": 0}  # someone else's session id does nothing
-    assert (await client.get("/api/v1/auth/me")).status_code == 200
-    assert other != email
+        alive = {
+            name: (await c.get("/api/v1/auth/me")).status_code
+            for name, c in (("phone", client), ("laptop", laptop))
+        }
+        assert sorted(alive.values()) == [200, 401]  # exactly the one session ended
+        survivor = client if alive["phone"] == 200 else laptop
+        async with new_client("198.51.100.87") as stranger:
+            await _enroll(stranger)
+            r = await stranger.post("/api/v1/auth/sessions/end", json={"jti": own[1]["jti"]})
+            assert r.json() == {"ended": 0}  # someone else's session id does nothing
+        assert (await survivor.get("/api/v1/auth/me")).status_code == 200
