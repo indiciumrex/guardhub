@@ -747,7 +747,7 @@
   "adminCenter": {
     "nav": {
       "label": "Yönetim bölümleri",
-      "overview": "Genel bakış",
+      "overview": "Konsol özeti",
       "modules": "Modül Merkezi",
       "scans": "Taramalar",
       "findings": "Bulgular ve risk",
@@ -755,11 +755,12 @@
       "users": "Kullanıcılar",
       "trustedDomains": "Güvenilir alan adları",
       "config": "Yapılandırma",
-      "alerts": "Uyarılar",
+      "alerts": "Platform uyarıları",
       "reports": "Raporlar",
       "integrations": "API ve entegrasyonlar",
       "billing": "Faturalandırma",
-      "sites": "Doğrulanmış siteler"
+      "sites": "Doğrulanmış siteler",
+      "observe": "Yalnızca gözlem taraması"
     },
     "common": {
       "lifecycle": {
@@ -1775,5 +1776,108 @@
     "accept": "Yukarıdaki beyanı onaylıyorum (sürüm {version}). Hesabımla birlikte kaydedilir.",
     "runs": "Çalışacak kontroller",
     "start": "Yalnızca gözlem taramasını başlat"
+  },
+  "appNav": {
+    "label": "Ana menü",
+    "menu": "Menü",
+    "newScan": "Yeni tarama",
+    "panelTitle": "GuardHub'ınız",
+    "consoleTitle": "GuardHub yönetim konsolu",
+    "scanning": "Taramalar ve sonuçlar",
+    "account": "Hesabınız",
+    "operations": "Yönetim: operasyon",
+    "monitoring": "Yönetim: izleme",
+    "platform": "Yönetim: platform",
+    "safety": "Güvenlik",
+    "safetyLabel": "Güvenlik: acil durdurma ve aktif test (tarama denetimlerini aç)",
+    "killSwitch": "Acil durdurma",
+    "armed": "Hazır",
+    "engaged": "DEVREDE",
+    "activeTesting": "Aktif test",
+    "on": "Açık",
+    "off": "Kapalı",
+    "unknown": "Bilinmiyor"
+  },
+  "newScan": {
+    "eyebrow": "Tarama",
+    "title": "Yeni tarama",
+    "intro": "Doğrulanmış bir site seçip tarayın ya da yeni bir site ekleyin. Her tarama güvenli ve salt okunurdur; önce sahiplik yeniden kontrol edilir.",
+    "flowLabel": "Tarama nasıl işler",
+    "stepN": "Adım {n}",
+    "flow": {
+      "add": {
+        "title": "Sitenizi ekleyin",
+        "help": "Adresi ve tanıyacağınız bir ad."
+      },
+      "verify": {
+        "title": "Sahibi olduğunuzu kanıtlayın",
+        "help": "Bir dosya, meta etiketi veya DNS kaydı. Bundan önce hiçbir şey taranmaz."
+      },
+      "scan": {
+        "title": "Tarayın ve raporu okuyun",
+        "help": "Her biri için nasıl düzelteceğinizle birlikte anlaşılır bulgular."
+      }
+    },
+    "readyTitle": "Taramaya hazır",
+    "readyIntro": "Doğrulanmış siteler. Tek tıkla tarama başlar ve canlı raporu açılır.",
+    "noneReady": "Henüz doğrulanmış site yok. Aşağıdan ekleyin ve sahibi olduğunuzu kanıtlayın; ardından burada görünür.",
+    "lastScan": "Son tarama {when}",
+    "scanNow": "Şimdi tara",
+    "starting": "Başlatılıyor…",
+    "scanNamed": "{name} sitesini şimdi tara",
+    "trustedDomain": "Güvenilir alan adı",
+    "waitingTitle": "Sahiplik kanıtı bekleniyor",
+    "waitingIntro": "Bu siteler, kontrol ettiğinizi kanıtlayana kadar taranamaz.",
+    "verify": "Doğrula",
+    "verifyNamed": "{name} sitesini doğrula",
+    "addTitle": "Yeni site ekle",
+    "addIntro": "Ekledikten sonra sahipliği nasıl kanıtlayacağınızı göreceksiniz; ardından tarayabilirsiniz.",
+    "moreTitle": "Diğer tarama yolları",
+    "more": {
+      "repo": {
+        "title": "Bir kod deposu",
+        "help": "Bağımlılıkları ve sızmış anahtarları kontrol etmek için GitHub'ı bağlayın."
+      },
+      "quick": {
+        "title": "Hızlı tek seferlik tarama",
+        "help": "Hesaba kaydetmeden: sahipliği tarayıcıda kanıtlayın ve rapor alın."
+      },
+      "trusted": {
+        "title": "Güvenilir alan adları (yönetici)",
+        "help": "Bir alan adını bir kez kanıtlayın; kanıt yayında kaldıkça buradan tarayın."
+      },
+      "active": {
+        "title": "Sahip hedefinde aktif test (yönetici)",
+        "help": "Tüm aktif test kilitlerinin ve acil durdurmanın arkasında."
+      },
+      "observe": {
+        "title": "Yalnızca gözlem taraması (süper yönetici)",
+        "help": "Sahiplik kanıtı olmadan: yalnızca gözlem, kaydedilen bir yetki beyanıyla."
+      }
+    }
+  },
+  "startGuide": {
+    "title": "Buradan başlayın",
+    "intro": "İlk raporunuza üç adım. Her taramadan önce sahiplik gelir.",
+    "done": "Tamam",
+    "todo": "Yapılacak",
+    "ready": "Hazır",
+    "readyHelp": "Doğrulanmış bir siteniz ve bir raporunuz var. İstediğiniz zaman yeni tarama başlatın.",
+    "newScan": "Yeni tarama",
+    "add": {
+      "title": "Site ekleyin",
+      "help": "Kontrol ettiğiniz bir web sitesi ya da güvenilir alan adı.",
+      "cta": "Site ekle"
+    },
+    "verify": {
+      "title": "Sahipliği kanıtlayın",
+      "help": "Tarayıcının kontrol ettiği bir dosya, meta etiketi veya DNS kaydı.",
+      "cta": "Site doğrula"
+    },
+    "scan": {
+      "title": "Tarama çalıştırın",
+      "help": "Güvenli, salt okunur kontroller; rapor canlı açılır.",
+      "cta": "Tarama başlat"
+    }
   }
 }

@@ -1,5 +1,6 @@
 /**
- * Admin overview (§8.3): the safety status first (active-testing locks, lab gates, false-positive
+ * Admin overview (§8.3): the first-use guide (add a site → verify → scan) until it is done, then
+ * the safety status (active-testing locks, lab gates, false-positive
  * rate), then scans, findings by severity, system health (API, database, Redis, scanner, queue),
  * module success rates, recent admin actions and recent errors.
  * Each block loads independently, so one failing endpoint doesn't hide the others.
@@ -9,6 +10,7 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ErrorList } from "@/components/admin/ErrorList";
 import { SafetyStatus } from "@/components/admin/SafetyStatus";
+import { StartGuide } from "@/components/admin/StartGuide";
 import {
   KV,
   PageHeader,
@@ -72,6 +74,8 @@ export default async function AdminOverviewPage() {
   return (
     <>
       <PageHeader eyebrow={tConsole("eyebrow")} title={tAdmin("title")} intro={t("intro")} />
+
+      <StartGuide />
 
       <SafetyStatus
         active={settled(orchR)?.active ?? null}

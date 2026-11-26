@@ -747,7 +747,7 @@
   "adminCenter": {
     "nav": {
       "label": "Administration sections",
-      "overview": "Overview",
+      "overview": "Console overview",
       "modules": "Module Center",
       "scans": "Scans",
       "findings": "Findings & risk",
@@ -755,11 +755,12 @@
       "users": "Users",
       "trustedDomains": "Trusted domains",
       "config": "Configuration",
-      "alerts": "Alerts",
+      "alerts": "Platform alerts",
       "reports": "Reports",
       "integrations": "API & integrations",
       "billing": "Billing",
-      "sites": "Verified sites"
+      "sites": "Verified sites",
+      "observe": "Observe-only scan"
     },
     "common": {
       "lifecycle": {
@@ -1775,5 +1776,108 @@
     "accept": "I confirm the statement above (version {version}). It is recorded with my account.",
     "runs": "Checks that will run",
     "start": "Start observe-only scan"
+  },
+  "appNav": {
+    "label": "Main menu",
+    "menu": "Menu",
+    "newScan": "New scan",
+    "panelTitle": "Your GuardHub",
+    "consoleTitle": "GuardHub admin console",
+    "scanning": "Scans & results",
+    "account": "Your account",
+    "operations": "Admin: operations",
+    "monitoring": "Admin: monitoring",
+    "platform": "Admin: platform",
+    "safety": "Safety",
+    "safetyLabel": "Safety: kill switch and active testing (open scan controls)",
+    "killSwitch": "Kill switch",
+    "armed": "Armed",
+    "engaged": "ENGAGED",
+    "activeTesting": "Active testing",
+    "on": "On",
+    "off": "Off",
+    "unknown": "Unknown"
+  },
+  "newScan": {
+    "eyebrow": "Scan",
+    "title": "New scan",
+    "intro": "Pick a verified site and scan it, or add a new one. Every scan is safe and read-only, and ownership is checked again first.",
+    "flowLabel": "How scanning works",
+    "stepN": "Step {n}",
+    "flow": {
+      "add": {
+        "title": "Add your site",
+        "help": "Its address and a name you recognise."
+      },
+      "verify": {
+        "title": "Prove you own it",
+        "help": "A file, a meta tag or a DNS record. Nothing is scanned before this."
+      },
+      "scan": {
+        "title": "Scan and read the report",
+        "help": "Plain-language findings with how to fix each one."
+      }
+    },
+    "readyTitle": "Ready to scan",
+    "readyIntro": "Verified sites. One click starts a scan and opens its live report.",
+    "noneReady": "No verified site yet. Add one below and prove you own it; then it appears here.",
+    "lastScan": "Last scan {when}",
+    "scanNow": "Scan now",
+    "starting": "Starting…",
+    "scanNamed": "Scan {name} now",
+    "trustedDomain": "Trusted domain",
+    "waitingTitle": "Waiting for the ownership proof",
+    "waitingIntro": "These sites cannot be scanned until you prove you control them.",
+    "verify": "Verify",
+    "verifyNamed": "Verify {name}",
+    "addTitle": "Add a new site",
+    "addIntro": "After adding it you will see how to prove ownership; then you can scan it.",
+    "moreTitle": "Other ways to scan",
+    "more": {
+      "repo": {
+        "title": "A code repository",
+        "help": "Connect GitHub to check dependencies and leaked keys."
+      },
+      "quick": {
+        "title": "Quick one-off scan",
+        "help": "Without an account record: prove ownership in the browser and get a report."
+      },
+      "trusted": {
+        "title": "Trusted domains (admin)",
+        "help": "Prove a domain once; scan it from here while the proof stays published."
+      },
+      "active": {
+        "title": "Active test of an owner target (admin)",
+        "help": "Behind every active-testing lock and the kill switch."
+      },
+      "observe": {
+        "title": "Observe-only scan (super-admin)",
+        "help": "Without an ownership proof: observation only, with a recorded authorisation statement."
+      }
+    }
+  },
+  "startGuide": {
+    "title": "Start here",
+    "intro": "Three steps to your first report. Ownership comes before any scan.",
+    "done": "Done",
+    "todo": "To do",
+    "ready": "Ready",
+    "readyHelp": "You have a verified site and a report. Start a new scan any time.",
+    "newScan": "New scan",
+    "add": {
+      "title": "Add a site",
+      "help": "A website you control, or a trusted domain.",
+      "cta": "Add a site"
+    },
+    "verify": {
+      "title": "Prove ownership",
+      "help": "A file, meta tag or DNS record the scanner checks.",
+      "cta": "Verify a site"
+    },
+    "scan": {
+      "title": "Run a scan",
+      "help": "Safe, read-only checks; the report opens live.",
+      "cta": "Start a scan"
+    }
   }
 }
