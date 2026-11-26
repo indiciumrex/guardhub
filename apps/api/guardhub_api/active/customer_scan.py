@@ -129,7 +129,7 @@ async def _locks(redis: Redis, project: Project, checks: list[str]) -> list[Lock
         blocked.append("oob_live")
     if not s.active_testing_approved:
         blocked.append("approval")
-    if set(checks) - await _modules_on(checks):
+    if not checks or set(checks) - await _modules_on(checks):
         blocked.append("modules")
     if await _kill_engaged(redis):
         blocked.append("kill")
@@ -152,13 +152,14 @@ async def _running(redis: Redis, project: Project) -> uuid.UUID | None:
 
 async def readiness(claims: SessionClaims, redis: Redis, project_id: uuid.UUID) -> Readiness:
     project = await _own_site(claims, project_id)
-    blocked = await _locks(redis, project, list(CUSTOMER_CHECKS))
+    offered = sorted(await _modules_on(list(CUSTOMER_CHECKS)))  # only the modules switched on
+    blocked = await _locks(redis, project, offered)
     terms = _terms()
     return Readiness(
         available=not blocked,
         blocked_by=blocked,
         terms_version=terms[0] if terms else None,
-        checks=list(CUSTOMER_CHECKS),
+        checks=offered,
         running_scan_id=await _running(redis, project),
     )
 
