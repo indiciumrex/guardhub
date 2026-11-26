@@ -11,6 +11,7 @@ import { ScanStatusBadge } from "@/components/account/ScanStatusBadge";
 import { SeverityCounts } from "@/components/scan/SeverityCounts";
 import { serverApiFetch } from "@/lib/api-server";
 import { loadProtected } from "@/lib/auth-server";
+import { RecoveryCodesPanel } from "@/components/account/RecoveryCodes";
 import type { GitHubStatus, Project } from "@/lib/types";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,8 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AccountHomePage() {
-  const [projects, github] = await loadProtected(() =>
-    Promise.all([serverApiFetch<Project[]>("/projects"), serverApiFetch<GitHubStatus>("/github")]),
+  const [projects, github, recovery] = await loadProtected(() =>
+    Promise.all([
+      serverApiFetch<Project[]>("/projects"),
+      serverApiFetch<GitHubStatus>("/github"),
+      serverApiFetch<{ remaining: number }>("/auth/2fa/recovery-codes").catch(() => null),
+    ]),
   );
   const t = await getTranslations("account");
   const tGitHub = await getTranslations("github");
@@ -32,6 +37,8 @@ export default async function AccountHomePage() {
         <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="gh-muted mt-2">{t("intro")}</p>
       </div>
+
+      {recovery ? <RecoveryCodesPanel remaining={recovery.remaining} /> : null}
 
       <section aria-labelledby="projects-heading">
         <h2 id="projects-heading" className="text-xl font-semibold">

@@ -53,3 +53,16 @@ class TotpSetupResponse(BaseModel):
 
 class SessionResponse(BaseModel):
     user: UserView
+    recovery_codes: list[str] | None = None  # only right after two-factor was first enabled
+
+
+class RecoveryCodeRequest(BaseModel):
+    code: str = Field(min_length=10, max_length=20, pattern=r"^[A-Za-z0-9 -]+$")
+
+
+class RecoveryStatus(BaseModel):
+    remaining: int
+
+
+class RecoveryCodes(BaseModel):
+    codes: list[str]

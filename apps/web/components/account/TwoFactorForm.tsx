@@ -3,7 +3,8 @@
  * Two-factor authentication (mandatory, §9.1).
  * - setup: asks the API for a TOTP secret, renders the otpauth:// QR code client-side
  *   (the secret never leaves the browser/API pair) and shows the secret as text.
- * - verify: 6-digit code entry.
+ * - verify: 6-digit code entry, or a single-use recovery code instead.
+ * - right after setup, the ten recovery codes are shown once, before going on.
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,7 @@ import { apiFetch } from "@/lib/api";
 import type { TotpSetupResponse, VerifyTotpResponse } from "@/lib/types";
 import { useErrorMessage } from "@/lib/use-error-message";
 import { Alert } from "@/components/ui/Alert";
+import { RecoveryCodeList } from "./RecoveryCodes";
 
 export function TwoFactorForm({ mode, next }: { mode: "setup" | "verify"; next: string }) {
   const t = useTranslations("twoFactor");
@@ -24,6 +26,8 @@ export function TwoFactorForm({ mode, next }: { mode: "setup" | "verify"; next: 
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [codes, setCodes] = useState<string[] | null>(null);
   const requested = useRef(false);
 
   useEffect(() => {
@@ -48,13 +52,39 @@ export function TwoFactorForm({ mode, next }: { mode: "setup" | "verify"; next: 
     setBusy(true);
     setError(null);
     try {
-      await apiFetch<VerifyTotpResponse>("/auth/2fa/verify", { method: "POST", body: { code } });
+      const r = await apiFetch<VerifyTotpResponse & { recovery_codes?: string[] | null }>(
+        useRecovery ? "/auth/2fa/recover" : "/auth/2fa/verify",
+        { method: "POST", body: { code } },
+      );
+      if (r.recovery_codes?.length) {
+        setCodes(r.recovery_codes); // shown once: the user continues after saving them
+        setBusy(false);
+        return;
+      }
       router.replace(next);
       router.refresh();
     } catch (err) {
       setError(err);
       setBusy(false);
     }
+  }
+
+  if (codes) {
+    return (
+      <div className="space-y-4">
+        <RecoveryCodeList codes={codes} />
+        <button
+          type="button"
+          className="gh-btn-primary w-full"
+          onClick={() => {
+            router.replace(next);
+            router.refresh();
+          }}
+        >
+          {t("codesSaved")}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -95,28 +125,51 @@ export function TwoFactorForm({ mode, next }: { mode: "setup" | "verify"; next: 
       ) : null}
 
       <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label htmlFor="otp" className="gh-label">
-            {t("codeLabel")}
-          </label>
-          <input
-            id="otp"
-            name="otp"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            required
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-            aria-describedby="otp-hint"
-            className="gh-input text-center font-mono text-lg tracking-[0.4em]"
-          />
-          <p id="otp-hint" className="gh-muted mt-1 text-sm">
-            {t("codeHint")}
-          </p>
-        </div>
+        {useRecovery ? (
+          <div>
+            <label htmlFor="recovery" className="gh-label">
+              {t("recoveryLabel")}
+            </label>
+            <input
+              id="recovery"
+              name="recovery"
+              type="text"
+              autoComplete="off"
+              maxLength={20}
+              required
+              value={code}
+              onChange={(event) => setCode(event.target.value.slice(0, 20))}
+              aria-describedby="recovery-hint"
+              className="gh-input text-center font-mono text-lg tracking-wider"
+            />
+            <p id="recovery-hint" className="gh-muted mt-1 text-sm">
+              {t("recoveryHint")}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="otp" className="gh-label">
+              {t("codeLabel")}
+            </label>
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              aria-describedby="otp-hint"
+              className="gh-input text-center font-mono text-lg tracking-[0.4em]"
+            />
+            <p id="otp-hint" className="gh-muted mt-1 text-sm">
+              {t("codeHint")}
+            </p>
+          </div>
+        )}
         {error ? (
           <Alert tone="error" label={tCommon("errorLabel")}>
             {errorMessage(error)}
@@ -125,10 +178,25 @@ export function TwoFactorForm({ mode, next }: { mode: "setup" | "verify"; next: 
         <button
           type="submit"
           className="gh-btn-primary w-full"
-          disabled={busy || code.length !== 6}
+          disabled={
+            busy || (useRecovery ? code.replace(/[^a-z0-9]/gi, "").length < 10 : code.length !== 6)
+          }
         >
           {busy ? tCommon("working") : t("submit")}
         </button>
+        {mode === "verify" ? (
+          <button
+            type="button"
+            className="gh-link text-sm"
+            onClick={() => {
+              setUseRecovery((v) => !v);
+              setCode("");
+              setError(null);
+            }}
+          >
+            {useRecovery ? t("useAuthenticator") : t("useRecovery")}
+          </button>
+        ) : null}
       </form>
     </div>
   );

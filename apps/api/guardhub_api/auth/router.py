@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response, status
+from redis.asyncio import Redis
 
 from guardhub_api.auth import service, sessions
-from guardhub_api.auth.deps import AnySession, clear_session_cookie, set_session_cookie
+from guardhub_api.auth.deps import AnySession, FullSession, clear_session_cookie, set_session_cookie
 from guardhub_api.auth.schemas import (
     LoginRequest,
     MfaState,
+    RecoveryCodeRequest,
+    RecoveryCodes,
+    RecoveryStatus,
     RegisterRequest,
     RegisterResponse,
     SessionResponse,
@@ -17,10 +21,12 @@ from guardhub_api.auth.schemas import (
     UpdateMeRequest,
     UserView,
 )
+from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common.crypto import keyed_hash
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
+from guardhub_api.db.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -54,7 +60,14 @@ async def totp_verify(
     body: TotpVerifyRequest, claims: AnySession, request: Request, response: Response
 ) -> SessionResponse:
     redis = get_redis()
-    user = await service.verify_totp(redis, claims, body.code)
+    user, codes = await service.verify_totp(redis, claims, body.code)
+    await _full_session(redis, claims, user, request, response)
+    return SessionResponse(user=service.user_view(user, mfa_complete=True), recovery_codes=codes)
+
+
+async def _full_session(
+    redis: Redis, claims: SessionClaims, user: User, request: Request, response: Response
+) -> None:
     await service.revoke(redis, claims)  # rotate: the pre-MFA token dies, a fresh full token is issued
     fresh = service.full_session(user)
     set_session_cookie(response, fresh)
@@ -64,7 +77,27 @@ async def totp_verify(
         ip_hash=keyed_hash(get_settings().hash_pepper.get_secret_value(), client_ip(request)),
         user_agent=request.headers.get("user-agent", ""),
     )
+
+
+@router.post("/2fa/recover")
+async def totp_recover(
+    body: RecoveryCodeRequest, claims: AnySession, request: Request, response: Response
+) -> SessionResponse:
+    """Finish sign-in with a single-use recovery code instead of the authenticator code."""
+    redis = get_redis()
+    user = await service.recover(redis, claims, body.code)
+    await _full_session(redis, claims, user, request, response)
     return SessionResponse(user=service.user_view(user, mfa_complete=True))
+
+
+@router.get("/2fa/recovery-codes")
+async def recovery_status(claims: FullSession) -> RecoveryStatus:
+    return RecoveryStatus(remaining=await service.recovery_status(claims))
+
+
+@router.post("/2fa/recovery-codes")
+async def regenerate_recovery_codes(body: TotpVerifyRequest, claims: FullSession) -> RecoveryCodes:
+    return RecoveryCodes(codes=await service.regenerate_recovery_codes(get_redis(), claims, body.code))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

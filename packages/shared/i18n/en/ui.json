@@ -145,7 +145,9 @@
     "already_admin": "This account is already an admin.",
     "invite_not_found": "This invitation does not exist.",
     "invite_invalid": "This invitation is unknown, used, revoked or expired.",
-    "invite_wrong_account": "Sign in with the invited e-mail address to accept."
+    "invite_wrong_account": "Sign in with the invited e-mail address to accept.",
+    "invalid_recovery_code": "This recovery code is not valid or was already used.",
+    "cannot_reset_self": "You cannot reset your own two-factor sign-in. Use a recovery code, or ask another admin."
   },
   "severity": {
     "critical": "Critical",
@@ -387,7 +389,20 @@
     "secretLabel": "Secret key (if you can't scan the code)",
     "codeLabel": "6-digit code",
     "codeHint": "The code changes every 30 seconds.",
-    "submit": "Verify"
+    "submit": "Verify",
+    "codesTitle": "Your recovery codes",
+    "codesHelp": "If you lose your authenticator, each code signs you in once instead of a 6-digit code. Save them somewhere safe (a password manager). They are shown only now.",
+    "codesCopy": "Copy all",
+    "codesCopied": "Copied",
+    "codesSaved": "I saved them, continue",
+    "recoveryLabel": "Recovery code",
+    "recoveryHint": "One of the ten codes you saved when you set up two-factor sign-in. Each works once.",
+    "useRecovery": "Lost your authenticator? Use a recovery code",
+    "useAuthenticator": "Use the authenticator code instead",
+    "panelTitle": "Recovery codes",
+    "panelRemaining": "{count, plural, =0 {No unused recovery codes left.} one {# unused recovery code left.} other {# unused recovery codes left.}}",
+    "panelHelp": "Making new codes needs a current authenticator code and voids the old ones. If you lost both, an admin can reset your two-factor sign-in.",
+    "regenerate": "Make new codes"
   },
   "account": {
     "title": "Your projects",
@@ -1463,7 +1478,13 @@
         "two_factor": "Two-factor code"
       },
       "inviteEmailed": "The invitation was e-mailed to the address. The link is also shown here once.",
-      "inviteNotEmailed": "E-mail is not configured: send the link yourself through a trusted channel."
+      "inviteNotEmailed": "E-mail is not configured: send the link yourself through a trusted channel.",
+      "resetTwoFactor": "Reset two-factor",
+      "resetTwoFactorNamed": "Reset two-factor for {email}",
+      "resetReason": "Reason",
+      "resetYourCode": "Your authenticator code",
+      "resetConfirm": "Reset",
+      "resetHelp": "Ends every session of this account and deletes its recovery codes. It must sign in with its password and set up two-factor again."
     }
   },
   "platformBanner": {
