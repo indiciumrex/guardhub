@@ -194,3 +194,5 @@ REPO_CHECK_IDS: tuple[str, ...] = ('dependency_vulns', 'repo_secrets')
 # Active checks (check-ids.json "target": "active", ADR-0008): never in a passive site scan.
 ACTIVE_CHECK_IDS: tuple[str, ...] = ('active_xss', 'active_sqli', 'active_redirect', 'active_cors', 'active_ssrf', 'active_idor')
 SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS and c not in ACTIVE_CHECK_IDS)
+# Observe-only site checks (check-ids.json "observe": true): the only ones without an ownership proof.
+OBSERVE_CHECK_IDS: tuple[str, ...] = ('security_headers', 'tls_cert', 'tls_config', 'http_hardening', 'tls_depth', 'header_quality', 'dns_depth', 'cookie_depth', 'js_libraries', 'content_signals')

@@ -90,7 +90,7 @@ export interface VerifyTotpResponse {
 }
 
 // §4.4 (+ §8.2/§8.3 fields)
-export type ScanTrigger = "manual" | "scheduled" | "ci";
+export type ScanTrigger = "manual" | "scheduled" | "ci" | "observe";
 export type ScanFrequency = "off" | "daily" | "weekly";
 export type SchedulePausedReason = "ownership_lost";
 

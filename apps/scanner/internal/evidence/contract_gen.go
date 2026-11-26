@@ -241,3 +241,17 @@ var ActiveChecks = map[string]bool{
 	"active_ssrf":     true,
 	"active_idor":     true,
 }
+
+// ObserveChecks holds the observe-only site checks (check-ids.json "observe": true).
+var ObserveChecks = map[string]bool{
+	"security_headers": true,
+	"tls_cert":         true,
+	"tls_config":       true,
+	"http_hardening":   true,
+	"tls_depth":        true,
+	"header_quality":   true,
+	"dns_depth":        true,
+	"cookie_depth":     true,
+	"js_libraries":     true,
+	"content_signals":  true,
+}

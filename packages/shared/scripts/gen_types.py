@@ -47,6 +47,16 @@ def _active_ids(catalog: dict) -> list[str]:
     return _target_ids(catalog, "active")
 
 
+def _observe_ids(catalog: dict) -> list[str]:
+    """Observe-only site checks ("observe": true): the only checks allowed without an ownership
+    proof (super-admin observe scans). Only a site check can carry the flag."""
+    ids = [c["id"] for c in catalog["checks"] if c.get("observe") is True]
+    bad = [c["id"] for c in catalog["checks"] if c.get("observe") is True and c.get("target", "site") != "site"]
+    if bad:
+        raise SystemExit(f"check-ids.json: observe on a non-site check {bad}")
+    return ids
+
+
 def _camel(name: str) -> str:
     return "".join(part.capitalize() for part in name.split("_"))
 
@@ -147,6 +157,14 @@ def gen_python(schema: dict, catalog: dict) -> str:
     lines.append(
         "SITE_CHECK_IDS: tuple[str, ...] = tuple(c for c in CHECK_IDS if c not in REPO_CHECK_IDS and c not in ACTIVE_CHECK_IDS)"
     )
+    observe = _observe_ids(catalog)
+    lines.append('# Observe-only site checks (check-ids.json "observe": true): the only ones without an ownership proof.')
+    lines.append(
+        "OBSERVE_CHECK_IDS: tuple[str, ...] = ("
+        + ", ".join(repr(i) for i in observe)
+        + ("," if len(observe) == 1 else "")
+        + ")"
+    )
     lines.append("")
     return "\n".join(lines)
 
@@ -209,6 +227,11 @@ def gen_go(schema: dict, catalog: dict) -> str:
     for i in _active_ids(catalog):
         lines.append(f'\t"{i}": true,')
     lines += ["}", ""]
+    lines.append('// ObserveChecks holds the observe-only site checks (check-ids.json "observe": true).')
+    lines.append("var ObserveChecks = map[string]bool{")
+    for i in _observe_ids(catalog):
+        lines.append(f'\t"{i}": true,')
+    lines += ["}", ""]
     return "\n".join(lines)
 
 
@@ -252,6 +275,12 @@ def gen_ts(schema: dict, catalog: dict) -> str:
     lines.append(
         "export const SITE_CHECK_IDS: readonly CheckId[] = ["
         + ", ".join(f'"{i}"' for i in ids if i not in repo and i not in active)
+        + "];"
+    )
+    lines.append('/** Observe-only site checks (check-ids.json "observe": true). */')
+    lines.append(
+        "export const OBSERVE_CHECK_IDS: readonly CheckId[] = ["
+        + ", ".join(f'"{i}"' for i in _observe_ids(catalog))
         + "];"
     )
     lines.append("")

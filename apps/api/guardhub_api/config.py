@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # published active-testing terms (version + SHA-256 of the exact text, set by the founder) and
     # a live OOB collaborator reported by the scanner. Empty / false means "not yet".
     customer_active_testing_go: bool = False
+    # Profile prompt item 3: observe-only scans WITHOUT an ownership proof (TLS, headers, cookies,
+    # DNS records, page content, library versions; nothing that probes, injects or signs in), by
+    # super-admins only (SUPER_ADMIN_IDS: comma-separated user ids; empty = nobody), each with a
+    # recorded authorisation statement. Off until the founder approves the boundary.
+    observe_scan_enabled: bool = False
+    super_admin_ids: str = ""
     # Phase 5C billing: the mechanism is built, charging stays OFF until the founder sets the
     # provider and its keys on the server and switches BILLING_CHARGING_ENABLED on. Keys never
     # live in the repository; the admin console shows them only as configured / not set.

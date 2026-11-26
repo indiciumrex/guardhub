@@ -16,7 +16,7 @@ class ChallengeRequest(BaseModel):
 
 
 ScanStatus = Literal["queued", "running", "done", "failed", "cancelled"]
-ScanTrigger = Literal["manual", "scheduled", "ci"]
+ScanTrigger = Literal["manual", "scheduled", "ci", "observe"]
 CheckStatus = Literal["queued", "running", "done", "failed"]
 
 

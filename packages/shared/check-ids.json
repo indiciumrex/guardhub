@@ -1,5 +1,5 @@
 {
-  "$comment": "Single catalog of check ids (GUARDHUB_STANDARDS §7.4). ids and finding_keys are permanent: never rename or reuse one. i18n keys: checks.<id>.<finding_key>.{title,summary,why,fix}. \"target\": \"repo\" marks checks that scan a connected repository (ADR-0006); every other check scans a site.",
+  "$comment": "Single catalog of check ids (GUARDHUB_STANDARDS §7.4). ids and finding_keys are permanent: never rename or reuse one. i18n keys: checks.<id>.<finding_key>.{title,summary,why,fix}. \"target\": \"repo\" marks checks that scan a connected repository (ADR-0006); every other check scans a site. \"observe\": true marks the observe-only site checks (TLS, headers, cookies, DNS records, page content, library versions: no payloads, no path probing, no credential attempts), the only ones a super-admin may run on a target without an ownership proof (profile prompt item 3).",
   "version": 1,
   "checks": [
     {
@@ -14,6 +14,7 @@
     {
       "id": "security_headers",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "csp_missing", "severity": "medium", "params": [] },
         { "key": "hsts_missing", "severity": "medium", "params": [] },
@@ -26,6 +27,7 @@
     {
       "id": "tls_cert",
       "category": "transport",
+      "observe": true,
       "finding_keys": [
         { "key": "https_unavailable", "severity": "high", "params": [] },
         { "key": "http_not_redirected", "severity": "medium", "params": [] },
@@ -70,6 +72,7 @@
     {
       "id": "tls_config",
       "category": "transport",
+      "observe": true,
       "finding_keys": [
         { "key": "weak_cipher_insecure", "severity": "high", "params": ["suite"] },
         { "key": "weak_cipher_3des", "severity": "low", "params": ["suite"] },
@@ -82,6 +85,7 @@
     {
       "id": "http_hardening",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "cors_any_origin_with_credentials", "severity": "high", "params": ["origin"] },
         { "key": "cors_null_origin_with_credentials", "severity": "medium", "params": [] },
@@ -114,6 +118,7 @@
     {
       "id": "tls_depth",
       "category": "transport",
+      "observe": true,
       "finding_keys": [
         { "key": "cert_weak_signature", "severity": "medium", "params": ["algorithm", "subject"] },
         { "key": "cert_lifetime_too_long", "severity": "low", "params": ["days"] },
@@ -125,6 +130,7 @@
     {
       "id": "header_quality",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "csp_unsafe_eval", "severity": "low", "params": [] },
         { "key": "csp_base_uri_missing", "severity": "low", "params": [] },
@@ -137,6 +143,7 @@
     {
       "id": "dns_depth",
       "category": "dns",
+      "observe": true,
       "finding_keys": [
         { "key": "dnssec_broken", "severity": "medium", "params": ["domain", "reason"] },
         { "key": "caa_missing", "severity": "info", "params": ["domain"] },
@@ -153,6 +160,7 @@
     {
       "id": "cookie_depth",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "cookie_prefix_invalid", "severity": "low", "params": ["cookie_name", "reason"] },
         { "key": "cookie_domain_too_broad", "severity": "low", "params": ["cookie_name", "domain"] }
@@ -173,6 +181,7 @@
     {
       "id": "js_libraries",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "vulnerable_js_library", "severity": "medium", "params": ["library", "version", "advisories", "fixed_version", "script"] }
       ]
@@ -180,6 +189,7 @@
     {
       "id": "content_signals",
       "category": "hardening",
+      "observe": true,
       "finding_keys": [
         { "key": "mixed_content_active", "severity": "medium", "params": ["count", "example"] },
         { "key": "mixed_content_passive", "severity": "low", "params": ["count", "example"] },

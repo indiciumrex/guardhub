@@ -162,7 +162,10 @@
     "plan_not_found": "This plan does not exist.",
     "free_plan_public": "The free plan stays public.",
     "wrong_current_password": "The current password is not right. Please try again.",
-    "invalid_display_name": "The name contains characters that are not allowed."
+    "invalid_display_name": "The name contains characters that are not allowed.",
+    "observe_scan_off": "Observe-only scans are switched off on the server.",
+    "statement_required": "Please read and accept the current authorisation statement first.",
+    "ownership_required": "These checks need a verified site. They never run without an ownership proof."
   },
   "severity": {
     "critical": "Critical",
@@ -550,7 +553,8 @@
     "trigger": {
       "manual": "Manual",
       "scheduled": "Scheduled",
-      "ci": "CI"
+      "ci": "CI",
+      "observe": "Observe-only"
     }
   },
   "compare": {
@@ -1746,5 +1750,30 @@
     "ruleExpired": "Expired: the proof is older than 30 days. The next scan proves it again first.",
     "ruleFailed": "Failed: the last check did not find the proof. Nothing is scanned until it passes again.",
     "ruleScan": "This page never starts a scan and never skips the ownership check: every scan proves ownership on its own."
+  },
+  "observe": {
+    "title": "Observe-only scan",
+    "intro": "A passive look at a site you have not verified: only what any browser or mail server sees. For super-admins, with a recorded authorisation statement.",
+    "boundaryTitle": "The boundary",
+    "on": "Switched on",
+    "off": "Switched off",
+    "offHelp": "Observe-only scans are switched off on the server. The founder switches them on after approving this boundary.",
+    "allowedTitle": "Runs without an ownership proof (observe-only)",
+    "needsProofTitle": "Needs a verified site, always (no exception)",
+    "formLabel": "Start an observe-only scan",
+    "targetLabel": "Website address",
+    "relationshipLabel": "Your relationship to the site",
+    "relationship": {
+      "owner": "We own or run it",
+      "client": "A client asked us",
+      "employer": "My employer's site",
+      "other": "Other"
+    },
+    "noteLabel": "Who owns it and who asked (recorded)",
+    "noteHelp": "At least 10 characters. For example: \"Owner Jane Doe asked by e-mail on 26 Nov to check the TLS set-up.\"",
+    "statementTitle": "Authorisation statement",
+    "accept": "I confirm the statement above (version {version}). It is recorded with my account.",
+    "runs": "Checks that will run",
+    "start": "Start observe-only scan"
   }
 }

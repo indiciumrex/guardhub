@@ -234,7 +234,7 @@ func (s *Service) HandleMessage(ctx context.Context, msg redis.XMessage, claimed
 	}
 	var err error
 	switch job.Kind {
-	case KindScan:
+	case KindScan, KindObserveScan: // observe_scan: checks already limited to observe-only (ParseJob)
 		err = s.runScan(ctx, job)
 	case KindVerify:
 		err = s.runVerify(ctx, job)
@@ -256,7 +256,8 @@ func (s *Service) HandleMessage(ctx context.Context, msg redis.XMessage, claimed
 func (s *Service) reportUnprocessable(ctx context.Context, job Job, log *slog.Logger) {
 	var err error
 	switch {
-	case (job.Kind == KindScan || job.Kind == KindRepoScan || job.Kind == KindActiveScan) && idRe.MatchString(job.ScanID):
+	case (job.Kind == KindScan || job.Kind == KindObserveScan || job.Kind == KindRepoScan ||
+		job.Kind == KindActiveScan) && idRe.MatchString(job.ScanID):
 		err = publishEvent(ctx, s.RDB, ScanFailed{V: ProtocolVersion, Type: EventScanFailed, ScanID: job.ScanID,
 			At: rfc3339(s.now()), Error: ErrCodeInternal})
 	case job.Kind == KindVerify && idRe.MatchString(job.JobID) && strings.HasPrefix(job.ReplyKey, VerifyReplyPrefix) &&

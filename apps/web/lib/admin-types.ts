@@ -572,3 +572,13 @@ export interface SiteRow {
   project_ids: string[];
   trusted_domain_status: string | null;
 }
+
+// Observe-only scans without an ownership proof (profile prompt item 3)
+export interface ObserveReadiness {
+  enabled: boolean;
+  checks: string[];
+  needs_verified_site: string[];
+  statement: string;
+  statement_version: string;
+  statement_sha256: string;
+}
