@@ -47,6 +47,7 @@ class ProgressItem(BaseModel):
     check_id: str
     name: str
     status: CheckStatus
+    reason: str | None = None  # a failed check's reason code (budget_exceeded = safe stop, ...)
 
 
 class EvidenceView(BaseModel):

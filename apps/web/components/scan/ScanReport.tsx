@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from "react";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ScanView } from "@/lib/types";
+import { isSafeStop, type ScanView } from "@/lib/types";
 import { hostOf } from "@/lib/navigation";
 import { FindingCard } from "./FindingCard";
 import { ScoreGauge } from "./ScoreGauge";
@@ -17,7 +17,10 @@ export function ScanReport({ scan, actions }: { scan: ScanView; actions?: ReactN
   const findings = [...scan.findings].sort(
     (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
   );
-  const failedChecks = scan.progress.filter((item) => item.status === "failed");
+  const failedChecks = scan.progress.filter(
+    (item) => item.status === "failed" && !isSafeStop(item),
+  );
+  const safeStopped = scan.progress.filter(isSafeStop);
   const finishedAt = scan.finished_at ?? scan.created_at;
 
   return (
@@ -51,6 +54,13 @@ export function ScanReport({ scan, actions }: { scan: ScanView; actions?: ReactN
           <p className="mt-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
             {t("partial", {
               names: failedChecks.map((item) => item.name || item.check_id).join(", "),
+            })}
+          </p>
+        ) : null}
+        {safeStopped.length > 0 ? (
+          <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
+            {t("partialSafeStop", {
+              names: safeStopped.map((item) => item.name || item.check_id).join(", "),
             })}
           </p>
         ) : null}

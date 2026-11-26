@@ -23,6 +23,26 @@ describe("ProgressList", () => {
     expect(rows[3]).toHaveTextContent("Couldn't finish");
   });
 
+  it("shows a safe stop as incomplete, not as a failure", () => {
+    renderWithIntl(
+      <ProgressList
+        items={[
+          {
+            check_id: "exposed_files",
+            name: "Forgotten files",
+            status: "failed",
+            reason: "budget_exceeded",
+          },
+          { check_id: "dns_email", name: "E-mail", status: "failed", reason: "target_unreachable" },
+        ]}
+      />,
+    );
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Incomplete (safe stop)");
+    expect(rows[0]).not.toHaveTextContent("Couldn't finish");
+    expect(rows[1]).toHaveTextContent("Couldn't finish");
+  });
+
   it("falls back to the catalog name when the API sends none", () => {
     renderWithIntl(<ProgressList items={items} />);
     expect(screen.getByText("HTTPS and certificate")).toBeInTheDocument();
