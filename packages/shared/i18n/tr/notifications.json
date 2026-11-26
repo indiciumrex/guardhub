@@ -61,5 +61,10 @@
       "monthly": "[GuardHub] Aylık platform raporu"
     },
     "body": "Taramalar: {scans} (başarısız: {scans_failed}). Yeni kritik bulgular: {critical}, yüksek: {high}. Yeni hesaplar: {new_users}. Raporun tamamı yönetim konsolunda:"
+  },
+  "adminInviteMail": {
+    "subject": "[GuardHub] Yönetim konsoluna davet edildiniz",
+    "body": "GuardHub'ı yönetici olarak yönetmeye davet edildiniz. Bu e-posta adresiyle giriş yapın (ya da kaydolun), iki adımlı girişi tamamlayın ve bağlantıyı açın. Bağlantı bir kez çalışır ve {hours} saat sonra sona erer.",
+    "note": "Bunu beklemiyorsanız bu e-postayı yok sayın: bağlantı bu adresle iki adımlı girişten sonra kullanılmadıkça hiçbir şey değişmez."
   }
 }

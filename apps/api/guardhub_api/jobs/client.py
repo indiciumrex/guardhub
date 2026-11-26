@@ -101,3 +101,12 @@ async def enqueue_webhook_delivery(delivery_id: uuid.UUID) -> bool:
         WEBHOOK_DELIVER, str(delivery_id), _job_id=f"webhook-delivery:{delivery_id}"
     )
     return job is not None
+
+
+SEND_ADMIN_INVITE = "send_admin_invite"
+
+
+async def enqueue_admin_invite(email: str, link: str, locale: str) -> None:
+    """E-mail an admin invitation (Admin Panel gaps). The link holds the one-time token, so the
+    job keeps no result in Redis once it ran (keep_result=0 in the worker)."""
+    await (await get_arq()).enqueue_job(SEND_ADMIN_INVITE, email, link, locale)

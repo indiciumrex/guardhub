@@ -1461,7 +1461,9 @@
       "kind": {
         "password": "Password",
         "two_factor": "Two-factor code"
-      }
+      },
+      "inviteEmailed": "The invitation was e-mailed to the address. The link is also shown here once.",
+      "inviteNotEmailed": "E-mail is not configured: send the link yourself through a trusted channel."
     }
   },
   "platformBanner": {

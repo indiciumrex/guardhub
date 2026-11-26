@@ -34,6 +34,7 @@ from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
 from guardhub_api.db.models import AdminInvite, AuditLog, User
 from guardhub_api.db.session import DbContext, db_session
+from guardhub_api.jobs import client as jobs
 
 router = APIRouter(prefix="/admin/people", tags=["admin"])
 accept_router = APIRouter(prefix="/auth/admin-invite", tags=["auth"])
@@ -225,7 +226,8 @@ class InviteView(BaseModel):
 
 class CreatedInvite(BaseModel):
     invite: InviteView
-    link: str  # shown once
+    link: str  # shown once, and e-mailed to the invited address
+    emailed: bool  # the mail was queued (SMTP configured); delivery itself runs in api-jobs
 
 
 def _invite_view(i: AdminInvite, now: datetime) -> InviteView:
@@ -277,8 +279,20 @@ async def create_invite(body: InviteRequest, claims: AdminSession) -> CreatedInv
             metadata={"email": email},
         )
         view = _invite_view(invite, now)
-    link = f"{get_settings().public_base_url.rstrip('/')}/account/admin-invite?token={token}"
-    return CreatedInvite(invite=view, link=link)
+    settings = get_settings()
+    link = f"{settings.public_base_url.rstrip('/')}/account/admin-invite?token={token}"
+    emailed = False
+    if settings.smtp_host.strip():
+        async with db_session(_ctx(claims)) as session:
+            locale = (
+                await session.execute(select(User.locale).where(User.id == claims.user_id))
+            ).scalar() or "en"
+        try:
+            await jobs.enqueue_admin_invite(email, link, locale)
+            emailed = True
+        except Exception:  # the link is still shown once: the invitation does not depend on mail
+            emailed = False
+    return CreatedInvite(invite=view, link=link, emailed=emailed)
 
 
 @router.post("/invites/{invite_id}/revoke")

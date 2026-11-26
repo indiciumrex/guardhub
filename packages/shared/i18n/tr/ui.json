@@ -1461,7 +1461,9 @@
       "kind": {
         "password": "Parola",
         "two_factor": "İki adımlı doğrulama kodu"
-      }
+      },
+      "inviteEmailed": "Davet bu adrese e-postayla gönderildi. Bağlantı burada da bir kez gösteriliyor.",
+      "inviteNotEmailed": "E-posta ayarlı değil: bağlantıyı güvendiğiniz bir kanaldan kendiniz gönderin."
     }
   },
   "platformBanner": {

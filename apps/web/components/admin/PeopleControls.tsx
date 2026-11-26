@@ -166,11 +166,15 @@ export function InviteAdmin() {
   const { busy, error, run } = useAction();
   const [email, setEmail] = useState("");
   const [link, setLink] = useState<string | null>(null);
+  const [emailed, setEmailed] = useState(false);
   return (
     <div className="space-y-3">
       {link ? (
         <div role="status" className="gh-tone-warn rounded-lg border p-4 text-sm">
           <p className="font-semibold">{t("linkOnce")}</p>
+          <p className="mt-1 text-xs font-semibold">
+            {emailed ? t("inviteEmailed") : t("inviteNotEmailed")}
+          </p>
           <p className="mt-1 text-xs">{t("linkHelp")}</p>
           <code
             aria-label={t("inviteLink")}
@@ -192,11 +196,12 @@ export function InviteAdmin() {
         className="flex flex-wrap items-end gap-3 text-sm"
         onSubmit={async (e) => {
           e.preventDefault();
-          const r = await run<{ link: string }>("/admin/people/invites", "POST", {
+          const r = await run<{ link: string; emailed: boolean }>("/admin/people/invites", "POST", {
             email: email.trim(),
           });
           if (r) {
             setLink(r.link);
+            setEmailed(r.emailed);
             setEmail("");
           }
         }}

@@ -166,7 +166,7 @@ async def test_against_must_be_an_earlier_done_scan_of_the_same_project(
 def test_worker_registration() -> None:
     names = {f.name for f in worker.FUNCTIONS}
     assert names == {client.NOTIFY_SCAN, client.NOTIFY_PAUSED, client.SEND_TEST_NOTIFICATION,
-                     client.WEBHOOK_FANOUT, client.WEBHOOK_DELIVER}  # fmt: skip
+                     client.WEBHOOK_FANOUT, client.WEBHOOK_DELIVER, client.SEND_ADMIN_INVITE}  # fmt: skip
     notify = next(f for f in worker.FUNCTIONS if f.name == client.NOTIFY_SCAN)
     assert notify.max_tries == 3
     reports, alerts, tick, recheck, purge = worker.CRON_JOBS

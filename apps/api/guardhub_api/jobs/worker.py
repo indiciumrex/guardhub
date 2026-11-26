@@ -19,8 +19,10 @@ from arq.cron import CronJob
 from arq.worker import Function
 
 from guardhub_api.active.jobs import purge_active_request_log
+from guardhub_api.admin import invite_mail
 from guardhub_api.admin.trusted_domains.jobs import recheck_trusted_domains
 from guardhub_api.alerts import notifier
+from guardhub_api.alerts.delivery import EmailNotConfiguredError
 from guardhub_api.common.logging import configure_logging
 from guardhub_api.common.redis import close_redis, get_redis
 from guardhub_api.config import get_settings
@@ -102,6 +104,19 @@ async def deliver_webhook(ctx: JobContext, delivery_id: str) -> str:
     return outcome
 
 
+async def send_admin_invite(ctx: JobContext, email: str, link: str, locale: str) -> str:
+    """The admin invitation e-mail. Retried on SMTP errors; never kept as a job result."""
+    try:
+        await invite_mail.send(email, link, locale)
+    except EmailNotConfiguredError:
+        return "email_not_configured"
+    except Exception as exc:
+        if _final_try(ctx):
+            return f"failed:{type(exc).__name__}"
+        raise _retry(ctx) from exc
+    return "sent"
+
+
 async def startup(ctx: JobContext) -> None:
     configure_logging(get_settings().log_level)
 
@@ -116,6 +131,7 @@ FUNCTIONS: list[Function] = [
     func(notify_scan, max_tries=NOTIFY_MAX_TRIES, timeout=120),
     func(notify_paused, max_tries=NOTIFY_MAX_TRIES, timeout=120),
     func(send_test_notification, max_tries=1, timeout=60),
+    func(send_admin_invite, max_tries=3, timeout=60, keep_result=0),  # the link is a secret
     func(webhook_fanout, max_tries=3, timeout=60),
     func(deliver_webhook, max_tries=NOTIFY_MAX_TRIES, timeout=60),
 ]
