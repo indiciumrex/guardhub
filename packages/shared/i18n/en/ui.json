@@ -125,7 +125,10 @@
     "alert_not_found": "This alert does not exist.",
     "alert_resolved": "This alert is already resolved.",
     "alert_rule_not_found": "This alert rule does not exist.",
-    "mute_invalid": "Mute for 1 hour, 4 hours or 24 hours, or unmute."
+    "mute_invalid": "Mute for 1 hour, 4 hours or 24 hours, or unmute.",
+    "report_unknown": "This report does not exist.",
+    "report_days_invalid": "Choose 7, 30 or 90 days.",
+    "report_schedule_unknown": "Weekly or monthly only."
   },
   "severity": {
     "critical": "Critical",
@@ -701,7 +704,8 @@
       "users": "Users",
       "trustedDomains": "Trusted domains",
       "config": "Configuration",
-      "alerts": "Alerts"
+      "alerts": "Alerts",
+      "reports": "Reports"
     },
     "common": {
       "lifecycle": {
@@ -1184,6 +1188,83 @@
       "colValue": "Value / threshold",
       "colOpened": "Opened",
       "colClosed": "Resolved"
+    },
+    "reports": {
+      "title": "Reports",
+      "intro": "Platform, module, scan, finding and customer reports and the risk trend. Customer data is always masked, on screen and in every export. Exports are recorded in the audit log.",
+      "kindLabel": "Report",
+      "daysLabel": "Period",
+      "days": "{days} days",
+      "kind": {
+        "platform": "Platform",
+        "modules": "Modules",
+        "scans": "Scans",
+        "findings": "Findings",
+        "customers": "Customers",
+        "risk_trend": "Risk trend"
+      },
+      "kindHelp": {
+        "platform": "One row per day: scans by outcome, new findings by severity, new accounts.",
+        "modules": "One row per check: runs, could not run, findings by severity, false positives.",
+        "scans": "Every scan in the period (up to 5,000), sites masked.",
+        "findings": "Findings per check and severity, with the admin's triage.",
+        "customers": "One row per customer account (masked): projects, scans and serious findings.",
+        "risk_trend": "One row per week: completed scans, their average score, critical and high findings."
+      },
+      "masked": "Masked",
+      "downloadCsv": "Download CSV",
+      "downloadXlsx": "Download XLSX",
+      "printPdf": "Print / save as PDF",
+      "generated": "Generated {when} (UTC)",
+      "rowsShown": "{shown} of {total} rows shown",
+      "truncated": "the export holds every row up to the limit",
+      "empty": "No data in this period.",
+      "columns": {
+        "date": "Date",
+        "scans": "Scans",
+        "scans_done": "Completed",
+        "scans_failed": "Failed",
+        "scans_cancelled": "Cancelled",
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "info": "Info",
+        "new_users": "New accounts",
+        "check_id": "Check",
+        "runs": "Runs",
+        "could_not_run": "Could not run",
+        "false_positive_groups": "False positives (groups)",
+        "created_at": "Created",
+        "scan_id": "Scan",
+        "trigger": "Trigger",
+        "status": "Status",
+        "score": "Score",
+        "target": "Site (masked)",
+        "checks": "Checks",
+        "severity": "Severity",
+        "findings": "Findings",
+        "groups": "Groups",
+        "verified": "Verified",
+        "accepted": "Accepted",
+        "false_positive": "False positive",
+        "resolved": "Resolved",
+        "customer": "Customer (masked)",
+        "joined": "Joined",
+        "projects": "Projects",
+        "critical_or_high": "Critical or high",
+        "last_scan": "Last scan",
+        "week": "Week",
+        "completed_scans": "Completed scans",
+        "average_score": "Average score"
+      },
+      "schedulesTitle": "Scheduled reports",
+      "schedulesIntro": "A platform summary e-mailed to every admin: counts and a link only, never rows.",
+      "schedule": {
+        "weekly": "Weekly summary (Mondays, 06:05 UTC)",
+        "monthly": "Monthly summary (on the 1st, 06:05 UTC)"
+      },
+      "lastSent": "Last sent: {when}"
     }
   },
   "platformBanner": {

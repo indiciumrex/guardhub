@@ -54,5 +54,12 @@
     "subject": "[GuardHub] Uyarı: {label}",
     "subjectEscalated": "[GuardHub] Eskalasyon, onaylanmadı: {label}",
     "body": "{label}: {value} (eşik {threshold}). Uyarıyı yönetim konsolunda açın:"
+  },
+  "reportMail": {
+    "subject": {
+      "weekly": "[GuardHub] Haftalık platform raporu",
+      "monthly": "[GuardHub] Aylık platform raporu"
+    },
+    "body": "Taramalar: {scans} (başarısız: {scans_failed}). Yeni kritik bulgular: {critical}, yüksek: {high}. Yeni hesaplar: {new_users}. Raporun tamamı yönetim konsolunda:"
   }
 }

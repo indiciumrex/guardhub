@@ -54,5 +54,12 @@
     "subject": "[GuardHub] Alert: {label}",
     "subjectEscalated": "[GuardHub] Escalated, not acknowledged: {label}",
     "body": "{label}: {value} (threshold {threshold}). Open the alert in the admin console:"
+  },
+  "reportMail": {
+    "subject": {
+      "weekly": "[GuardHub] Weekly platform report",
+      "monthly": "[GuardHub] Monthly platform report"
+    },
+    "body": "Scans: {scans} (failed: {scans_failed}). New critical findings: {critical}, high: {high}. New accounts: {new_users}. Full report in the admin console:"
   }
 }

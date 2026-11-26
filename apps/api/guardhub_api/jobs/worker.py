@@ -27,6 +27,7 @@ from guardhub_api.config import get_settings
 from guardhub_api.db.session import dispose_engine
 from guardhub_api.jobs import client, scheduler
 from guardhub_api.opsalerts import service as ops_alerts
+from guardhub_api.reports import service as reports
 
 NOTIFY_MAX_TRIES = notifier.MAX_ATTEMPTS
 NOTIFY_RETRY_BASE_SECONDS = 30
@@ -80,6 +81,11 @@ async def evaluate_ops_alerts(ctx: JobContext) -> dict[str, int]:
     return await ops_alerts.evaluate(get_redis())
 
 
+async def send_scheduled_reports(ctx: JobContext) -> dict[str, int]:
+    """Admin report summaries (Prompt 2 §3): weekly on Mondays, monthly on the 1st."""
+    return await reports.send_scheduled()
+
+
 async def startup(ctx: JobContext) -> None:
     configure_logging(get_settings().log_level)
 
@@ -97,6 +103,10 @@ FUNCTIONS: list[Function] = [
 ]
 
 CRON_JOBS: list[CronJob] = [
+    # Prompt 2 §3: scheduled admin report summaries (06:05 UTC; due weekly / monthly)
+    cron(
+        send_scheduled_reports, hour={6}, minute={5}, second=0, unique=True, run_at_startup=False, timeout=600
+    ),
     # Prompt 2 §2: admin operational alerts (critical findings, scan failures, scanner, API 5xx)
     cron(evaluate_ops_alerts, second=0, unique=True, run_at_startup=False, timeout=50),
     cron(enqueue_due_scans, minute=EVERY_5_MINUTES, second=0, unique=True, run_at_startup=False, timeout=290),
