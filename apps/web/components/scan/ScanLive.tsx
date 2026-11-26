@@ -14,6 +14,7 @@ import { scanTokenKey, hostOf } from "@/lib/navigation";
 import { isScanActive, type ScanView } from "@/lib/types";
 import { useErrorMessage } from "@/lib/use-error-message";
 import { Alert } from "@/components/ui/Alert";
+import { ObservationalBadge, ObservationalNotice } from "./ObservationalNotice";
 import { ProgressList } from "./ProgressList";
 import { ScanReport } from "./ScanReport";
 
@@ -158,7 +159,14 @@ export function ScanLive({ scanId, source, initial, renderActions }: ScanLivePro
           {t(`statusHeading.${scan.status}`)}
         </p>
         <h1 className="mt-1 break-words text-3xl font-bold">{hostOf(scan.target_url)}</h1>
+        {scan.trigger === "observe" ? (
+          <p className="mt-2">
+            <ObservationalBadge />
+          </p>
+        ) : null}
       </header>
+
+      {scan.trigger === "observe" ? <ObservationalNotice /> : null}
 
       {isScanActive(scan.status) ? (
         <>

@@ -336,7 +336,12 @@
       "cancelled": "Bu tarama bitmeden GuardHub ekibi tarafından durduruldu. Sitenize başka istek gönderilmedi. İstediğiniz zaman yeni bir tarama başlatabilirsiniz."
     },
     "saveBody": "Bu raporu saklamak, daha sonra yeniden taramak ve nelerin değiştiğini görmek ister misiniz? Ücretsiz bir hesaba kaydedin.",
-    "saveCta": "Taramayı kaydet, sonra yeniden tara"
+    "saveCta": "Taramayı kaydet, sonra yeniden tara",
+    "observational": {
+      "badge": "Gözlemsel tarama",
+      "title": "Gözlemsel tarama: yalnızca pasif gözlem",
+      "body": "Bu sitenin sahipliği kanıtlanmadı. Yalnızca herhangi bir tarayıcının veya e-posta sunucusunun gördükleri kontrol edildi (TLS, başlıklar, DNS ve e-posta, teknoloji), normal ve nazik istek hızında. Hiçbir aktif, yol yoklayan veya oturum açma denemesi yapan kontrol çalışmadı. Bu tarama için bir yetki beyanı kaydedildi."
+    }
   },
   "report": {
     "heading": "{host} için güvenlik raporu",
@@ -554,7 +559,7 @@
       "manual": "Elle",
       "scheduled": "Zamanlanmış",
       "ci": "CI",
-      "observe": "Yalnızca gözlem"
+      "observe": "Gözlemsel"
     }
   },
   "compare": {
@@ -924,7 +929,8 @@
       "trigger": {
         "manual": "elle",
         "scheduled": "zamanlanmış",
-        "ci": "CI"
+        "ci": "CI",
+        "observe": "Gözlemsel"
       },
       "details": "Ayrıntılar ve puan",
       "score": "Puan {score}",

@@ -336,7 +336,12 @@
       "cancelled": "This scan was stopped by GuardHub's team before it finished. Nothing more was sent to your website. You can start a new scan at any time."
     },
     "saveBody": "Want to keep this report, rescan later and see what changed? Save it to a free account.",
-    "saveCta": "Save this scan & rescan later"
+    "saveCta": "Save this scan & rescan later",
+    "observational": {
+      "badge": "Observational scan",
+      "title": "Observational scan: passive observation only",
+      "body": "Ownership of this site was not proven. Only what any browser or mail server sees was checked (TLS, headers, DNS and e-mail, technology), at the normal gentle request rate. No active, path-probing or login checks ran. An authorisation statement was recorded for this scan."
+    }
   },
   "report": {
     "heading": "Security report for {host}",
@@ -554,7 +559,7 @@
       "manual": "Manual",
       "scheduled": "Scheduled",
       "ci": "CI",
-      "observe": "Observe-only"
+      "observe": "Observational"
     }
   },
   "compare": {
@@ -924,7 +929,8 @@
       "trigger": {
         "manual": "manual",
         "scheduled": "scheduled",
-        "ci": "CI"
+        "ci": "CI",
+        "observe": "Observational"
       },
       "details": "Details and score",
       "score": "Score {score}",
