@@ -1499,5 +1499,81 @@
     "ruleOnce": "The invitation works once and expires after 72 hours.",
     "accept": "Accept and open the admin console",
     "noToken": "This link has no invitation in it. Ask the admin for a new one."
+  },
+  "customer": {
+    "nav": {
+      "overview": "Overview",
+      "security": "Security"
+    },
+    "eyebrow": "Your GuardHub",
+    "title": "Overview",
+    "intro": "Your websites, their security and what to do next. Only you (and the GuardHub team for support) can see this.",
+    "onboardingTitle": "Getting started",
+    "onboardingProgress": "{done} of {total} steps done",
+    "allSet": "All set",
+    "stepDone": "Done",
+    "stepTodo": "To do",
+    "step": {
+      "account": {
+        "title": "Create your account",
+        "help": "With two-factor sign-in, so nobody else can get in.",
+        "cta": "Security settings"
+      },
+      "site": {
+        "title": "Add a website",
+        "help": "A site you control.",
+        "cta": "Add a website"
+      },
+      "verify": {
+        "title": "Prove you own it",
+        "help": "Put a small file or tag on your site. We never scan a site before this.",
+        "cta": "Verify ownership"
+      },
+      "scan": {
+        "title": "Run the first scan",
+        "help": "Safe, read-only checks: nothing on your site is changed.",
+        "cta": "Start a scan"
+      },
+      "review": {
+        "title": "Review the findings",
+        "help": "Plain-language results with how to fix each one.",
+        "cta": "Open the report"
+      },
+      "alerts": {
+        "title": "Choose your alerts",
+        "help": "Hear about new problems and fixes by e-mail or Slack.",
+        "cta": "Alert settings"
+      }
+    },
+    "riskTitle": "Your risk at a glance",
+    "sites": "Websites",
+    "verifiedSites": "Verified",
+    "seriousOpen": "Critical and high",
+    "seriousHint": "From each site's latest scan",
+    "weakest": "Lowest score",
+    "openBySeverity": "Open findings by severity",
+    "noScansYet": "No completed scan yet: verify a website and run its first scan.",
+    "colSite": "Website",
+    "colOwnership": "Ownership",
+    "colLastScan": "Last scan",
+    "colScore": "Score",
+    "colSerious": "Critical / high",
+    "colNext": "Next scheduled scan",
+    "verifyNow": "Verify now",
+    "noSchedule": "Not scheduled",
+    "security": {
+      "title": "Security",
+      "intro": "How you sign in, your recovery codes and where you are signed in.",
+      "mfaTitle": "Two-factor sign-in",
+      "mfaOn": "On",
+      "mfaHelp": "Required for every GuardHub account. If you lose your authenticator, use a recovery code.",
+      "sessionsTitle": "Where you are signed in",
+      "sessionsIntro": "Sign out a device you no longer use, or everywhere at once.",
+      "noSessions": "No other sessions.",
+      "since": "since {when}",
+      "until": "until {when}",
+      "end": "Sign out",
+      "endAll": "Sign out everywhere"
+    }
   }
 }

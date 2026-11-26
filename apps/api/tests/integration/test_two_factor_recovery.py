@@ -109,3 +109,25 @@ async def test_another_admin_resets_with_their_own_code_never_yourself(client: h
         actions = set((await session.execute(select(AuditLog.action).where(AuditLog.target == str(target_id))))
                       .scalars().all())  # fmt: skip
     assert "user.two_factor_reset" in actions
+
+
+async def test_a_customer_sees_and_ends_only_their_own_sessions(client: httpx.AsyncClient) -> None:
+    email, secret, _ = await _enroll(client)
+    async with new_client("198.51.100.86") as laptop:
+        await laptop.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+        assert (
+            await laptop.post("/api/v1/auth/2fa/verify", json={"code": next_code(secret)})
+        ).status_code == 200
+        own = (await client.get("/api/v1/auth/sessions")).json()
+        assert len(own) == 2
+        laptop_jti = own[0]["jti"]  # newest first
+        r = await client.post("/api/v1/auth/sessions/end", json={"jti": laptop_jti})
+        assert r.json() == {"ended": 1}
+        assert (await laptop.get("/api/v1/auth/me")).status_code == 401
+        assert (await client.get("/api/v1/auth/me")).status_code == 200
+    async with new_client("198.51.100.87") as stranger:
+        other, _, _ = await _enroll(stranger)
+        r = await stranger.post("/api/v1/auth/sessions/end", json={"jti": own[1]["jti"]})
+        assert r.json() == {"ended": 0}  # someone else's session id does nothing
+    assert (await client.get("/api/v1/auth/me")).status_code == 200
+    assert other != email

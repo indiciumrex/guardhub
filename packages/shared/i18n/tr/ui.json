@@ -1499,5 +1499,81 @@
     "ruleOnce": "Davet bir kez çalışır ve 72 saat sonra sona erer.",
     "accept": "Kabul et ve yönetim konsolunu aç",
     "noToken": "Bu bağlantıda davet yok. Yöneticiden yeni bir davet isteyin."
+  },
+  "customer": {
+    "nav": {
+      "overview": "Genel bakış",
+      "security": "Güvenlik"
+    },
+    "eyebrow": "GuardHub'ınız",
+    "title": "Genel bakış",
+    "intro": "Web siteleriniz, güvenlikleri ve sıradaki adım. Bunu yalnızca siz (ve destek için GuardHub ekibi) görebilir.",
+    "onboardingTitle": "Başlarken",
+    "onboardingProgress": "{total} adımın {done} tanesi tamamlandı",
+    "allSet": "Hazırsınız",
+    "stepDone": "Tamam",
+    "stepTodo": "Yapılacak",
+    "step": {
+      "account": {
+        "title": "Hesabınızı oluşturun",
+        "help": "İki adımlı girişle, başkası giremesin diye.",
+        "cta": "Güvenlik ayarları"
+      },
+      "site": {
+        "title": "Bir web sitesi ekleyin",
+        "help": "Kontrolünüzdeki bir site.",
+        "cta": "Web sitesi ekle"
+      },
+      "verify": {
+        "title": "Sahibi olduğunuzu kanıtlayın",
+        "help": "Sitenize küçük bir dosya ya da etiket koyun. Bundan önce bir siteyi asla taramayız.",
+        "cta": "Sahipliği doğrula"
+      },
+      "scan": {
+        "title": "İlk taramayı çalıştırın",
+        "help": "Güvenli, salt okunur kontroller: sitenizde hiçbir şey değişmez.",
+        "cta": "Tarama başlat"
+      },
+      "review": {
+        "title": "Bulguları inceleyin",
+        "help": "Her biri için nasıl düzeltileceğiyle birlikte sade bir dille sonuçlar.",
+        "cta": "Raporu aç"
+      },
+      "alerts": {
+        "title": "Uyarılarınızı seçin",
+        "help": "Yeni sorunları ve düzeltmeleri e-posta ya da Slack ile öğrenin.",
+        "cta": "Uyarı ayarları"
+      }
+    },
+    "riskTitle": "Bir bakışta riskiniz",
+    "sites": "Web siteleri",
+    "verifiedSites": "Doğrulanmış",
+    "seriousOpen": "Kritik ve yüksek",
+    "seriousHint": "Her sitenin son taramasından",
+    "weakest": "En düşük skor",
+    "openBySeverity": "Önem derecesine göre açık bulgular",
+    "noScansYet": "Henüz tamamlanmış tarama yok: bir web sitesini doğrulayın ve ilk taramasını çalıştırın.",
+    "colSite": "Web sitesi",
+    "colOwnership": "Sahiplik",
+    "colLastScan": "Son tarama",
+    "colScore": "Skor",
+    "colSerious": "Kritik / yüksek",
+    "colNext": "Sonraki zamanlanmış tarama",
+    "verifyNow": "Şimdi doğrula",
+    "noSchedule": "Zamanlanmadı",
+    "security": {
+      "title": "Güvenlik",
+      "intro": "Nasıl giriş yaptığınız, kurtarma kodlarınız ve nerelerde oturumunuzun açık olduğu.",
+      "mfaTitle": "İki adımlı giriş",
+      "mfaOn": "Açık",
+      "mfaHelp": "Her GuardHub hesabı için zorunlu. Doğrulama uygulamanızı kaybederseniz bir kurtarma kodu kullanın.",
+      "sessionsTitle": "Oturumunuzun açık olduğu yerler",
+      "sessionsIntro": "Artık kullanmadığınız bir cihazdan ya da her yerden aynı anda çıkış yapın.",
+      "noSessions": "Başka oturum yok.",
+      "since": "başlangıç {when}",
+      "until": "bitiş {when}",
+      "end": "Çıkış yap",
+      "endAll": "Her yerden çıkış yap"
+    }
   }
 }
