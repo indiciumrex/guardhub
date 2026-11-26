@@ -9,6 +9,7 @@ from redis.asyncio import Redis
 from guardhub_api.auth import service, sessions
 from guardhub_api.auth.deps import AnySession, FullSession, clear_session_cookie, set_session_cookie
 from guardhub_api.auth.schemas import (
+    ChangePasswordRequest,
     LoginRequest,
     MfaState,
     RecoveryCodeRequest,
@@ -25,6 +26,7 @@ from guardhub_api.auth.schemas import (
 from guardhub_api.auth.security import SessionClaims
 from guardhub_api.common import audit
 from guardhub_api.common.crypto import keyed_hash
+from guardhub_api.common.errors import ForbiddenError
 from guardhub_api.common.redis import get_redis
 from guardhub_api.common.request_meta import client_ip
 from guardhub_api.config import get_settings
@@ -142,5 +144,23 @@ async def me(claims: AnySession) -> UserView:
 
 @router.patch("/me")
 async def update_me(body: UpdateMeRequest, claims: AnySession) -> UserView:
-    user = await service.update_locale(claims, body.locale)
+    # The display name needs a full (2FA) session; the language may be set before sign-in finishes.
+    if body.display_name is not None and not claims.mfa:
+        raise ForbiddenError("mfa_required", "Finish two-factor sign-in first.")
+    user = await service.update_profile(claims, locale=body.locale, display_name=body.display_name)
     return service.user_view(user, mfa_complete=claims.mfa)
+
+
+@router.post("/password")
+async def change_password(body: ChangePasswordRequest, claims: FullSession) -> dict[str, int]:
+    """Change one's own password with the current password and a current authenticator code.
+    Every other session of the account ends; this one stays signed in."""
+    redis = get_redis()
+    await service.change_password(
+        redis,
+        claims,
+        current_password=body.current_password,
+        new_password=body.new_password,
+        code=body.code,
+    )
+    return {"sessions_ended": await sessions.end_others(redis, claims.user_id, keep=claims.jti)}

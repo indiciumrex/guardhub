@@ -64,9 +64,11 @@ export interface User {
   email: string;
   role: Role;
   locale: string;
+  display_name?: string | null;
   totp_enabled: boolean;
   mfa_complete: boolean;
   created_at: string;
+  password_changed_at?: string | null;
 }
 
 export interface RegisterResponse {

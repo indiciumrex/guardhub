@@ -124,3 +124,14 @@ async def end(redis: Redis, user_id: uuid.UUID, jti: str | None = None) -> int:
             await redis.hdel(f"{PREFIX}{user_id}", s.jti)
             ended += 1
     return ended
+
+
+async def end_others(redis: Redis, user_id: uuid.UUID, *, keep: str) -> int:
+    """End every session of the account except `keep` (the one making the request)."""
+    ended = 0
+    for s in await list_sessions(redis, user_id):
+        if s.jti != keep:
+            await redis.set(f"{REVOKED}{s.jti}", "1", ex=max(1, s.expires_at - int(time.time())))
+            await redis.hdel(f"{PREFIX}{user_id}", s.jti)
+            ended += 1
+    return ended

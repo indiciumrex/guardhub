@@ -160,7 +160,9 @@
     "trial_used": "A trial was already used on this account.",
     "billing_not_live": "Payments are not switched on.",
     "plan_not_found": "This plan does not exist.",
-    "free_plan_public": "The free plan stays public."
+    "free_plan_public": "The free plan stays public.",
+    "wrong_current_password": "The current password is not right. Please try again.",
+    "invalid_display_name": "The name contains characters that are not allowed."
   },
   "severity": {
     "critical": "Critical",
@@ -1517,7 +1519,7 @@
   "customer": {
     "nav": {
       "overview": "Overview",
-      "security": "Security",
+      "security": "Profile & security",
       "plan": "Plan"
     },
     "eyebrow": "Your GuardHub",
@@ -1577,7 +1579,7 @@
     "verifyNow": "Verify now",
     "noSchedule": "Not scheduled",
     "security": {
-      "title": "Security",
+      "title": "Profile & security",
       "intro": "How you sign in, your recovery codes and where you are signed in.",
       "mfaTitle": "Two-factor sign-in",
       "mfaOn": "On",
@@ -1675,5 +1677,29 @@
       "status": "Status",
       "trialEnds": "Trial ends"
     }
+  },
+  "profile": {
+    "title": "Profile",
+    "intro": "Your name and sign-in details.",
+    "email": "E-mail",
+    "role": "Account type",
+    "roleAdmin": "Administrator",
+    "roleCustomer": "Customer",
+    "nameLabel": "Display name (optional)",
+    "save": "Save",
+    "saved": "Saved.",
+    "emailHelp": "To change the e-mail address of your account, contact support: it is your sign-in name and recovery address.",
+    "passwordTitle": "Password",
+    "lastChanged": "Last changed {when} (UTC).",
+    "neverChanged": "Not changed since the account was created.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "newPasswordHelp": "At least 12 characters, not a common password and not containing your e-mail.",
+    "confirmPassword": "Repeat the new password",
+    "mismatch": "The two new passwords are not the same.",
+    "code": "Current code from your authenticator app",
+    "passwordHelp": "For your safety we ask for both your current password and a current two-factor code. Every other device is signed out; this one stays signed in.",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed. {count, plural, =0 {No other device was signed in.} one {# other device was signed out.} other {# other devices were signed out.}}"
   }
 }

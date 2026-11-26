@@ -108,9 +108,18 @@ test("account: duplicate refused; a second user adds, verifies and scans their o
   await expect(onboarding).toContainText("2 of 6 steps done"); // account, and e-mail alerts are on by default
   await expect(onboarding.getByRole("link", { name: "Add a website" }).first()).toBeVisible();
   await expect(other.getByRole("navigation", { name: "Account navigation" })).toContainText(
-    "Security",
+    "Profile & security",
   );
   await shoot(other, "customer-overview");
+  // own profile: a display name; the password form asks for the current password and a code
+  await other.getByRole("link", { name: "Profile & security" }).click();
+  await fill(other.getByLabel("Display name (optional)"), "Demo Customer");
+  await other.getByRole("button", { name: "Save" }).click();
+  await expect(other.getByText("Saved.")).toBeVisible();
+  await expect(other.getByRole("form", { name: "Password" })).toContainText(
+    "Current code from your authenticator app",
+  );
+  await other.goto("/account");
   // Phase 5C: the plan page shows the free plan and that payments are not switched on
   await other.getByRole("link", { name: "Plan" }).click();
   await expect(other.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();

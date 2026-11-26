@@ -49,9 +49,11 @@ def user_view(user: User, *, mfa_complete: bool) -> UserView:
         email=user.email,
         role="admin" if user.role == "admin" else "user",
         locale=user.locale,
+        display_name=user.display_name,
         totp_enabled=user.totp_enabled,
         mfa_complete=mfa_complete,
         created_at=user.created_at,
+        password_changed_at=user.password_changed_at,
     )
 
 
@@ -279,16 +281,80 @@ async def get_user(claims: SessionClaims) -> User:
     return user
 
 
-async def update_locale(claims: SessionClaims, locale: str) -> User:
-    matched = match_locale(locale)
-    if matched is None:
-        raise UnprocessableError("unsupported_locale", "Unsupported language.")
+async def update_profile(claims: SessionClaims, *, locale: str | None, display_name: str | None) -> User:
+    """The account holder's own profile: language and display name. Nothing here grants access."""
+    matched = None
+    if locale is not None:
+        matched = match_locale(locale)
+        if matched is None:
+            raise UnprocessableError("unsupported_locale", "Unsupported language.")
+    name: str | None = None
+    if display_name is not None:
+        name = " ".join(display_name.split())  # collapse runs of whitespace
+        if any(not ch.isprintable() for ch in name):
+            raise UnprocessableError(
+                "invalid_display_name", "The name contains characters that are not allowed."
+            )
     async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
         user = await repository.by_id(session, claims.user_id)
         if user is None:
             raise NotFoundError("user_not_found", "User not found.")
-        user.locale = matched
+        if matched is not None:
+            user.locale = matched
+        if display_name is not None and (name or None) != user.display_name:
+            user.display_name = name or None
+            await audit.record(
+                session,
+                actor=f"user:{user.id}",
+                action="auth.profile_updated",
+                target=str(user.id),
+                metadata={"field": "display_name"},
+            )
         return user
+
+
+async def change_password(
+    redis: Redis, claims: SessionClaims, *, current_password: str, new_password: str, code: str
+) -> User:
+    """Change one's own password: the current password AND a current authenticator code (step-up),
+    rate-limited and audited (failures too). The caller ends the account's other sessions."""
+    await ratelimit.enforce(redis, "password-change", str(claims.user_id), limit=5, window=LOGIN_WINDOW)
+    async with db_session(DbContext.for_user(claims.user_id, claims.role)) as session:
+        user = await repository.by_id(session, claims.user_id)
+        if user is None or user.disabled_at is not None:
+            raise UnauthenticatedError("session_invalid", "Session is no longer valid.")
+        reason: str | None = None
+        if not await verify_password(user.password_hash, current_password):
+            reason = "wrong_password"
+        elif not user.totp_enabled or not user.totp_secret:
+            reason = "totp_not_setup"
+        else:
+            secret = _cipher().decrypt(user.totp_secret, associated_data=str(user.id).encode())
+            if not await recovery.current_code_ok(redis, user, code, secret):
+                reason = "invalid_totp"
+        problem = None if reason else password_problem(new_password, user.email)
+        if reason is None and problem is None and new_password == current_password:
+            problem = "same_as_current"
+        failed = reason or problem
+        if not failed:
+            user.password_hash = await hash_password(new_password)
+            user.password_changed_at = datetime.now(UTC)
+        await audit.record(
+            session,
+            actor=f"user:{user.id}",
+            action="auth.password_change_failed" if failed else "auth.password_changed",
+            target=str(user.id),
+            metadata={"reason": failed} if failed else None,
+        )
+    if reason == "wrong_password":
+        raise UnauthenticatedError("wrong_current_password", "The current password is incorrect.")
+    if reason == "totp_not_setup":
+        raise UnprocessableError("totp_not_setup", "Set up two-factor authentication first.")
+    if reason == "invalid_totp":
+        raise UnauthenticatedError("invalid_totp", "The code is not valid.")
+    if problem:
+        raise UnprocessableError("weak_password", "Password does not meet the policy.", {"reason": problem})
+    return user
 
 
 async def current_role(user_id: uuid.UUID) -> str:

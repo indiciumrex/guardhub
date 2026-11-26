@@ -39,6 +39,8 @@ class User(Base):
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     disabled_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    display_name: Mapped[str | None] = mapped_column(Text)  # the holder's own; never authorisation
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Project(Base):
