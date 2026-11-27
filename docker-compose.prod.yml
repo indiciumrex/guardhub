@@ -31,8 +31,11 @@ services:
 
   api:
     <<: *logging
-    environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "" }
+    environment: { SCANNER_ALLOW_PRIVATE_HOSTS: "", LEGAL_DIR: /srv/legal }
     deploy: { resources: { limits: { cpus: "1.0", memory: 512M, pids: 128 } } }
+    volumes:
+      # The approved active-testing terms (legal.py): placed by the founder, never in the repo.
+      - ${GUARDHUB_ROOT:-/opt/guardhub}/shared/legal:/srv/legal:ro
 
   api-worker:
     <<: *logging

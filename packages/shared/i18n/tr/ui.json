@@ -167,7 +167,8 @@
     "statement_required": "Lütfen önce güncel yetki beyanını okuyup onaylayın.",
     "ownership_required": "Bu kontroller doğrulanmış site gerektirir. Sahiplik kanıtı olmadan asla çalışmazlar.",
     "plan_not_available": "Bu plan buradan satın alınamaz.",
-    "checkout_unavailable": "Ödeme sayfası açılamadı. Lütfen biraz sonra tekrar deneyin."
+    "checkout_unavailable": "Ödeme sayfası açılamadı. Lütfen biraz sonra tekrar deneyin.",
+    "terms_not_published": "Aktif test koşulları henüz yayımlanmadı."
   },
   "severity": {
     "critical": "Kritik",
@@ -1911,5 +1912,13 @@
     "off": "Ödemeler açık değil",
     "offHelp": "Ücretli planlar henüz çevrim içi satın alınamıyor. Burada hiçbir ücret alınmaz. Yükseltmek için bizimle iletişime geçin.",
     "back": "Planınıza dönün"
+  },
+  "legalTerms": {
+    "title": "Aktif test koşulları",
+    "version": "Sürüm",
+    "fingerprint": "SHA-256 parmak izi",
+    "notPublished": "Aktif test koşulları henüz yayımlanmadı. Yayımlanana kadar müşteri sitelerinde aktif test yapılamaz.",
+    "englishOnly": "Bu sürüm için Türkçe çeviri yayımlanmadı; geçerli olan aşağıdaki İngilizce metindir.",
+    "translationNote": "Bu bir çeviridir. Geçerli olan İngilizce metindir; parmak izi yukarıda gösterilir."
   }
 }

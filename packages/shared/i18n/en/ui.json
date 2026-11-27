@@ -167,7 +167,8 @@
     "statement_required": "Please read and accept the current authorisation statement first.",
     "ownership_required": "These checks need a verified site. They never run without an ownership proof.",
     "plan_not_available": "This plan cannot be bought here.",
-    "checkout_unavailable": "The payment page could not be opened. Please try again in a moment."
+    "checkout_unavailable": "The payment page could not be opened. Please try again in a moment.",
+    "terms_not_published": "The active-testing terms are not published yet."
   },
   "severity": {
     "critical": "Critical",
@@ -1911,5 +1912,13 @@
     "off": "Payments are not switched on",
     "offHelp": "Paid plans cannot be bought online yet. Nothing is charged here. Contact us to upgrade.",
     "back": "Back to your plan"
+  },
+  "legalTerms": {
+    "title": "Active testing terms",
+    "version": "Version",
+    "fingerprint": "SHA-256 fingerprint",
+    "notPublished": "The active-testing terms are not published yet. Active testing of customer sites is not available until they are.",
+    "englishOnly": "A Turkish translation is not published for this version; the English text below is the one that applies.",
+    "translationNote": "This is a translation. The English text is the one that applies; its fingerprint is shown above."
   }
 }
